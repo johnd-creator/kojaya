@@ -36,7 +36,10 @@ roughly six minutes. Whole-repository formatting checks remain mandatory.
 
 Baseline aggregation: 3,427 tests, 28,150 assertions, zero skips/errors/failures;
 combined line coverage 81.39%, required >=60%; minimum test threshold 2,211.
-Canonical discovery: 302 eligible files. Before/after catalog comparison
+Canonical discovery: 302 eligible files. The original partition assigned
+75 / 75 / 76 / 76 files and nearly equal static weights (45,724 / 45,722 /
+45,761 / 45,762), despite the large measured runtime imbalance. Before/after
+catalog comparison
 preserves all 3,427 original testcase IDs; the initial change adds 15 cases.
 No original test, assertion, suite, exclusion, coverage or quality threshold
 is removed. A duplicate local timing profile was stopped without a PASS claim;
@@ -44,15 +47,37 @@ the successful full CI baselines remain authoritative.
 
 ## Execution design and trust boundaries
 
-Four shards are retained for the first pilot. Deterministic greedy LPT uses a
-committed manifest, content hashes and conservative static fallback for new or
-changed files. Invalid/missing manifests fail closed. The bootstrap manifest
-is explicitly an estimate: measured CI #531 shard durations apportioned by
-old static file weights, not claimed per-file measurements. The pilot publishes
-sanitized real JUnit per-file timing data for controlled refinement. The next
-manifest can be generated with `php bin/ci/phpunit-timings`, which rejects
-unsuccessful, skipped, duplicate, malformed or incomplete input. No runtime
-network or mutable external timing service controls the partition.
+Four runner shards remain, with the existing four ParaTest workers per shard.
+Deterministic greedy LPT uses a committed JUnit timing manifest, source hashes
+and conservative static fallback for new or changed files. Invalid/missing
+manifests fail closed. The original bootstrap manifest was explicitly an
+estimate; iteration 2 replaces it with all 305 files measured by successful
+PHPUnit shards in CI #538. That workflow failed Phase 4 input equivalence and
+is not an acceptance run. JUnit sums are worker time across parallel processes,
+not wall time; the original parallel command/process count remains unchanged.
+
+Within each measured shard, generated XML preserves descending runtime order
+with path ties, so expensive files reach ParaTest's queue first. Previously
+alphabetical execution could leave a heavy file late in the worker queue.
+Static-only helper use retains its original alphabetical output. There is no
+random order, mutable cache or external timing service. The collector rejects
+failed/skipped/duplicate/malformed/incomplete JUnit reports. Changed CI test
+files keep their original recorded hashes and safely use static fallback.
+
+Pilot shard jobs were 15m14s / 25m42s / 17m25s / 30m05s. PHPUnit aggregation
+passed 3,442 tests / 28,340 assertions, zero errors/failures/skips, 81.40%
+coverage. The full failed workflow took 32m12s and is retained as evidence.
+Measured LPT totals are almost equal at about 4.85 million worker milliseconds
+per runner; five/six shards also balance but introduce extra runner/setup/
+artifact cost. Four plus heavy-first worker scheduling is selected for the
+next controlled full measurement before spending more runner capacity.
+
+The largest measured worker-time files are SEED-09 SeedIntegrityGateTest
+(851.666s), RoleSmokeTest (566.015s), CooperativeResetTestDataCommandTest
+(546.182s), SensitiveEmployeeFileStorageTest (541.400s), and
+ErpPayrollOrganizationIsolationTest (516.674s). These contain repeated
+application/database fixture setup; their validations remain intact. Values
+are JUnit worker time, not observed runner duration.
 
 MECE covers every canonical file once. The existing aggregate merges raw
 Xdebug coverage, enforces zero skips/failures/errors, >=2,211 tests and >=60%
@@ -67,16 +92,19 @@ including Phase 4 execution. Documentation-only decisions also require every
 mandatory job to succeed. Unknown comparisons choose full CI. Unknown result
 classification cannot pass final readiness. `PHPUnit Parallel` keeps its name.
 
-Frontend build reuse is exact-source and checksum verified. Local controlled
-builds under testing and playwright produced identical digests for all 333
-files. A public-only provenance ledger binds the GitHub tested SHA, all asset
-hashes and generated Wayfinder inputs. Every consumer verifies source/digests;
-Playwright additionally compares freshly generated inputs before reuse. New
-Vite environment inputs cannot silently diverge: helper regressions compare
-all configured public Vite values for testing/playwright. Generated Drift
-still independently checks tracked-file policy and generates routes; its
-redundant Node install/build is removed. The one mandatory frontend build
-remains required by final readiness.
+Frontend artifact consumers verify exact source and every public asset digest.
+A public-only provenance ledger binds the tested SHA, assets and generated
+Wayfinder inputs. Local controlled testing/playwright builds had identical
+333-file digests, but iteration 1's CI input check correctly rejected reuse
+because the explicit Playwright Wayfinder command regenerated inputs without
+the Vite plugin's form variants (`formVariants: true` / `--with-form`).
+Reproducing the workflow order locally confirmed the digest difference; the
+simplified local builds did not reproduce that intermediate state. Iteration 2 retains the independent Playwright-environment
+build and its route generation; no integrity check is bypassed to permit reuse.
+This small build runs in parallel and does not extend the PHPUnit critical path.
+Generated Drift still independently checks tracked-file policy and generates
+routes; its redundant Node install/build is removed. Both required frontend
+build paths and the final readiness dependency remain enforced.
 
 npm download caching is enabled through setup-node with package-lock binding;
 npm ci still verifies locked dependencies. Composer download preparation is
@@ -92,7 +120,8 @@ Pint uses its existing two-process option and still checks the whole repository.
 - Isolated PHP 8.4, phpunit.xml forces APP_ENV=testing and SQLite :memory:;
   no QA/shared DB used. A temporary extracted SQLite extension is local only.
 - `php artisan test --compact tests/Unit/Ci tests/Feature/Phase4ReadinessGateTest.php`:
-  33 tests / 293 assertions PASS; no warnings, failures or skips.
+  33 tests / 293 assertions PASS initially; the retained-build refinement
+  passes 33 tests / 300 assertions, including heavy-first ordering; no warnings, failures or skips.
 - `php bin/ci/phpunit-shard verify --total=4`: 305 canonical files assigned,
   zero missing/duplicates. Helper regressions also cover 2/4/5/6 partitions.
 - Before/after PHPUnit catalog: 3,427 -> 3,442 IDs, missing zero, duplicates zero.
@@ -103,9 +132,11 @@ Pint uses its existing two-process option and still checks the whole repository.
 
 ## Performance validation status
 
-Iteration 1 pilot is pending a real full CI run. Estimated balance is not a
-performance acceptance claim. Expected critical path is ~26–30 minutes if the
-bootstrap estimate is representative; actual JUnit timings will drive the
+Iteration 1 full CI #538 completed FAIL in 32m12s; Phase 4 failed closed at the
+frontend input-equivalence check. This pilot cannot qualify as PASS. The
+Playwright-specific build is restored for iteration 2. Estimated balance is not a
+performance acceptance claim. Iteration 2 aims at approximately 23–27 minutes
+with measured weights and heavy-first worker scheduling; actual JUnit timings will drive the
 next refinement within the maximum three iterations. No success will be
 claimed until all mandatory full jobs finish and measured improvement reaches
 at least 20%. Final results and exact control identity will be appended here.

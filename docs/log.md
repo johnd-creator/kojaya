@@ -1816,10 +1816,20 @@ Three successful full runs establish a 43–44-minute baseline; CI #531 is
 43m29s, with shard 1 at 36m14s and serial readiness at 5m17s. The scoped
 CI pilot introduces deterministic source-bound runtime estimates and
 JUnit measurement publication, parallel Phase 4 execution with a final
-fail-closed decision, exact-source frontend integrity/reuse, npm download
+fail-closed decision, exact-source frontend integrity, npm download
 caching, and whole-repository parallel Pint. All original testcase IDs,
 coverage/test thresholds, PostgreSQL/backup/seed/build/drift/audit/UI/a11y
 validation remain. Initial local helper/readiness tests PASS (33/293);
 performance acceptance is pending real full CI and controlled timing refinement.
 QA candidate stays exact rc.12; QA/production/legacy untouched; Bundle B not
 executed. Detailed baseline and invariants: docs/ci-performance.md.
+
+CI #538 rejected Playwright artifact reuse because generated inputs differed.
+Iteration 2 restores the independent environment-specific build; the failed
+pilot remains recorded and cannot qualify as performance PASS.
+
+The complete pilot PHPUnit gate passed 3442 tests / 28340 assertions, zero
+errors/failures/skips and 81.40% coverage; full workflow FAIL at 32m12s.
+Iteration 2 replaces the estimate with measured source-bound JUnit worker
+timings, retains four runners and four existing ParaTest workers, and preserves
+heavy-first file order within each shard. Affected regressions PASS (33/300).

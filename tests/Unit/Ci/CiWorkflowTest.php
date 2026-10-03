@@ -91,7 +91,7 @@ class CiWorkflowTest extends TestCase
         verifyReadinessResults('false', $results);
     }
 
-    public function test_reused_build_context_preserves_all_client_environment_inputs(): void
+    public function test_playwright_keeps_its_distinct_build_even_when_public_environment_values_match(): void
     {
         $contexts = [];
         foreach (['.env.example', '.env.playwright.example'] as $file) {
@@ -104,6 +104,12 @@ class CiWorkflowTest extends TestCase
             }
             $contexts[] = $values;
         }
+        $workflow = Yaml::parseFile($this->root().'/.github/workflows/ci.yml');
+        $steps = $workflow['jobs']['phase4-execution']['steps'];
+        $build = array_values(array_filter($steps, fn (array $step): bool => ($step['name'] ?? '') === 'Build frontend for the distinct Playwright environment'));
+        $this->assertCount(1, $build);
+        $this->assertSame('playwright', $build[0]['env']['APP_ENV']);
+        $this->assertStringContainsString('npm run build', $build[0]['run']);
         $this->assertSame($contexts[0], $contexts[1]);
         $this->assertSame(['VITE_APP_NAME' => 'Kojaya'], $contexts[0]);
         $this->assertStringContainsString("environment(['testing', 'playwright'])", file_get_contents($this->root().'/routes/web.php'));

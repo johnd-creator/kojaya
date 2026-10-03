@@ -619,12 +619,12 @@ jobs:
           php artisan --env=playwright storage:link --force --no-interaction
           php artisan --env=playwright wayfinder:generate --no-interaction
 
-      - name: Verify frontend reuse for the Playwright environment
+      - name: Build frontend for the distinct Playwright environment
         if: needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: playwright
         run: |
-          php bin/ci/frontend-artifact verify-generated public/build
+          npm run build
           rm -f public/hot
 
       - name: Verify UI Audit global setup lifecycle

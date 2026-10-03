@@ -218,9 +218,10 @@ function partitionFiles(array $canonicalFiles, int $totalShards, string $root, a
         $shards[$targetShard]['lines'] += $item['lines'];
     }
 
-    // Sort files within each shard alphabetically for stable XML output
-    for ($s = 1; $s <= $totalShards; $s++) {
-        sort($shards[$s]['files']);
+    if ($timings === []) {
+        for ($s = 1; $s <= $totalShards; $s++) {
+            sort($shards[$s]['files']);
+        }
     }
 
     return $shards;

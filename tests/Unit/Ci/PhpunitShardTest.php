@@ -48,6 +48,7 @@ class PhpunitShardTest extends TestCase
             $this->assertEqualsCanonicalizing($files, $assigned);
             $this->assertCount(count($files), array_unique($assigned));
             $this->assertSame(10000, array_sum(array_column($first, 'weight')));
+            $this->assertSame('tests/Unit/NewTest.php', $first[1]['files'][0], 'The heaviest file must reach the ParaTest queue first.');
         }
     }
 

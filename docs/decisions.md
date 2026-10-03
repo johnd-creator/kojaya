@@ -1708,10 +1708,11 @@ Audits of the CI pipeline revealed several optimization opportunities:
 Keep the existing full validation contract while separating parallel Phase 4
 execution from its final fail-closed mandatory readiness decision. Deterministic
 LPT now supports source-controlled runtime weights with content-hash binding,
-new/changed-file static fallback, and controlled successful JUnit collection.
+new/changed-file static fallback, controlled successful JUnit collection,
+and deterministic heavy-first file order in the existing ParaTest worker queue.
 Bootstrap estimates are labelled; measured full CI determines acceptance.
-Public frontend artifacts are source/digest bound and compatible generated
-inputs are checked before Playwright reuse. Whole-repository Pint uses its
+Public frontend artifacts are source/digest bound. Playwright retains its
+distinct environment-specific build after the pilot rejected input equivalence. Whole-repository Pint uses its
 existing parallel option. CI/control changes never repromote or redeploy the
 QA application candidate. Baseline, trust boundaries and measured results are
 recorded in `docs/ci-performance.md`; all original threshold/security/database/

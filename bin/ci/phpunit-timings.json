@@ -1,1516 +1,1531 @@
 {
     "version": 1,
-    "source": "Bootstrap estimate: successful CI #531 / 37125296562, per-shard measured PHPUnit duration distributed by prior static file weight. Per-file values are estimates, to be replaced with pilot JUnit measurements.",
-    "fallback_ms_per_weight": 48,
+    "source": "CI #538 / run 37161183209, successful four PHPUnit shards, tested SHA ad000da9e011ec50b82f006d0a0fdd89b417ff18; full workflow failed Phase 4 input equivalence (not an acceptance run). JUnit testcase sums are worker time under unchanged ParaTest parallel execution.",
+    "fallback_ms_per_weight": 196,
     "files": {
         "tests/Feature/AdminKoperasiPhase1Test.php": {
-            "milliseconds": 18238,
-            "cases": 10,
+            "milliseconds": 142395,
+            "cases": 15,
             "sha256": "f7e2172511c94e48ce0b5ee06022ef970b9cdc14f7b30c036cc5279acd5c9a09"
         },
         "tests/Feature/Api/V1/CooperativeMemberApiControllerOpeningBalanceTest.php": {
-            "milliseconds": 10093,
-            "cases": 9,
+            "milliseconds": 41817,
+            "cases": 4,
             "sha256": "0f01be17ef2f49c7fab1285e1d182cf210a93f94d85b88055d9def8b66a559b7"
         },
         "tests/Feature/ApiPaginationHardeningTest.php": {
-            "milliseconds": 16057,
-            "cases": 6,
+            "milliseconds": 63041,
+            "cases": 14,
             "sha256": "98c47cfa496920ca0a284cc4b831d1c624db823de77c5e1d6f4f00c2d08ce462"
         },
         "tests/Feature/AuditLogTest.php": {
-            "milliseconds": 6640,
+            "milliseconds": 42098,
             "cases": 6,
             "sha256": "ecd229124dc45f90a269c1289bee1357996d974dd35084d8b1aecca8187ecd8c"
         },
         "tests/Feature/AuditLogsThrottleTest.php": {
-            "milliseconds": 4615,
+            "milliseconds": 16245,
             "cases": 2,
             "sha256": "946417f1db208651dab951fd2e9a4309aebd46d6ea71ca617e6515f5a31670a5"
         },
         "tests/Feature/Auth/AuthAuditActorIdentityTest.php": {
-            "milliseconds": 12744,
-            "cases": 10,
+            "milliseconds": 168405,
+            "cases": 27,
             "sha256": "bf13b9ae91164268554a56f000b75010ef0567c7d3d43f41fb242f795f17fb85"
         },
         "tests/Feature/Auth/AuthenticationAndAccessFunctionalTest.php": {
-            "milliseconds": 34731,
+            "milliseconds": 243426,
             "cases": 27,
             "sha256": "ad658bee208a5b8e276d3bc6b3bb26eec87475f80ac405e2afb59600b6c4b91a"
         },
         "tests/Feature/Auth/AuthenticationTest.php": {
-            "milliseconds": 11772,
+            "milliseconds": 35904,
             "cases": 6,
             "sha256": "fe2228c70104531da227874a098668a123d3e2cd8ffb805bb1c1b7164cb99954"
         },
         "tests/Feature/Auth/EmailVerificationTest.php": {
-            "milliseconds": 7426,
+            "milliseconds": 25414,
             "cases": 6,
             "sha256": "d5c649f4988e2661d9ac8228671b801748cd9a2524cf76981be734ea852b8dc7"
         },
         "tests/Feature/Auth/MemberTokenAbilityTest.php": {
-            "milliseconds": 18858,
+            "milliseconds": 84205,
             "cases": 18,
             "sha256": "0f7e2e13f259d2c3df73e1ee5aa7c7ef8487aa1da940c60a5cb457794bf6687f"
         },
         "tests/Feature/Auth/PasswordConfirmationTest.php": {
-            "milliseconds": 2390,
+            "milliseconds": 8780,
             "cases": 2,
             "sha256": "b737998745aea0d252fa8de3470564f500a2655f0f37867012909d5bb70514d1"
         },
         "tests/Feature/Auth/PasswordResetTest.php": {
-            "milliseconds": 5697,
+            "milliseconds": 20684,
             "cases": 5,
             "sha256": "8d4b5c28cd1199771b6b3bb6cec41d76278e351621856883390899ef0d8d50f3"
         },
         "tests/Feature/Auth/RegistrationTest.php": {
-            "milliseconds": 9361,
+            "milliseconds": 4104,
             "cases": 8,
             "sha256": "e182262bf671671b0f3994902e2fb2a1bc3767e56a0eb8d9b8bb1aca40c94683"
         },
         "tests/Feature/Auth/Sso/GoogleSsoFlowTest.php": {
-            "milliseconds": 38209,
+            "milliseconds": 5487,
             "cases": 28,
             "sha256": "e16d553f9483006f2766a1c6306b1b6a1a8476eb8e59c9da7ba70139c258b153"
         },
         "tests/Feature/Auth/Sso/GoogleSsoMemberMatchingTest.php": {
-            "milliseconds": 53410,
+            "milliseconds": 7173,
             "cases": 42,
             "sha256": "010a4b84f44d978c54e2bc72e8a885703cde087e5ddca143d8ba07b5f5910986"
         },
         "tests/Feature/Auth/Sso/GoogleSsoOpenRedirectHardeningTest.php": {
-            "milliseconds": 41201,
+            "milliseconds": 5858,
             "cases": 19,
             "sha256": "848bb6ed5f9d92e0bbf4307f0aa16ec0d606a840765df72e8cd559b0d9f6afe0"
         },
         "tests/Feature/Auth/TwoFactorChallengeTest.php": {
-            "milliseconds": 5038,
+            "milliseconds": 11719,
             "cases": 2,
             "sha256": "dca47f67caf939c69b63748d6e03c02a79ec6decbd281c68babaded5a8d270df"
         },
         "tests/Feature/Auth/VerificationNotificationTest.php": {
-            "milliseconds": 2213,
+            "milliseconds": 11679,
             "cases": 2,
             "sha256": "76b118d89e89f89b553cca922177870c18c7c11ec90795e5b865ecdb0e434edc"
         },
         "tests/Feature/Authorization/CrossOrganizationMutationTest.php": {
-            "milliseconds": 14765,
+            "milliseconds": 50978,
             "cases": 7,
             "sha256": "c0397baf253a0354ee67fb60922ae8172337e6780fd53ddff52d4dfa45f64929"
         },
         "tests/Feature/Authorization/GlobalCooperativePermissionMatrixTest.php": {
-            "milliseconds": 6810,
+            "milliseconds": 27221,
             "cases": 6,
             "sha256": "2db774b92a8bb564fbd50aef78b888ceac7f0770e31a69c1b0eea89ab2b582c2"
         },
         "tests/Feature/Authorization/OrganizationScopeContractTest.php": {
-            "milliseconds": 18788,
+            "milliseconds": 40240,
             "cases": 9,
             "sha256": "c33f3f2ce55cfa5f84f2e283aebc4c079276b7dac5e7e77231a9de35d740b8e2"
         },
         "tests/Feature/Backup/BackupDatabaseCommandTest.php": {
-            "milliseconds": 21062,
+            "milliseconds": 3554,
             "cases": 20,
             "sha256": "26ce9e7a4b1b0e98fa5c7922b5401b5e84ac8af7a1179ff2df2f09c2e934d5a2"
         },
         "tests/Feature/Backup/BackupPrivatePermissionsTest.php": {
-            "milliseconds": 17214,
-            "cases": 10,
+            "milliseconds": 2770,
+            "cases": 22,
             "sha256": "bc280d60d8285a366349d895fb19245ab8974cbfba82c10f1928c8ed9c808791"
         },
         "tests/Feature/Backup/BackupRetentionTest.php": {
-            "milliseconds": 9023,
+            "milliseconds": 2524,
             "cases": 6,
             "sha256": "b1a5d435ab01d98a062cd760fd1189e8058a1faebfa5da96d3e257d3bf064caf"
         },
         "tests/Feature/Backup/BackupStatusCommandTest.php": {
-            "milliseconds": 8479,
+            "milliseconds": 930,
             "cases": 6,
             "sha256": "861262cd03e997b891d9a208a9a4735e7513671303649aa35a18fabdb02251b3"
         },
         "tests/Feature/Backup/BackupVerificationTest.php": {
-            "milliseconds": 19588,
+            "milliseconds": 2369,
             "cases": 8,
             "sha256": "b64ce6cb581bbb694ddc6b47cbdcaa5d3800a8aa1a3f774731871d7ed01a1fd5"
         },
         "tests/Feature/CoffeeOrderWorkflowTest.php": {
-            "milliseconds": 7910,
+            "milliseconds": 51514,
             "cases": 3,
             "sha256": "3f74d232025e5d560fb073bb91f941a801ab1d83543bde55a5a5ce38566bc710"
         },
         "tests/Feature/ComplianceReportQueryTest.php": {
-            "milliseconds": 13184,
+            "milliseconds": 17880,
             "cases": 4,
             "sha256": "9aa650fa64984ef41436a743675df7e179ba4d9427972aaf3e1f9b1cb22a7c70"
         },
         "tests/Feature/Cooperative/AdminMemberManagementFunctionalTest.php": {
-            "milliseconds": 52989,
+            "milliseconds": 231576,
             "cases": 35,
             "sha256": "9bb0e7e0254c4d47dc11996fcd1aa926dd66620d1b45e80352e97edd8bf065eb"
         },
         "tests/Feature/Cooperative/AnggotaMemberStructureTest.php": {
-            "milliseconds": 18976,
+            "milliseconds": 104040,
             "cases": 6,
             "sha256": "efa5a923183bd47c075fbf4e6731955c55a48f7a0a73d62f8ac557f53dfe2972"
         },
         "tests/Feature/Cooperative/AuthorizationLayerStandardizationTest.php": {
-            "milliseconds": 9202,
+            "milliseconds": 46009,
             "cases": 7,
             "sha256": "148721a428e3a721ec5f5e64e47867565900a8ad7b602862ff0e93babef16efd"
         },
         "tests/Feature/Cooperative/ContributionsDuesPaymentsFunctionalTest.php": {
-            "milliseconds": 63278,
+            "milliseconds": 212186,
             "cases": 32,
             "sha256": "c8a5e8be9db0b626d2c519b6a20a19ba0c9132bf5f56dc788c75afc77ea0c46b"
         },
         "tests/Feature/Cooperative/CooperativeFeatureTest.php": {
-            "milliseconds": 91254,
-            "cases": 63,
+            "milliseconds": 394150,
+            "cases": 47,
             "sha256": "59a4c372cb502b60c649db956f12403cf5b133f4f6e68cf2a218306872b5c443"
         },
         "tests/Feature/Cooperative/CooperativeLoanFeatureTest.php": {
-            "milliseconds": 14016,
+            "milliseconds": 102673,
             "cases": 6,
             "sha256": "f9b6dcea425ec7b8c729523199385bb76a57e3e6641f51d5499428d79fbd9fca"
         },
         "tests/Feature/Cooperative/CooperativeMemberValidationTest.php": {
-            "milliseconds": 15906,
+            "milliseconds": 2218,
             "cases": 13,
             "sha256": "ead12d3c2666038253fa4e5194a65a80e1c410824c3c6a9547a9a4ddcd56e58d"
         },
         "tests/Feature/Cooperative/CooperativeNotificationActivationTest.php": {
-            "milliseconds": 20514,
+            "milliseconds": 94446,
             "cases": 15,
             "sha256": "fa09c5ef6999dadc2bfe8ca8d8f1f675b1481108f2518b07098db8375ca66b33"
         },
         "tests/Feature/Cooperative/CooperativeNotificationWorkflowTest.php": {
-            "milliseconds": 4333,
+            "milliseconds": 663,
             "cases": 2,
             "sha256": "f008262b58ecf2db8aba26f27678fc0ba08ef28385b881bb27313d1f304caf08"
         },
         "tests/Feature/Cooperative/CooperativeReportDeferredTest.php": {
-            "milliseconds": 2967,
+            "milliseconds": 34658,
             "cases": 2,
             "sha256": "da709b48e613db3705cf4963b16f536bca1d5f37e2992f2695f8d8d58d9506f2"
         },
         "tests/Feature/Cooperative/DemoMemberSeederTest.php": {
-            "milliseconds": 3049,
+            "milliseconds": 16698,
             "cases": 1,
             "sha256": "c87bbbd28023326f12fb32f360b36d4012b74531cbeaaf756269d61f5875c432"
         },
         "tests/Feature/Cooperative/DuesDomainSeparationTest.php": {
-            "milliseconds": 3557,
+            "milliseconds": 4364,
             "cases": 1,
             "sha256": "53261d34cafab2a0847644674d28c77ad7cda5976602dbd789d7b8441754aad8"
         },
         "tests/Feature/Cooperative/FailureRecoveryEdgeFunctionalTest.php": {
-            "milliseconds": 20954,
+            "milliseconds": 38129,
             "cases": 4,
             "sha256": "8928a496f6a97762c01068d8f9a4ef0ef137653932a3226f21a3bcf08ae1f1b9"
         },
         "tests/Feature/Cooperative/FinanceLedgerFunctionalTest.php": {
-            "milliseconds": 55664,
+            "milliseconds": 148461,
             "cases": 15,
             "sha256": "bbac9898d2d9003a1d1c7cabb326c528a5f4fd077765bfcb84dc4b90552b43ed"
         },
         "tests/Feature/Cooperative/LoanFunctionalTest.php": {
-            "milliseconds": 27775,
+            "milliseconds": 114795,
             "cases": 14,
             "sha256": "eeda637b734faaeea0ce04dd62faf6178333ebbbd760875b46f3337edde09ada"
         },
         "tests/Feature/Cooperative/MakerCheckerTest.php": {
-            "milliseconds": 12808,
+            "milliseconds": 22410,
             "cases": 5,
             "sha256": "b7447255c57c4ba91462c29f77824fafdaf6fde37681556866266d3fe7e58003"
         },
         "tests/Feature/Cooperative/MemberAccountLinkAuthorizationTest.php": {
-            "milliseconds": 33950,
+            "milliseconds": 56189,
             "cases": 13,
             "sha256": "a10baf0d85c629039b8a67e9a91a1ff301d6b6f7f0ee9215dba14b00fec3f64d"
         },
         "tests/Feature/Cooperative/MemberDestroyEndpointTest.php": {
-            "milliseconds": 5055,
+            "milliseconds": 13916,
             "cases": 3,
             "sha256": "58b48849b7625528782ca35a13ba7578deee6354cdb04ad93ee801c12beee5d2"
         },
         "tests/Feature/Cooperative/MemberExportAuthorizationTest.php": {
-            "milliseconds": 47746,
+            "milliseconds": 95646,
             "cases": 21,
             "sha256": "4c3c46d2d23dc924319ab672bc01c45b9a4710230c46360b8edc35bdf61dd1ba"
         },
         "tests/Feature/Cooperative/MemberImportExecutionTest.php": {
-            "milliseconds": 70704,
+            "milliseconds": 439224,
             "cases": 47,
             "sha256": "a49d03f98e513d3a42a3b63a84134b2750e480adef54964e360e43e98ba4247a"
         },
         "tests/Feature/Cooperative/MemberImportPreviewTest.php": {
-            "milliseconds": 52408,
+            "milliseconds": 99545,
             "cases": 23,
             "sha256": "843abbf6129a9a59cbada8b5302573fbc423a4b8b3672841aaf8293b34e58b63"
         },
         "tests/Feature/Cooperative/MemberImportValidatorTest.php": {
-            "milliseconds": 82119,
+            "milliseconds": 3456,
             "cases": 32,
             "sha256": "6f216b73ec5937ee810879b713e8c07a8c067878e4c2c67deb586bda41dfbb4b"
         },
         "tests/Feature/Cooperative/MemberLifecycleStateMachineTest.php": {
-            "milliseconds": 32607,
+            "milliseconds": 128097,
             "cases": 30,
             "sha256": "0da5ce9eb9b2bc8467404d743581acd92751f106688126ccf851eb6df8eb4ff4"
         },
         "tests/Feature/Cooperative/MemberP0SecurityClosureTest.php": {
-            "milliseconds": 29664,
-            "cases": 26,
+            "milliseconds": 77442,
+            "cases": 17,
             "sha256": "e7706bd80a1924d1877b1ded473f85c82d143131a5c30479b6d19964ac0108b9"
         },
         "tests/Feature/Cooperative/MemberResignationAuthorizationTest.php": {
-            "milliseconds": 7588,
+            "milliseconds": 45073,
             "cases": 7,
             "sha256": "1a850fbf00ccb0efc1f8497919ec2b53e711e96dc03165ae7a97141ce0c81979"
         },
         "tests/Feature/Cooperative/MemberResignationControllerTest.php": {
-            "milliseconds": 8533,
+            "milliseconds": 23435,
             "cases": 5,
             "sha256": "8bd7240cb069420f40b5b9b30d5685330e0a527d8679c6728a52d05d7ad72603"
         },
         "tests/Feature/Cooperative/MemberStatusConsistencyTest.php": {
-            "milliseconds": 19360,
+            "milliseconds": 118341,
             "cases": 19,
             "sha256": "8b9d47aba235bd0514b75849f8bb920d73e2b7218681f16316aae0e5e825a528"
         },
         "tests/Feature/Cooperative/MemberUpdateCommandSeparationTest.php": {
-            "milliseconds": 16531,
+            "milliseconds": 55308,
             "cases": 12,
             "sha256": "8f9164107d99e63fc256f4e2967c3d78e26672b9ddb12c68c2456c4fa4682fd9"
         },
         "tests/Feature/Cooperative/OpeningBalanceWizardHttpTest.php": {
-            "milliseconds": 21339,
+            "milliseconds": 129157,
             "cases": 14,
             "sha256": "bbf34097d42ff65056089e6710be2391775e15a2df276674fa97ea6fd514793c"
         },
         "tests/Feature/Cooperative/OpeningBalanceWizardTest.php": {
-            "milliseconds": 22897,
+            "milliseconds": 56879,
             "cases": 14,
             "sha256": "0c74520cda938a0a7246b94fe14029cb78970f29c0067a693b1487b519a5dec7"
         },
         "tests/Feature/Cooperative/OperatorDashboardDeferredTest.php": {
-            "milliseconds": 6404,
+            "milliseconds": 26171,
             "cases": 3,
             "sha256": "1b04e1ce3df41318e3fd707f9e187bdf8a2d675d091fc8980da65916c9afb718"
         },
         "tests/Feature/Cooperative/OrganizationIsolationTest.php": {
-            "milliseconds": 12599,
+            "milliseconds": 41523,
             "cases": 9,
             "sha256": "4aae601c407bb3f132fcc2320723618b418141ee3e3f66d58248a713ea40484d"
         },
         "tests/Feature/Cooperative/OrganizationPermissionIsolationFunctionalTest.php": {
-            "milliseconds": 31582,
+            "milliseconds": 102666,
             "cases": 11,
             "sha256": "82333b8b524be64f7f9677e616dedf7a5320789cb08ecd5fae68c04d5f5038cb"
         },
         "tests/Feature/Cooperative/PaymentProofPrivateStorageMigrationTest.php": {
-            "milliseconds": 19632,
+            "milliseconds": 2819,
             "cases": 14,
             "sha256": "f1e08eefd404782d11187e6eb578be8204be75280358543a09ca73e351943c72"
         },
         "tests/Feature/Cooperative/PaymentSortBulkTest.php": {
-            "milliseconds": 24440,
+            "milliseconds": 148245,
             "cases": 18,
             "sha256": "88747fbdfc7c836d2018ca4ab9a0469b62d7e217786796584f0565c486f1ada9"
         },
         "tests/Feature/Cooperative/PermissionMatrixTest.php": {
-            "milliseconds": 10084,
+            "milliseconds": 36930,
             "cases": 9,
             "sha256": "45b944339e3bb613b3296d8f0bf2dc78e51db88fb010769b19897c945fc6caf3"
         },
         "tests/Feature/Cooperative/Plan07BackgroundJobExportTest.php": {
-            "milliseconds": 17788,
+            "milliseconds": 121174,
             "cases": 14,
             "sha256": "a3847ba289ad63ff4b7d7e6db3fd98409242a52b2dea2aa684c11fe8527adf2a"
         },
         "tests/Feature/Cooperative/PosCashierFunctionalTest.php": {
-            "milliseconds": 15590,
+            "milliseconds": 112454,
             "cases": 9,
             "sha256": "ac0462ad6f7c0b22dbb0db1a4766e71eaf280535ff13e7669862de2d9ab82484"
         },
         "tests/Feature/Cooperative/PosCategoryOrganizationIsolationTest.php": {
-            "milliseconds": 72943,
+            "milliseconds": 233501,
             "cases": 52,
             "sha256": "b00903d8e92e26ebe9fb3bf044b3b36385ac5e1d38f1e8a02abd130bf6c07fd4"
         },
         "tests/Feature/Cooperative/PosPhase0PolishingTest.php": {
-            "milliseconds": 15933,
+            "milliseconds": 78143,
             "cases": 9,
             "sha256": "a69f871b973bf7d1e409aa5ba26edc38cab3e0454026d482ea30a8d7a69841d2"
         },
         "tests/Feature/Cooperative/PosPhase1FeatureTest.php": {
-            "milliseconds": 30277,
+            "milliseconds": 126546,
             "cases": 10,
             "sha256": "ba60f14dff7307a38bbd3b02eca1003a21fd6334156c4de2737c37d000041925"
         },
         "tests/Feature/Cooperative/PosPhase2MemberCreditTest.php": {
-            "milliseconds": 10413,
+            "milliseconds": 73878,
             "cases": 6,
             "sha256": "bf7393b10d8b953207eee6d7e7943b66899ed70f015e1df402c673ea4ba269ed"
         },
         "tests/Feature/Cooperative/PosPhase3InventoryTest.php": {
-            "milliseconds": 10057,
+            "milliseconds": 102389,
             "cases": 6,
             "sha256": "5eea3ec9c3a50d224df78d01cffac913875d2b25c8e837411bba6b496b9c5bf3"
         },
         "tests/Feature/Cooperative/PosPhase4ReportsTest.php": {
-            "milliseconds": 17071,
+            "milliseconds": 90534,
             "cases": 11,
             "sha256": "39d45498cf16f194584d2a129235292cfb12ede1ed89352843ed1b69cafd3d15"
         },
         "tests/Feature/Cooperative/PosPhase5ShiftClosingTest.php": {
-            "milliseconds": 14852,
+            "milliseconds": 172837,
             "cases": 10,
             "sha256": "a86deedb39e954facaf86c7aac2e94dc8c0ddeaa24d1c7b412039d2d923db913"
         },
         "tests/Feature/Cooperative/PosPhase6OfflineSyncTest.php": {
-            "milliseconds": 8319,
+            "milliseconds": 48436,
             "cases": 6,
             "sha256": "2af351486b0f22d4306a4e528c403f60420b51a15c1f40db2aab497479d5cbc3"
         },
         "tests/Feature/Cooperative/PosProductOrganizationIsolationTest.php": {
-            "milliseconds": 11608,
+            "milliseconds": 26530,
             "cases": 6,
             "sha256": "08f5e7c567946b0bdde5ba79bdcab62b9430450266b60c3c31a15ea94fd2700c"
         },
         "tests/Feature/Cooperative/PosReturnNumberCollisionHardeningTest.php": {
-            "milliseconds": 5545,
+            "milliseconds": 14214,
             "cases": 2,
             "sha256": "1779793cb521f11c420faf8ee8dbed2a5be2c5e2047a5e159d9db4192c821427"
         },
         "tests/Feature/Cooperative/PosSprint2MultiLocationTest.php": {
-            "milliseconds": 8123,
+            "milliseconds": 35103,
             "cases": 4,
             "sha256": "b6983fe1bff51c9627fef1de154521ee5f7849fa1d88266dac00f616f565faef"
         },
         "tests/Feature/Cooperative/PosSprint3ClosingLockTest.php": {
-            "milliseconds": 14361,
+            "milliseconds": 44257,
             "cases": 5,
             "sha256": "f8f02ecffda21f0a6d7c65288f1728f931acc1b649adb7bb7d3a189a9c05d12e"
         },
         "tests/Feature/Cooperative/PosSprint4OfflineSyncHardeningTest.php": {
-            "milliseconds": 15354,
+            "milliseconds": 136203,
             "cases": 11,
             "sha256": "8b8374dc24518e917d3877676c21a6caa8a4808098f3dd04bd5fd5eb8124db68"
         },
         "tests/Feature/Cooperative/PosSprint5JournalConsistencyTest.php": {
-            "milliseconds": 27405,
+            "milliseconds": 157055,
             "cases": 9,
             "sha256": "886429f59595f3c46f4b58c890b5a0d922150e44673c34b4a7754ed6b8bf4d9d"
         },
         "tests/Feature/Cooperative/PosSprint6ReportFiltersTest.php": {
-            "milliseconds": 10896,
+            "milliseconds": 57791,
             "cases": 7,
             "sha256": "e6e349f80db2b2a5d1af0cefa2ce577ae99de2be88aff27aa0ada2466f3d0cdc"
         },
         "tests/Feature/Cooperative/PosTransactionConcurrencyTest.php": {
-            "milliseconds": 7463,
+            "milliseconds": 5151,
             "cases": 1,
             "sha256": "e28088ce861a58a25c5bbb13cdb112c385e07f3bf9a8e33914d1a24c9e46bc48"
         },
         "tests/Feature/Cooperative/SavingsWithdrawalApprovalTest.php": {
-            "milliseconds": 4937,
+            "milliseconds": 21662,
             "cases": 3,
             "sha256": "9408a4968e6acc1d663014567d745b4ac075e6a2a0c8236e5b88604d752aec50"
         },
         "tests/Feature/Cooperative/SensitiveDataMaskPreventionTest.php": {
-            "milliseconds": 16022,
+            "milliseconds": 56342,
             "cases": 13,
             "sha256": "4021ce86a6b6c1790222caf7ed77d5028e381605a61720f66027aebc44d5a6c4"
         },
         "tests/Feature/Cooperative/Sprint2BusinessCriticalFlowsTest.php": {
-            "milliseconds": 7383,
+            "milliseconds": 3556,
             "cases": 4,
             "sha256": "6ebebec0ce7b49b2429f5fc0ed9aa043be455feabfee33430e79de4e4b17be11"
         },
         "tests/Feature/Cooperative/Sprint2BusinessHardeningTest.php": {
-            "milliseconds": 9496,
+            "milliseconds": 66466,
             "cases": 4,
             "sha256": "a9c9e84301524bc6fd56f48150a9eae5abddac4f26f33b805aeb36fe0bc28225"
         },
         "tests/Feature/Cooperative/StoreCredit/MemberStoreLedgerSchemaRepairTest.php": {
-            "milliseconds": 4889,
+            "milliseconds": 15484,
             "cases": 4,
             "sha256": "2dcc1d84917a4340029e5e5b525c8dab4fd5dc94015d221ef91d69bb7480b821"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditApiContractTest.php": {
-            "milliseconds": 9247,
+            "milliseconds": 42273,
             "cases": 5,
             "sha256": "fb44a5a1a6b4faecbf24be6427631408822c8b791c2f9d23289125d88f5144b0"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditAuthorizationTest.php": {
-            "milliseconds": 9901,
+            "milliseconds": 68150,
             "cases": 8,
             "sha256": "006c79d4e97275ca6e5ac8726492a06c53bc6b7f644ce8b8c1a77f34135afd03"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditDelegateHardeningTest.php": {
-            "milliseconds": 13373,
+            "milliseconds": 43698,
             "cases": 5,
             "sha256": "9fa446db41a6bb22e5911a997355e727aff9e25d2e5b38a103c645d7bcedd332"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditDelegateOrganizationIsolationTest.php": {
-            "milliseconds": 6339,
+            "milliseconds": 25256,
             "cases": 3,
             "sha256": "d92975924bbfa14ba78a6432b33d2a3433b478d068060354e483c9db8d1d1b9c"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditFundingAndDelegateTest.php": {
-            "milliseconds": 12064,
+            "milliseconds": 121773,
             "cases": 10,
             "sha256": "045e5743371305ca117eb76a05cdeb2ce360f05ed4e549195ac2bf2d47106ce1"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditLedgerTest.php": {
-            "milliseconds": 37293,
+            "milliseconds": 153957,
             "cases": 19,
             "sha256": "f0893f1d5c198e9ce62746c1be683f4b074e9880881449dd12f6fff0df941c09"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditOpenAccountTest.php": {
-            "milliseconds": 9461,
+            "milliseconds": 75620,
             "cases": 6,
             "sha256": "29ba8acc623520e57cd92e549922cbc738e775776869d2057c0403cc28cdefa8"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditOrganizationScopeTest.php": {
-            "milliseconds": 8988,
+            "milliseconds": 102949,
             "cases": 6,
             "sha256": "94316d434d3efb85c4012654c1b4f8cc7a0526efce5b9b09c605d9f323ea2e52"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditPaginationTest.php": {
-            "milliseconds": 5292,
+            "milliseconds": 32928,
             "cases": 2,
             "sha256": "20c4022eb18d7baa0412197da089b5d60c4dee52cfcf0f0b3a2d8774f7bbc85f"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditPosIntegrationTest.php": {
-            "milliseconds": 11066,
+            "milliseconds": 100202,
             "cases": 8,
             "sha256": "69b72a5c69de20b0498f58473d8179d1d90ec2fbf032d018c5164f1ce4fd4b19"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditProofFundingHardeningTest.php": {
-            "milliseconds": 22555,
+            "milliseconds": 89486,
             "cases": 11,
             "sha256": "7bdd5b70c84b3bf58c8fd40593a53abf748fb6477e57cb52494dad89d5525912"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditRefundMoneyHardeningTest.php": {
-            "milliseconds": 11267,
+            "milliseconds": 58353,
             "cases": 7,
             "sha256": "8949a24b3f5afcaa68b09e4ac5a55b7846ef10678928bce2da2dcbb66ba6835a"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditReportTest.php": {
-            "milliseconds": 17234,
+            "milliseconds": 73200,
             "cases": 6,
             "sha256": "c0eb268494623eb56e91dc9ee5fa8de17953f5a647ca6a1b23a8ac33b283c839"
         },
         "tests/Feature/Cooperative/StoreCredit/StoreCreditVoidRefundTest.php": {
-            "milliseconds": 14785,
+            "milliseconds": 52503,
             "cases": 3,
             "sha256": "ca8c658f533c8ca4245bca5d263a118b8c7866996100d42c086121ed7869dc7f"
         },
         "tests/Feature/Cooperative/StoreCreditFunctionalTest.php": {
-            "milliseconds": 83422,
+            "milliseconds": 460678,
             "cases": 48,
             "sha256": "115ba67934940044d8ebc637803d5505ea5c836fcf188d409dc7cdb0709a29b7"
         },
         "tests/Feature/CooperativeFinancialFixtureSeederTest.php": {
-            "milliseconds": 34968,
+            "milliseconds": 212635,
             "cases": 23,
             "sha256": "51174e1dda5fa926000819b65b689a8f3306132464f2dd122476cbbf3d4f0872"
         },
         "tests/Feature/CooperativeMemberLifecycleSeederTest.php": {
-            "milliseconds": 23349,
+            "milliseconds": 98832,
             "cases": 15,
             "sha256": "d0c71f2dfb8440b631d91502f44073a5dd71530e979a890f2d738c499ceb1b3f"
         },
         "tests/Feature/CooperativePersonaSeederTest.php": {
-            "milliseconds": 46993,
+            "milliseconds": 83985,
             "cases": 19,
             "sha256": "f0ef51d946b3383c92c20502b224a9e44c369b6a0631dfe34346b99631cf0ab1"
         },
         "tests/Feature/CooperativeReferenceSeederTest.php": {
-            "milliseconds": 18295,
+            "milliseconds": 60982,
             "cases": 10,
             "sha256": "ce6f94fd3b0110a8ef5d7aac8595589eae70912866f41c0b1aba509cb3407e27"
         },
         "tests/Feature/DashboardTest.php": {
-            "milliseconds": 8906,
+            "milliseconds": 11885,
             "cases": 3,
             "sha256": "a5a72b6c8477181ce6eb271151252592b33ce6a54e8c8d27d6410717eb1c9703"
         },
         "tests/Feature/DatabaseIsolationTest.php": {
-            "milliseconds": 2006,
+            "milliseconds": 1283,
             "cases": 2,
             "sha256": "3c206895e001b83e173188bd749d4e993a985a72efee701db0d6f90902079e2b"
         },
         "tests/Feature/DatabaseSeederSafetyTest.php": {
-            "milliseconds": 20837,
+            "milliseconds": 157341,
             "cases": 11,
             "sha256": "4fef09a982a59d8c78d931ed4df1c7dc9ea3c4cb54d83dbfea014b96fe3634dd"
         },
         "tests/Feature/DefaultAdminCredentialTest.php": {
-            "milliseconds": 21538,
+            "milliseconds": 71994,
             "cases": 16,
             "sha256": "25beb9a9840cce6454d5f440b850ed0bc843df865bfeb75ac0429c72977ef5ba"
         },
         "tests/Feature/DemoDataSeederTest.php": {
-            "milliseconds": 1897,
+            "milliseconds": 5414,
             "cases": 1,
             "sha256": "1f1270a60373c2557a694446ce6c69bb713ce3edac3699a14d21d5051d74234f"
         },
         "tests/Feature/DestructiveCommandGuardTest.php": {
-            "milliseconds": 4780,
+            "milliseconds": 1246,
             "cases": 3,
             "sha256": "002052b5ce7a25350f6f036f5a79443b98d6e070b1026d21d589fd24a2e1a99b"
         },
         "tests/Feature/Document05AuditPaginationContractTest.php": {
-            "milliseconds": 6372,
-            "cases": 4,
+            "milliseconds": 4732,
+            "cases": 13,
             "sha256": "128ff72be1565d645f9ca7c925a2ce21dbaaf9cec4845673858bfe77c74f26dc"
         },
         "tests/Feature/Documentation/ContextualHelpTest.php": {
-            "milliseconds": 13401,
+            "milliseconds": 43433,
             "cases": 10,
             "sha256": "79256e6937f2ac98dcb3fa42e1e9cc9eda1b2c11753101158d3fc2d7dc0fcc7e"
         },
         "tests/Feature/Documentation/DocumentationAuthorizerTest.php": {
-            "milliseconds": 32396,
+            "milliseconds": 133319,
             "cases": 15,
             "sha256": "6e317079953e7507201dbafaa36f368ec481f2a1b008c532e0eb83d07378dab1"
         },
         "tests/Feature/Documentation/DocumentationNavigationTest.php": {
-            "milliseconds": 3983,
-            "cases": 2,
+            "milliseconds": 20675,
+            "cases": 5,
             "sha256": "830cb13096094e8ee7acaf12031060d4b0987e7c51888e74a6b203f91a2d5fde"
         },
         "tests/Feature/Documentation/RolePermissionMatrixTest.php": {
-            "milliseconds": 11301,
+            "milliseconds": 12242,
             "cases": 3,
             "sha256": "0a3daf1c657d7a6509aa91550ad5520bd17b0b7dae14530c44aeada74af9c4ed"
         },
         "tests/Feature/Documentation/ViewDocumentationCenterTest.php": {
-            "milliseconds": 26510,
+            "milliseconds": 89792,
             "cases": 21,
             "sha256": "88021452a298a44bae21cbb62116e110a6bd7411abe3aa67cf9b92b4efe0daf1"
         },
         "tests/Feature/ExampleTest.php": {
-            "milliseconds": 2072,
+            "milliseconds": 5807,
             "cases": 1,
             "sha256": "3838ae64b6490cc2d64a850892c80ddc469f9d69ff40ddc098c1a4aa5a8694aa"
         },
         "tests/Feature/FcmHttpV1Test.php": {
-            "milliseconds": 16393,
-            "cases": 14,
+            "milliseconds": 5488,
+            "cases": 24,
             "sha256": "42e4a8ac9c8658c67826d8b567737e7f1db27d68e9bb967ac0e0ce6e22848ac7"
         },
         "tests/Feature/FrontendFormatterHygieneTest.php": {
-            "milliseconds": 3137,
+            "milliseconds": 12,
             "cases": 1,
             "sha256": "51b101406d0341b34776156f094878a1196bb0cdf161b3c08d74b77eae396888"
         },
         "tests/Feature/GranularCooperativeAbilityRouteTest.php": {
-            "milliseconds": 2488,
+            "milliseconds": 16105,
             "cases": 2,
             "sha256": "b6b3db2aafa927616420f23e4b39b4b4019d7a163e02fc58b119321d7efeb041"
         },
         "tests/Feature/Http/TrustedProxyTest.php": {
-            "milliseconds": 3718,
+            "milliseconds": 347,
             "cases": 2,
             "sha256": "0bbcfce584925a87bc1e78af5edcf6267af988abc697351ac3f7f324135b58f2"
         },
         "tests/Feature/LegacyErp/AssetManagementTest.php": {
-            "milliseconds": 6345,
+            "milliseconds": 541,
             "cases": 4,
             "sha256": "4228977685aafa77efb251e1d0980b211b38e3a5d93459fbe3d9884f75b4f1b4"
         },
         "tests/Feature/LegacyErp/AttendanceManagementTest.php": {
-            "milliseconds": 8223,
+            "milliseconds": 975,
             "cases": 4,
             "sha256": "2eaf748ff615b5724ed374a2926841f9705e7324367edae02406fa1e08e80859"
         },
         "tests/Feature/LegacyErp/AutomateMaintenanceTest.php": {
-            "milliseconds": 6494,
+            "milliseconds": 442,
             "cases": 4,
             "sha256": "b5198455ee8978fa7ae73f3d92c7ead666fc06a2373e0a09f820f90998e0140b"
         },
         "tests/Feature/LegacyErp/BankIntegrationTest.php": {
-            "milliseconds": 2578,
+            "milliseconds": 6639,
             "cases": 1,
             "sha256": "1d39bd9752c8a9ded5f58e52b2f7fb278d693777efe133edbd1930ab3ad34bf3"
         },
         "tests/Feature/LegacyErp/BankStatementReconcilerTest.php": {
-            "milliseconds": 2134,
+            "milliseconds": 4399,
             "cases": 1,
             "sha256": "94b3763e3a52ddd9fbf8c80e6abe1b800016ace68613755c3b0640445220167b"
         },
         "tests/Feature/LegacyErp/BudgetControllerTest.php": {
-            "milliseconds": 4986,
+            "milliseconds": 51306,
             "cases": 3,
             "sha256": "7f8b5bb6c84fff866d69243fb68f36dfb2b0fe43c8f39905f364653a5421d2ad"
         },
         "tests/Feature/LegacyErp/BudgetImportTest.php": {
-            "milliseconds": 6781,
+            "milliseconds": 672,
             "cases": 2,
             "sha256": "0b1ba9b78828ed90c59289bc6951349867798e08679f0b08ead54b23c82fab3d"
         },
         "tests/Feature/LegacyErp/ClientControllerTest.php": {
-            "milliseconds": 27734,
+            "milliseconds": 108531,
             "cases": 13,
             "sha256": "e1a00cca8af2d59887092900aa798e66ddd443edcf404f2702179a93802b8844"
         },
         "tests/Feature/LegacyErp/EFakturExportTest.php": {
-            "milliseconds": 2140,
+            "milliseconds": 278,
             "cases": 1,
             "sha256": "3a2bab7e7fe139c1d9f924b28ff4bd7d762975598c954824c6e37db2af491996"
         },
         "tests/Feature/LegacyErp/EfakturApiTest.php": {
-            "milliseconds": 2162,
+            "milliseconds": 9263,
             "cases": 1,
             "sha256": "ff30ae5945612d6c652182acc1b8b0ebc8626f3a6649f7b9bcf37b61748345d9"
         },
         "tests/Feature/LegacyErp/EfakturBatchExportTest.php": {
-            "milliseconds": 2311,
+            "milliseconds": 4313,
             "cases": 1,
             "sha256": "459ebfa547005cee8d8c5eace7cbbbb733ff278cc12f937c882f714f267279e9"
         },
         "tests/Feature/LegacyErp/EmployeeControllerTest.php": {
-            "milliseconds": 9370,
+            "milliseconds": 15790,
             "cases": 4,
             "sha256": "04adbf05b3065fb34d8142d8be9efd36ae76c557c58c56446ec812d13cdb5014"
         },
         "tests/Feature/LegacyErp/EmployeeEssProvisioningTest.php": {
-            "milliseconds": 7796,
+            "milliseconds": 30366,
             "cases": 5,
             "sha256": "6307df5e07567bb98a618646309541121b986d8ae184561d0e1a1a6715f7a039"
         },
         "tests/Feature/LegacyErp/EmployeeScopeTest.php": {
-            "milliseconds": 5911,
-            "cases": 1,
+            "milliseconds": 66424,
+            "cases": 11,
             "sha256": "7cfb7c37e94f5336bffc8db4fe95daaa1563e8521ff989bde748847e1ad29eb6"
         },
         "tests/Feature/LegacyErp/EmployeeTransferTest.php": {
-            "milliseconds": 8706,
+            "milliseconds": 63870,
             "cases": 5,
             "sha256": "da26615293ab4cbd9b6229a733c82f411a853a2ccfcb430f6836480175714dbe"
         },
         "tests/Feature/LegacyErp/EssGeofenceTest.php": {
-            "milliseconds": 3061,
+            "milliseconds": 1173,
             "cases": 1,
             "sha256": "1dde53578c50ba5e142e9f03c518fedf9b40c1cead2b227f6e95b338aed71c12"
         },
         "tests/Feature/LegacyErp/HrMasterDataManagementTest.php": {
-            "milliseconds": 18034,
+            "milliseconds": 21558,
             "cases": 5,
             "sha256": "7b5d7e4fec5fdb462f1c51e6de4d10728c82815161d53e994ff8aa8298befe8e"
         },
         "tests/Feature/LegacyErp/InvoiceFlowTest.php": {
-            "milliseconds": 14361,
-            "cases": 1,
+            "milliseconds": 100502,
+            "cases": 12,
             "sha256": "f153cde69b6b0393c391039f1a7470186194dabd99b535fe7961ebb10dd6df9f"
         },
         "tests/Feature/LegacyErp/LeaveManagementTest.php": {
-            "milliseconds": 5424,
+            "milliseconds": 18356,
             "cases": 4,
             "sha256": "95a3c5a34cef17f973b9e60545e48d5f868278c74450ffe5e86dde1c29305137"
         },
         "tests/Feature/LegacyErp/OvertimeManagementTest.php": {
-            "milliseconds": 5577,
+            "milliseconds": 27099,
             "cases": 3,
             "sha256": "f403f3903be861c2486ce163bb8b5c4e03e5f76e338780e6c01fea53d68c5edd"
         },
         "tests/Feature/LegacyErp/P5EssPortalTest.php": {
-            "milliseconds": 5064,
+            "milliseconds": 20541,
             "cases": 2,
             "sha256": "d0b1058b3c4f8652f0376d8cbca83bdf088997415b9f208bbe80ea8ed3e03db4"
         },
         "tests/Feature/LegacyErp/P5FinanceUiTest.php": {
-            "milliseconds": 8280,
+            "milliseconds": 1167,
             "cases": 2,
             "sha256": "34244c444d47f9fcdfeca6cd6e13b9acbca9845f722a9e8bc0f410ddff20a2f8"
         },
         "tests/Feature/LegacyErp/PayrollCalculatorTest.php": {
-            "milliseconds": 8747,
+            "milliseconds": 26764,
             "cases": 7,
             "sha256": "2800bdb5a3a1b49d546b0a15f913eae7acf88572c7b262717fd60bc0cd03ae2e"
         },
         "tests/Feature/LegacyErp/PayrollPipelineTest.php": {
-            "milliseconds": 10413,
+            "milliseconds": 40843,
             "cases": 6,
             "sha256": "dad2d233cc547866b1923b599d6c1f59c4390a6fa543a44fe1995c47beeda006"
         },
         "tests/Feature/LegacyErp/PettyCashManagementTest.php": {
-            "milliseconds": 7597,
+            "milliseconds": 21163,
             "cases": 5,
             "sha256": "ee130e57e4c017e680585cebce6d1639decf3bf9316ed37a805c9b62c5facee6"
         },
         "tests/Feature/LegacyErp/Phase2EssMobileApiTest.php": {
-            "milliseconds": 7686,
+            "milliseconds": 1714,
             "cases": 3,
             "sha256": "7bf3929e12b91d640bbd7d4e908ad245516b3dc7cfabe9b85734d5df70d46a9d"
         },
         "tests/Feature/LegacyErp/Phase3TechnicianMobileApiTest.php": {
-            "milliseconds": 7734,
+            "milliseconds": 701,
             "cases": 4,
             "sha256": "e18373c3b28415becad6e09d29d8665315ab081030f921ab76befefc3ecf7b91"
         },
         "tests/Feature/LegacyErp/ProcurementFlowTest.php": {
-            "milliseconds": 5403,
+            "milliseconds": 297,
             "cases": 2,
             "sha256": "6c37d54e178695064e8a8353f04cdad957c333e62581d2e94cacda5d0031028f"
         },
         "tests/Feature/LegacyErp/ProcurementWebFlowTest.php": {
-            "milliseconds": 7650,
+            "milliseconds": 1614,
             "cases": 3,
             "sha256": "7a8cccd9186cb80538aab18a189bb094f416d8216bf9f610c63e18ab3f742b34"
         },
         "tests/Feature/LegacyErp/ProjectFinanceTest.php": {
-            "milliseconds": 10971,
+            "milliseconds": 1030,
             "cases": 3,
             "sha256": "2cd7dace64e64eca841c4e57d36f7f7a42546d84d7f37274564f96f8e00a2d25"
         },
         "tests/Feature/LegacyErp/ProjectMilestoneTest.php": {
-            "milliseconds": 3113,
+            "milliseconds": 383,
             "cases": 2,
             "sha256": "82d4ea25ed1e01fc54536efedf8d21cab59941075d0cbfa72e6f9c85c9ffb996"
         },
         "tests/Feature/LegacyErp/ProjectResourceTest.php": {
-            "milliseconds": 10453,
+            "milliseconds": 804,
             "cases": 3,
             "sha256": "00551eb951cd871124c9315f86c4f3789290448b10ac8fbf92f1abcb9882487c"
         },
         "tests/Feature/LegacyErp/ProjectTeamAvailabilityTest.php": {
-            "milliseconds": 4354,
+            "milliseconds": 12671,
             "cases": 2,
             "sha256": "5dc48f508fe1180ebaa38e1c8f57cd65b3244d04bad4c8d310d4fc12b3b53bf9"
         },
         "tests/Feature/LegacyErp/ProjectTeamTest.php": {
-            "milliseconds": 5776,
+            "milliseconds": 434,
             "cases": 3,
             "sha256": "1244dffa70dd888ef41c369dabfc934ea3f3ef0335b6ad016ce487576a6fdd9d"
         },
         "tests/Feature/LegacyErp/ReimbursementManagementTest.php": {
-            "milliseconds": 8002,
+            "milliseconds": 26249,
             "cases": 6,
             "sha256": "aa245ee072b613ec3932a9134c33f3cae28340300ea3138d22434f1122c66693"
         },
         "tests/Feature/LegacyErp/SalaryStructureManagementTest.php": {
-            "milliseconds": 4761,
+            "milliseconds": 9050,
             "cases": 2,
             "sha256": "16436dc9c112593fa3da16e064acffb9a25233a18b9c0744d4c6f26b4fa5f2a9"
         },
         "tests/Feature/LegacyErp/ShiftRosterManagementTest.php": {
-            "milliseconds": 4494,
+            "milliseconds": 27466,
             "cases": 3,
             "sha256": "6ad43370857a446aecaa0be2614ba1ffed4e63757966f96e452d56fcfa434566"
         },
         "tests/Feature/LegacyErp/SparePartManagementTest.php": {
-            "milliseconds": 6174,
+            "milliseconds": 12720,
             "cases": 3,
             "sha256": "e48c6b70b3875cfe33c86151a1a377b220333d707c75074682f4a76a33e3f5c4"
         },
         "tests/Feature/LegacyErp/Sprint3HrPayrollHardeningTest.php": {
-            "milliseconds": 7757,
+            "milliseconds": 1133,
             "cases": 4,
             "sha256": "eb91bc1775f194e3beaa92d66e9b2d5af6fbc7fb29707ea41a18bdd1e5068f39"
         },
         "tests/Feature/LegacyErp/TechnicianApiTest.php": {
-            "milliseconds": 15256,
+            "milliseconds": 547,
             "cases": 4,
             "sha256": "732b6e7f820a9803ffd7d3c291df0e99f5fbc1f163dcb9c9e2d81439faa465d5"
         },
         "tests/Feature/LegacyErp/WarehouseManagementTest.php": {
-            "milliseconds": 8334,
+            "milliseconds": 12732,
             "cases": 3,
             "sha256": "94a09bbac8f79a6c9bf4433f02cdb6e37d01dc154be3ecb3f48a4888229d773d"
         },
         "tests/Feature/LegacyErp/WorkOrderWebFlowTest.php": {
-            "milliseconds": 6232,
+            "milliseconds": 984,
             "cases": 4,
             "sha256": "96e5228f0e07aad401d5d774270df2213df1d7eeac55081d0d206a3f73bb7583"
         },
         "tests/Feature/Member/MemberActiveStatusGateTest.php": {
-            "milliseconds": 23779,
+            "milliseconds": 104698,
             "cases": 12,
             "sha256": "3576b8f44f3453e4f9db9504001f00f3737e88fd618499300b3ab48a5e63570e"
         },
         "tests/Feature/Member/MemberLifecycleAndProfileFunctionalTest.php": {
-            "milliseconds": 60148,
+            "milliseconds": 165406,
             "cases": 39,
             "sha256": "88cb2ebc3fe5e14754caee0ed8c5962978a9f5f219af61929d90a002b519d17c"
         },
         "tests/Feature/Member/MemberLifecycleTokenRevocationTest.php": {
-            "milliseconds": 22763,
+            "milliseconds": 77120,
             "cases": 18,
             "sha256": "1133973be6bb526d3ff173ddfe707ead6c6aea457429f1f9e99abc226aa3d22d"
         },
         "tests/Feature/MemberActivationTest.php": {
-            "milliseconds": 5861,
+            "milliseconds": 33296,
             "cases": 4,
             "sha256": "b9c89a9289304a68d5d2627c82e76a01eee59c6a27330f2bebada8f679053f44"
         },
         "tests/Feature/MemberCoffeeOrderApiTest.php": {
-            "milliseconds": 13655,
+            "milliseconds": 35738,
             "cases": 4,
             "sha256": "188cb8c5da8266227dead8990b482af840a6a2e83132a46f5cd9b0910d8c7b09"
         },
         "tests/Feature/MemberDashboardConditionalTest.php": {
-            "milliseconds": 17901,
+            "milliseconds": 97998,
             "cases": 15,
             "sha256": "13dcdfd7d248799571b753932e672882cd88e2ec9e73543cd9ff8992b7a0311f"
         },
         "tests/Feature/MemberGetReadOnlyTest.php": {
-            "milliseconds": 7864,
+            "milliseconds": 21148,
             "cases": 3,
             "sha256": "d1e2603087a5babb89d64da92a0ce768994e7659ca0caef9aff2c7196011397b"
         },
         "tests/Feature/MemberOnboardingAccessTest.php": {
-            "milliseconds": 9923,
+            "milliseconds": 1315,
             "cases": 8,
             "sha256": "f8a64e0a81b1bbf989b88ee82a013d05e26614e5a67685f657c5707b1b9a6e55"
         },
         "tests/Feature/MemberPortal/MemberAccessGatingTest.php": {
-            "milliseconds": 12380,
+            "milliseconds": 4513,
             "cases": 12,
             "sha256": "d4762dfc1c011101c40b887e540238af21e905ecca3a9405537575754a6b5843"
         },
         "tests/Feature/MemberPortal/MemberDuesAfterVoidTest.php": {
-            "milliseconds": 3867,
+            "milliseconds": 778,
             "cases": 1,
             "sha256": "82cf4e4670ebb283c65cc9477a6e834e6ec41c45777af85f4bfa2d50cb7ce5f8"
         },
         "tests/Feature/MemberPortal/MemberFinancialActivityTest.php": {
-            "milliseconds": 6932,
+            "milliseconds": 2164,
             "cases": 4,
             "sha256": "34aa8d56eac9a6a5e08fd6fb897edc2638e2e71f5677542f22d140740fd66874"
         },
         "tests/Feature/MemberPortal/MemberOnboardingReadOnlyTest.php": {
-            "milliseconds": 10077,
+            "milliseconds": 1190,
             "cases": 4,
             "sha256": "7aaf891aae9c871c15513359b8e6265e0ed0c3e578cc13efe1927427b53645cf"
         },
         "tests/Feature/MemberPortal/MemberOnboardingSubmitTest.php": {
-            "milliseconds": 10940,
+            "milliseconds": 1088,
             "cases": 7,
             "sha256": "882350c49e555072f11fb76d43b680f03274274d3e6c66481617c5b598cdba11"
         },
         "tests/Feature/MemberPortal/MemberPaymentIntentWebTest.php": {
-            "milliseconds": 29478,
+            "milliseconds": 167784,
             "cases": 19,
             "sha256": "ca18a9c8ed6b40d7417f484634429a89516a2f81215850514b727734af3a7283"
         },
         "tests/Feature/MemberPortal/MemberUnifiedEndpointsTest.php": {
-            "milliseconds": 25438,
+            "milliseconds": 2246,
             "cases": 14,
             "sha256": "1c329950747ddfacf390fa4fc489aaebf9c702b1f7d31409c4fded18cb009609"
         },
         "tests/Feature/MemberStoreOrderApiTest.php": {
-            "milliseconds": 13116,
+            "milliseconds": 114615,
             "cases": 7,
             "sha256": "01e3638725b175c41a5a5cd358c41e32fd568780d26a3404108fd03311ee2b24"
         },
         "tests/Feature/NotificationSystemTest.php": {
-            "milliseconds": 14082,
+            "milliseconds": 1979,
             "cases": 11,
             "sha256": "43f0445009f45fa2d362bb4c3a63ce507f5f92afbd878765cf844299b4082d85"
         },
         "tests/Feature/Onboarding/MemberFirstLoginLifecycleExperienceTest.php": {
-            "milliseconds": 44641,
+            "milliseconds": 6331,
             "cases": 16,
             "sha256": "1b0ca96bfd9adbc757b6eb8e4ec2806eff4ccb2e0bee5781e322c52beffeeda5"
         },
         "tests/Feature/Onboarding/MemberOnboardingEndToEndTest.php": {
-            "milliseconds": 27337,
+            "milliseconds": 68470,
             "cases": 7,
             "sha256": "b415825d234c0d6f5217e85c4264f930d45a12e6173b65313f29338e5ba5f2d8"
         },
         "tests/Feature/OrganizationManagementTest.php": {
-            "milliseconds": 7248,
+            "milliseconds": 3866,
             "cases": 6,
             "sha256": "d45a944036d34fd876b4ae876ec0b3e27b051c9e4b412959071dee9e476792b2"
         },
         "tests/Feature/P0SecurityTest.php": {
-            "milliseconds": 11990,
+            "milliseconds": 72626,
             "cases": 11,
             "sha256": "4e55e2abb391fe9a087902dcb8d20437ec2c301086323d6d1b9f71e0d37c2ac5"
         },
         "tests/Feature/P1ArchitectureTest.php": {
-            "milliseconds": 9182,
+            "milliseconds": 9901,
             "cases": 4,
             "sha256": "ed047eca60ed5ceba6d31f9e8c3aa629252674f38230bc1c3a4671df1c3898b2"
         },
         "tests/Feature/P1FormRequestValidationTest.php": {
-            "milliseconds": 9512,
+            "milliseconds": 12900,
             "cases": 3,
             "sha256": "f35e9923e723d547fd615f3e89b38bd8cb9d5ab75c92b350c7320c14e886e2a8"
         },
         "tests/Feature/P3ArchitectureTest.php": {
-            "milliseconds": 5617,
+            "milliseconds": 398,
             "cases": 4,
             "sha256": "b25b3d5cd5e049d2d952e439329c427cee74c2e90c19d8bf0095384755b9a7d6"
         },
         "tests/Feature/P4FrontendArchitectureTest.php": {
-            "milliseconds": 1551,
+            "milliseconds": 4481,
             "cases": 1,
             "sha256": "b8630ecb535f8a59b477918abd57fa4199b6b7338fffcdd148e4264615485865"
         },
         "tests/Feature/P5MemberAuthRedirectTest.php": {
-            "milliseconds": 5278,
+            "milliseconds": 20133,
             "cases": 5,
             "sha256": "b3684ade5e18a47adf3cd718b1570ef72e6f537e462b7febda93da32fadaf919"
         },
         "tests/Feature/P5MemberPortalTest.php": {
-            "milliseconds": 66063,
+            "milliseconds": 122924,
             "cases": 30,
             "sha256": "e8d185cf9fe15c7794af85713b00ca71149258ccde7112c3122d83ff986caef7"
         },
         "tests/Feature/P5PointsRewardsTest.php": {
-            "milliseconds": 14084,
+            "milliseconds": 35204,
             "cases": 5,
             "sha256": "8d9b9cd8de143cb87122bd017e8ad7f90499fcba6986fac2c9261254afbe3903"
         },
         "tests/Feature/PaymentCanonicalItemTest.php": {
-            "milliseconds": 32761,
+            "milliseconds": 207422,
             "cases": 25,
             "sha256": "718a362159f1001c8051b3a262b57ace061b6d0bdda01d007be6df6f05197ba2"
         },
         "tests/Feature/PaymentChargeRecoveryTest.php": {
-            "milliseconds": 31938,
+            "milliseconds": 124423,
             "cases": 15,
             "sha256": "b1226b451c58920db9a418eae210ed70bd42ebdded8e6837ff225bc3a8436d7f"
         },
         "tests/Feature/PaymentNotificationOutboxTest.php": {
-            "milliseconds": 10531,
+            "milliseconds": 47609,
             "cases": 6,
             "sha256": "6635218a3035a14c44a500c8b6b09ae6cb78f28cce27566815a9a91430bd62e3"
         },
         "tests/Feature/PaymentReservationStateMachineTest.php": {
-            "milliseconds": 24213,
+            "milliseconds": 265845,
             "cases": 16,
             "sha256": "31e5f345ad71f4c57331b2fa50be535427209d37a647f54eadc3d5b786905f59"
         },
         "tests/Feature/Phase0MobileApiTest.php": {
-            "milliseconds": 8537,
+            "milliseconds": 2015,
             "cases": 7,
             "sha256": "6ae36d0df341d8dab291e18832a2bc024bee058fe2e173eb433785ccb471e7bb"
         },
         "tests/Feature/Phase1MemberSelfServiceApiTest.php": {
-            "milliseconds": 29825,
+            "milliseconds": 2526,
             "cases": 15,
             "sha256": "214767dc29473e5fa835ebcceda17315045f8f9ebe614f7bfbfe1ea45373d095"
         },
         "tests/Feature/Phase4ControllerAuthorizationTest.php": {
-            "milliseconds": 11819,
-            "cases": 5,
+            "milliseconds": 222277,
+            "cases": 13,
             "sha256": "01a8f582acd65666465510bdff62e49ef9dbe8d29465eef293ad50e621de1462"
         },
         "tests/Feature/Phase4FullRegressionInventoryTest.php": {
-            "milliseconds": 3370,
+            "milliseconds": 195,
             "cases": 2,
             "sha256": "a56153bde3e679ab7eeb4a22acba7bdccad3f185b58e4de9cf0daecf8a69beba"
         },
         "tests/Feature/Phase4Phase5OperatorHardeningTest.php": {
-            "milliseconds": 7078,
+            "milliseconds": 24797,
             "cases": 3,
             "sha256": "5e340ea0a21d04cd8dab9d044890394db68ba01c8c9d9392fa1d4aa7600f1673"
         },
         "tests/Feature/Phase4ReadinessGateTest.php": {
-            "milliseconds": 8415,
+            "milliseconds": 834,
             "cases": 8,
-            "sha256": "9277ebc17ce37ee78973f0b2a8cbac1ab3424c52d3f9bc0f8f92382f7852fb87"
+            "sha256": "cf3643a422a71fad0cec4017f738bc0c097d6cf91d48a833d8058fb22759fc4b"
         },
         "tests/Feature/PhaseBContractApiTest.php": {
-            "milliseconds": 40711,
-            "cases": 26,
+            "milliseconds": 131797,
+            "cases": 32,
             "sha256": "23fc6ff78d6e3b769c42ad50a5e543f3cada3f0d54f4fdca0ae4ee95b68077bc"
         },
         "tests/Feature/PhaseCExceptionReportTest.php": {
-            "milliseconds": 18243,
+            "milliseconds": 112437,
             "cases": 14,
             "sha256": "2735a52ec7430c4f1b0ed4979263ddd705efb1abc6d40e7b6bf802049f696e5f"
         },
         "tests/Feature/PhaseCSegregationOfDutiesTest.php": {
-            "milliseconds": 38140,
+            "milliseconds": 241174,
             "cases": 14,
             "sha256": "6dd027ca96562d86e7baa03a1c9b814269db12accd13dc596ed2ec70565648c8"
         },
         "tests/Feature/PhaseD1ObservabilityTest.php": {
-            "milliseconds": 14690,
+            "milliseconds": 27186,
             "cases": 14,
             "sha256": "c6c551e9e3306f9f5a7b899cb0ad8ae37d54b47c33ca19e0ac41f950486df6aa"
         },
         "tests/Feature/PhaseDOpenApiSnapshotTest.php": {
-            "milliseconds": 11154,
+            "milliseconds": 1359,
             "cases": 11,
             "sha256": "1bef66b85b597b682720b6170e3d3d4f128d171ed8024dc867a061becb451180"
         },
         "tests/Feature/PhaseDPrivacyHardeningTest.php": {
-            "milliseconds": 12718,
+            "milliseconds": 83964,
             "cases": 9,
             "sha256": "020a4ed8515d734655c8b481f9d28e870a75df46a47960ac9962ff6a3b1834f9"
         },
         "tests/Feature/PhaseDProductionSmokeTest.php": {
-            "milliseconds": 24344,
+            "milliseconds": 76178,
             "cases": 11,
             "sha256": "0c3f630415e4726b4f70bad1e42b15d82fa0016f83378094b87b20c844608639"
         },
         "tests/Feature/ProductionReadinessP0P2Test.php": {
-            "milliseconds": 16343,
+            "milliseconds": 2542,
             "cases": 12,
             "sha256": "d62182424e9e089db36ad11b8ceff4108a9e9b77b5d36f5e77636afdd1b287f6"
         },
         "tests/Feature/PublicWebRootSecurityTest.php": {
-            "milliseconds": 2274,
+            "milliseconds": 243,
             "cases": 2,
             "sha256": "67308b34ea916f648c49bee9ff087552d17912abbbf772f39fa602da6eec84cf"
         },
         "tests/Feature/QwenFollowUpHardeningTest.php": {
-            "milliseconds": 3989,
+            "milliseconds": 2940,
             "cases": 4,
             "sha256": "5f91c31ced153a1e2d49691b92497fb92071f99b5a5ead4c04c599f94fea381b"
         },
         "tests/Feature/ReleasePreflightTest.php": {
-            "milliseconds": 27086,
+            "milliseconds": 2399,
             "cases": 24,
             "sha256": "0fec05d5a58b2e38b5c965afccc045f8e85f9fa558ff3ea3e12c789bd22468e6"
         },
         "tests/Feature/RepoHygieneTest.php": {
-            "milliseconds": 5350,
+            "milliseconds": 37,
             "cases": 3,
             "sha256": "3d715df372e49a13a6da788f55ab01347da284bfae7071f018d8a6de064a9fd1"
         },
         "tests/Feature/ReportGenerationTest.php": {
-            "milliseconds": 5789,
+            "milliseconds": 1153,
             "cases": 4,
             "sha256": "d801da5afccc2fb279b83f0fa557e7f1e5e28036e6d5f49b28a7cc3131a701cd"
         },
         "tests/Feature/RoleManagementTest.php": {
-            "milliseconds": 5719,
+            "milliseconds": 1001,
             "cases": 4,
             "sha256": "bd5a68e6e946708c16eb8ab8eb689b36de1ccfa0eb9c107fcebd489e476e0c72"
         },
         "tests/Feature/RoleSmokeTest.php": {
-            "milliseconds": 35503,
-            "cases": 11,
+            "milliseconds": 566015,
+            "cases": 33,
             "sha256": "573637c8536e8fc44a0018391f6eef279c48e6bb2c3275af04b4c89f4f67c867"
         },
         "tests/Feature/SEED06/CooperativeEdgeCaseFixtureSeederTest.php": {
-            "milliseconds": 59612,
+            "milliseconds": 184981,
             "cases": 23,
             "sha256": "03a7eb705dc62f1bbfa9d7add847b77a3bb8a2ad7ea045346b8dd1f3bce5adf9"
         },
         "tests/Feature/SEED07/CooperativeResetTestDataCommandTest.php": {
-            "milliseconds": 34425,
+            "milliseconds": 546182,
             "cases": 23,
             "sha256": "f766cb2f784322bbe0352868a578eb864509a391fb4bd06c22264c474c868481"
         },
         "tests/Feature/SEED08/SeederEnvironmentGuardTest.php": {
-            "milliseconds": 53585,
+            "milliseconds": 5192,
             "cases": 26,
             "sha256": "6f07c9714335d7f02441331bdb05ce47d990dab55843c5f831a8238cd3a14b01"
         },
         "tests/Feature/SEED09/SeedIntegrityGateTest.php": {
-            "milliseconds": 123226,
+            "milliseconds": 851666,
             "cases": 41,
             "sha256": "176b22ffee486aa7c072862375ad4155f42c4681d0cc6d1130d5443b5d1c6635"
         },
         "tests/Feature/Security/ApiAbilityCharacterizationTest.php": {
-            "milliseconds": 16904,
+            "milliseconds": 65133,
             "cases": 7,
             "sha256": "337792dd976d0320df653bdc1573589b0e79f8ca09a11f5ecdd2447ba2a3aa63"
         },
         "tests/Feature/Security/AttendanceAuthorizationIsolationTest.php": {
-            "milliseconds": 54457,
+            "milliseconds": 164074,
             "cases": 41,
             "sha256": "a8700baac86483ff8a122c6efd5707e9e753b2957bb47dda0a2fdf577cb7e186"
         },
         "tests/Feature/Security/AttendanceRolePermissionCutoverTest.php": {
-            "milliseconds": 18411,
+            "milliseconds": 121068,
             "cases": 10,
             "sha256": "afd1f01315fca127e2904866bae7b084d3dddbd6580761ce1cfafd0d1c7f4e41"
         },
         "tests/Feature/Security/AuditContextSourceTest.php": {
-            "milliseconds": 19409,
+            "milliseconds": 64267,
             "cases": 16,
             "sha256": "f89d1c2e68b25ca96b4f38dffdc7cb360f3a3523dce397ec3b36ded5d4bc5480"
         },
         "tests/Feature/Security/BankBatchAuthorizationIsolationTest.php": {
-            "milliseconds": 49543,
+            "milliseconds": 412863,
             "cases": 44,
             "sha256": "8594eaf2a21456130d4eeae886e7f276b796864ee188d1c73674f6326aa6da80"
         },
         "tests/Feature/Security/BankBatchPermissionCutoverTest.php": {
-            "milliseconds": 13080,
+            "milliseconds": 33779,
             "cases": 4,
             "sha256": "6263718b4a8d2ad7117dce12ba3baa89193ac29b855d13d83e96594f7bc77ee5"
         },
         "tests/Feature/Security/BudgetAuthorizationIsolationTest.php": {
-            "milliseconds": 94409,
+            "milliseconds": 13939,
             "cases": 46,
             "sha256": "5964fc24955bb226f8a08258b66f624c4707c961d9df7ca8629ee258b1a310f3"
         },
         "tests/Feature/Security/CooperativeReportsOrganizationIsolationTest.php": {
-            "milliseconds": 119414,
+            "milliseconds": 341160,
             "cases": 85,
             "sha256": "85ff34b72cfe64a006d7f03dae33932a812cc9520d582e9c7370ab7acadd02a9"
         },
         "tests/Feature/Security/ErpPayrollOrganizationIsolationTest.php": {
-            "milliseconds": 97991,
+            "milliseconds": 516674,
             "cases": 79,
             "sha256": "3073548d3c3db2051560959129d3f9ab4927ab1a69a2a680a7beb1176728de3b"
         },
         "tests/Feature/Security/GranularAbilityCutoverTest.php": {
-            "milliseconds": 8536,
+            "milliseconds": 64178,
             "cases": 7,
             "sha256": "2ab9b880499ec7af624a6c6bb66d483f80c1515072d965845a15558ace59c60b"
         },
         "tests/Feature/Security/LegacyTokenClassificationCommandTest.php": {
-            "milliseconds": 2618,
+            "milliseconds": 444,
             "cases": 2,
             "sha256": "9a2d942b1fdcb07c713325dd5f2d0c6e541622370de8f3cac3f7e2a21c9bd4f4"
         },
         "tests/Feature/Security/LoanWriteOffAuditLifecycleTest.php": {
-            "milliseconds": 22413,
+            "milliseconds": 49391,
             "cases": 8,
             "sha256": "6e36e482b9aea3c78897362ced6845a80190b57c292e85eb03ab64771c11d6a2"
         },
         "tests/Feature/Security/MemberCoffeeOrderOrganizationIsolationTest.php": {
-            "milliseconds": 32976,
+            "milliseconds": 143227,
             "cases": 17,
             "sha256": "8b7e5061eccf36e32a042062fcb5c7929646745858594fa68b89dc3d8d37921c"
         },
         "tests/Feature/Security/MemberSensitiveDataRolloutTest.php": {
-            "milliseconds": 20008,
+            "milliseconds": 3080,
             "cases": 15,
             "sha256": "094f6651f3067af44958b5a5da5522b32ab0a9b4687ca6e59a3a660285790bdd"
         },
         "tests/Feature/Security/MemberSensitiveDataSerializationTest.php": {
-            "milliseconds": 6074,
+            "milliseconds": 531,
             "cases": 2,
             "sha256": "aa19d473330f7d31a322d4c9909f2e025c0b92c3468583c88894eee494908cb6"
         },
         "tests/Feature/Security/OrganizationIsolationFoundationTest.php": {
-            "milliseconds": 56646,
+            "milliseconds": 90604,
             "cases": 20,
             "sha256": "e272615c1d18f5934584208b1e2da8ec7f7996d9a0e08928520b54070a4b65df"
         },
         "tests/Feature/Security/PaymentWebhookFailClosedTest.php": {
-            "milliseconds": 36305,
+            "milliseconds": 136220,
             "cases": 22,
             "sha256": "299fc92a0d618d7485b1dcb8657b565691f8bc74a0961abf1eed15c7ae8928dd"
         },
         "tests/Feature/Security/PiiDatabaseMigrationsCompatibilityTest.php": {
-            "milliseconds": 1094,
+            "milliseconds": 7936,
             "cases": 1,
             "sha256": "89a75e68c6c77eeeb2794760c69a59eb7dac93aa2225791aad09e2b8dcfbe5fd"
         },
         "tests/Feature/Security/PiiMigrationGuardTest.php": {
-            "milliseconds": 12761,
+            "milliseconds": 1565,
             "cases": 4,
             "sha256": "201e01991a78fb93e495654cc85cb658c455dc80567e36a35b1d442c3f6b5788"
         },
         "tests/Feature/Security/PointsAdminOrganizationIsolationTest.php": {
-            "milliseconds": 102744,
+            "milliseconds": 143534,
             "cases": 36,
             "sha256": "dd8692ca9b8c014a65b2f8e2002c2de539d5cd0ba576d8d272ef49365567057b"
         },
         "tests/Feature/Security/PosDailyClosingOrganizationIsolationTest.php": {
-            "milliseconds": 66952,
+            "milliseconds": 317388,
             "cases": 49,
             "sha256": "ca5d195585305ef04af73e20bc8aa235386deb278119a39527e01bab23dcfcf6"
         },
         "tests/Feature/Security/PosMemberCreditOrganizationIsolationTest.php": {
-            "milliseconds": 58566,
+            "milliseconds": 272794,
             "cases": 51,
             "sha256": "38b5e80b3207c94a0397919392ee6111aa6f9c3994d567bf54b3463b6165a057"
         },
         "tests/Feature/Security/PosTransactionVoidOrganizationIsolationTest.php": {
-            "milliseconds": 242450,
+            "milliseconds": 285710,
             "cases": 92,
             "sha256": "3d22f6d64f04b36966a90b09f1362e139aec666e0b21d88e45b833d23995f16d"
         },
         "tests/Feature/Security/PrivilegedRoleMutationAuditTest.php": {
-            "milliseconds": 26322,
+            "milliseconds": 54411,
             "cases": 9,
             "sha256": "be609d4d21798f9aff8d4fae0a4bd444a8a0d634a4b913d91c50ed78539eadd9"
         },
         "tests/Feature/Security/ProjectDocumentAuthorizationTest.php": {
-            "milliseconds": 115551,
+            "milliseconds": 19916,
             "cases": 55,
             "sha256": "4aa1326eac6a3613503df69846b8c79f2cb5df3ddaa7c6a2d6bd1102d59804e8"
         },
         "tests/Feature/Security/RewardRedemptionOrganizationIsolationTest.php": {
-            "milliseconds": 62431,
+            "milliseconds": 319847,
             "cases": 35,
             "sha256": "68f2e7a7e9856d200ef4948531c1cf5c498103fa6b7c58c317e9f7c1428b5e5e"
         },
         "tests/Feature/Security/SensitiveEmployeeFileStorageTest.php": {
-            "milliseconds": 114457,
+            "milliseconds": 541400,
             "cases": 74,
             "sha256": "bbeaf21f4fb9b42c999623bdadc62d44424860cab01ed8e70eee25721003a48f"
         },
         "tests/Feature/Security/StrictApiAbilityEnforcementTest.php": {
-            "milliseconds": 32379,
+            "milliseconds": 123187,
             "cases": 19,
             "sha256": "b083e92be0a502d3e4a885152c0176e7fec71d057120f1b3c7e491bb21a0501f"
         },
         "tests/Feature/Security/TokenAppMetadataTest.php": {
-            "milliseconds": 5983,
+            "milliseconds": 44384,
             "cases": 5,
             "sha256": "d5d12bb66e54d86d4d79c4e80b73e56e9629b93852d15329209c77bda7369d95"
         },
         "tests/Feature/Security/TokenMetadataMigrationTest.php": {
-            "milliseconds": 1459,
+            "milliseconds": 303,
             "cases": 1,
             "sha256": "336251d18042c108b7bba5c1b5f860e6ac5347dec3a539069e52a8929b917113"
         },
         "tests/Feature/SeederSafetyStaticAnalysisTest.php": {
-            "milliseconds": 11208,
+            "milliseconds": 1347,
             "cases": 7,
             "sha256": "4f097171ff2ce10775f17b400fdc23652ff3f26f8134ceb75ddddad07538fa03"
         },
         "tests/Feature/Settings/AppearancePageTest.php": {
-            "milliseconds": 1394,
+            "milliseconds": 7821,
             "cases": 1,
             "sha256": "ff9f049a12f113d1103de9b6d1e27a704a98c49eca20edcb1cf0bdee3c65b223"
         },
         "tests/Feature/Settings/ComponentsPageTest.php": {
-            "milliseconds": 1394,
+            "milliseconds": 4175,
             "cases": 1,
             "sha256": "3dff6631152f7eab36d0fff99f61b3d05189d1aca4563f0858dbbe11885c59e8"
         },
         "tests/Feature/Settings/PasswordUpdateTest.php": {
-            "milliseconds": 3926,
+            "milliseconds": 23605,
             "cases": 3,
             "sha256": "b4db090d6c983a56109ffc396eccd3f6cc63756317d7acb1a5f31e8616b758bd"
         },
         "tests/Feature/Settings/ProfileUpdateTest.php": {
-            "milliseconds": 6402,
+            "milliseconds": 28853,
             "cases": 5,
             "sha256": "eb53c14c06ecfbf27e3053ef045de21914045e02501d5484eb7cd7efb7422e24"
         },
         "tests/Feature/Settings/SavingsPageTest.php": {
-            "milliseconds": 3296,
+            "milliseconds": 8794,
             "cases": 1,
             "sha256": "d04fd3d43cb3a2720bdcc8614786ed70ae9a53d378a195cdb9027954fb2a6fa4"
         },
         "tests/Feature/Settings/TwoFactorAuthenticationTest.php": {
-            "milliseconds": 9088,
+            "milliseconds": 16936,
             "cases": 4,
             "sha256": "8621f1363ea828037ac57dd4fc2f518016a14f439cea465ed4e04cc488b9d13c"
         },
         "tests/Feature/SimulateMidtransWebhookCommandTest.php": {
-            "milliseconds": 10592,
+            "milliseconds": 2410,
             "cases": 9,
             "sha256": "21087cc31a0df57b2c3be2e351192d543f33481ef4219e6353c2f7a94a072399"
         },
         "tests/Feature/Sprint1ApiContractHardeningTest.php": {
-            "milliseconds": 5216,
+            "milliseconds": 500,
             "cases": 4,
             "sha256": "1169f758c9340aac3027e55fd0a5dd73d648ab69d2fbdfa9ed9b8c7ddebca85f"
         },
         "tests/Feature/Sprint3ArchitectureHardeningTest.php": {
-            "milliseconds": 9418,
-            "cases": 5,
+            "milliseconds": 52239,
+            "cases": 6,
             "sha256": "a2dd76473b8d176b1975d0eda7ae0c2866ffb5949af62963b9315df85ce0ad40"
         },
         "tests/Feature/Sprint4ProductionInfrastructureTest.php": {
-            "milliseconds": 7115,
+            "milliseconds": 1754,
             "cases": 5,
             "sha256": "12d216728e0f7f225be6a589f818b5100e9a9720171ae58f1bb5de85d200b653"
         },
         "tests/Feature/Sprint4ReliabilityDxTest.php": {
-            "milliseconds": 6687,
+            "milliseconds": 1061,
             "cases": 5,
             "sha256": "8590af6a6ca8afd780140bd39a72672404acda0182721efde8569fc4f621e9e8"
         },
         "tests/Feature/Sprint5KojayakuUxTest.php": {
-            "milliseconds": 6743,
+            "milliseconds": 612,
             "cases": 3,
             "sha256": "7346b03d28d8c5a87f7f70ed915dbef9f5b74adbdacff419527676e7a6e728fb"
         },
         "tests/Feature/Sprint6WhatsAppNotificationTest.php": {
-            "milliseconds": 9388,
+            "milliseconds": 38209,
             "cases": 6,
             "sha256": "674b5dc973642b5af771901cbd1615ffa5118b2e23bf5329314d058b51448872"
         },
         "tests/Feature/SystemAdminAccessTest.php": {
-            "milliseconds": 8683,
+            "milliseconds": 37408,
             "cases": 8,
             "sha256": "198b84ef7a175d0b1a9e3061aa661db3259796960248a31250db8ed9ee90319c"
         },
         "tests/Feature/UiAuditCooperativeRouteCoverageTest.php": {
-            "milliseconds": 4816,
+            "milliseconds": 1376,
             "cases": 2,
             "sha256": "5068a5b112495d27cb79b91686ac4fef5fd95e734276cc514ec464c70a8aa9c3"
         },
         "tests/Feature/UiAuditFrameworkTest.php": {
-            "milliseconds": 11903,
+            "milliseconds": 972,
             "cases": 10,
             "sha256": "fb0899128c2f7ade4e676ab95d8000aeb8f4271a0ed2aa4ebef5ed321185bcc4"
         },
         "tests/Feature/UiAuditSeederTest.php": {
-            "milliseconds": 10869,
+            "milliseconds": 63286,
             "cases": 8,
             "sha256": "a7f96a2cf7ac089ed222568fd427bdaa5ff5088556f50e27a8ebecfcac16e351"
         },
         "tests/Feature/UserManagementTest.php": {
-            "milliseconds": 9389,
+            "milliseconds": 2148,
             "cases": 7,
             "sha256": "b067659343f86f55d52a4548a734fa0bb48fe915e1b3a442a48d4cc03d8c3aea"
         },
         "tests/Feature/UserRoleIntegrationTest.php": {
-            "milliseconds": 4752,
+            "milliseconds": 36597,
             "cases": 3,
             "sha256": "162181a0d5bc71a650d717a64fae143076dd884469256a06f09a37130e39c522"
         },
         "tests/Unit/Auth/LocalRedirectValidatorTest.php": {
-            "milliseconds": 16218,
+            "milliseconds": 3004,
             "cases": 15,
             "sha256": "3b5ba1fadef92c0589d5b21050e53d00e47a4f65a38c4aae998e52bcfbbf7496"
         },
         "tests/Unit/BudgetValidatorTest.php": {
-            "milliseconds": 1727,
+            "milliseconds": 1766,
             "cases": 1,
             "sha256": "a9ccd4d1175ce0f1422f3924045ae75338fbd519bde35e8f9c25408abd1d5324"
         },
+        "tests/Unit/Ci/CiWorkflowTest.php": {
+            "milliseconds": 201,
+            "cases": 5,
+            "sha256": "a847972e5ca36ab2ddebac3577a9837f9ff71f53b0222f10fb03806bfc16da0f"
+        },
+        "tests/Unit/Ci/FrontendArtifactTest.php": {
+            "milliseconds": 8,
+            "cases": 3,
+            "sha256": "38d962be6072602c986a0b1be4725610d4076b61af2e5a38a18b4429702c0572"
+        },
         "tests/Unit/Ci/PhpunitAggregateTest.php": {
-            "milliseconds": 13182,
-            "cases": 10,
-            "sha256": "c29c4a1f63307532321872acb66f5cad49ada609f35e614ca100a8aee7416a6d"
+            "milliseconds": 732,
+            "cases": 12,
+            "sha256": "ae5776aec01fffa60acf3762ac673d7d89c62d070214e37974e1d565ec16f8a1"
+        },
+        "tests/Unit/Ci/PhpunitShardTest.php": {
+            "milliseconds": 13,
+            "cases": 5,
+            "sha256": "e347b066b3a14a709197e55d824319ec8a54a0855ce3ae6c97d0f1315228a9d4"
         },
         "tests/Unit/CommonMarkTableRegressionTest.php": {
-            "milliseconds": 3443,
+            "milliseconds": 8786,
             "cases": 3,
             "sha256": "e345409da562cf0f831c7ad9a64e8c5617811be97f08387836e2b5103ceb2342"
         },
         "tests/Unit/ComposerSetupSafetyTest.php": {
-            "milliseconds": 1252,
+            "milliseconds": 2,
             "cases": 1,
             "sha256": "cb796827cb3465dd319ee0b8fa7e845cf0a9d9814cc3d3888321cc3bbda0f51c"
         },
         "tests/Unit/CooperativePaymentGatewayReferenceIndexMigrationTest.php": {
-            "milliseconds": 1204,
+            "milliseconds": 1,
             "cases": 1,
             "sha256": "f0c94ce869fd446d02d2ab6d02d7ad8f933b819d50165165caaa74fad90395a0"
         },
         "tests/Unit/DatabaseMigrationSafetyTest.php": {
-            "milliseconds": 6874,
-            "cases": 7,
+            "milliseconds": 13,
+            "cases": 11,
             "sha256": "88e8fc767fb9644fa31b7f51f5bf702ac005b737125262a7b63911acd678494f"
         },
         "tests/Unit/DeploymentRuntimePermissionsTest.php": {
-            "milliseconds": 7113,
+            "milliseconds": 327,
             "cases": 4,
             "sha256": "5fb33467352b2d8a5a65de3313244e4ff07ceb461deb25815ed2e8e4d22039b7"
         },
         "tests/Unit/DeploymentScriptTest.php": {
-            "milliseconds": 14084,
-            "cases": 9,
+            "milliseconds": 10585,
+            "cases": 28,
             "sha256": "f829bdc9368300ca2b5409b1e987f54c2a8e74ff91af99a1fef0f541fef95bee"
         },
         "tests/Unit/Documentation/ArticleFrontmatterTest.php": {
-            "milliseconds": 15868,
+            "milliseconds": 18,
             "cases": 9,
             "sha256": "0f4cf7f5c5a48b5ca9ec84de3ad6ffd077bddc019ecdb427a917336958c6495e"
         },
         "tests/Unit/ExampleTest.php": {
-            "milliseconds": 1022,
+            "milliseconds": 5832,
             "cases": 1,
             "sha256": "5aea7366b8bea36eec2d479fe3872750d657e235140ffba7f398fb35e5b7fcbf"
         },
         "tests/Unit/MemberNumberGeneratorTest.php": {
-            "milliseconds": 16716,
+            "milliseconds": 61650,
             "cases": 9,
             "sha256": "243f5ea21fbb1a8df3b293dbeaa6f453d77e8a934e854115be886e8b84a4f502"
         },
         "tests/Unit/MemberStoreLedgerEntryResourceTest.php": {
-            "milliseconds": 4135,
+            "milliseconds": 339,
             "cases": 3,
             "sha256": "a68dda57e32b2e3e12fe298ce5bff15de0836a012b71c31d200004d4199b1737"
         },
         "tests/Unit/Money/MinorAmountTest.php": {
-            "milliseconds": 11893,
+            "milliseconds": 13,
             "cases": 13,
             "sha256": "681d2704e8811499d79d92497596e8601c85c2d42ed80a9d7d93018f070aab69"
         },
         "tests/Unit/PaymentStateMachineTest.php": {
-            "milliseconds": 9788,
+            "milliseconds": 11,
             "cases": 10,
             "sha256": "4ae19d5091493a0269db64f9c6725ae4df1c4fbb665563969204245533f7bd7b"
         },
         "tests/Unit/PosSprint6OpenApiContractTest.php": {
-            "milliseconds": 3451,
+            "milliseconds": 2794,
             "cases": 3,
             "sha256": "35267f99e95f8eaa5af39e774a6c383df5f23be674b36edd746113d95dde1501"
         },
         "tests/Unit/Procurement/ApprovalServiceTest.php": {
-            "milliseconds": 4049,
+            "milliseconds": 1928,
             "cases": 2,
             "sha256": "447747565da3585edd2de0da7ca7c5f46f0a5a913cdfffa638975ddb3852ff48"
         },
         "tests/Unit/Procurement/BudgetValidationServiceTest.php": {
-            "milliseconds": 5980,
+            "milliseconds": 214,
             "cases": 2,
             "sha256": "4eff24c79aae4f4e40127613b2790259cb0310c03f53f662d1813e4cf9a69988"
         },
         "tests/Unit/QaDeploymentScriptTest.php": {
-            "milliseconds": 14325,
-            "cases": 11,
+            "milliseconds": 34843,
+            "cases": 23,
             "sha256": "55a5707b27890e65a4f3ec6c3cc74a7d7ed28828f484afb06f3adbf50bedd60d"
         },
         "tests/Unit/Security/LegacyTokenClassifierTest.php": {
-            "milliseconds": 3814,
+            "milliseconds": 3,
             "cases": 2,
             "sha256": "56c050baf2ab10d60c5dc77dedd0429406f368d5cd9f4b8baf61ae88022ebed1"
         },
         "tests/Unit/Security/MemberSensitiveDataInspectorTest.php": {
-            "milliseconds": 9888,
+            "milliseconds": 9,
             "cases": 4,
             "sha256": "06fcd90474d35fa878bd70c516dc22d13dcccc86e3d9bb33323fbf0e702f2dba"
         },
         "tests/Unit/Security/PiiCryptoServiceTest.php": {
-            "milliseconds": 30230,
+            "milliseconds": 23,
             "cases": 15,
             "sha256": "d1c7b26635e84a01dc609fb15dd063eb6ab1043b1a465adccf7700210060d615"
         },
         "tests/Unit/Services/BpjsCalculationServiceTest.php": {
-            "milliseconds": 4427,
+            "milliseconds": 375,
             "cases": 4,
             "sha256": "8c17e91ffac12577d8f5ef4c56d9d745c81a0c9b7391a24587cb3f228c7ae572"
         },
         "tests/Unit/Services/Cooperative/CooperativeOpeningBalanceServiceTest.php": {
-            "milliseconds": 15350,
+            "milliseconds": 547,
             "cases": 4,
             "sha256": "ff470489f4fd9d893d99ff9669c0b3befa81116eb92febbb63d521a566db80d9"
         },
         "tests/Unit/Services/Cooperative/CooperativeOpeningBalanceWizardServiceTest.php": {
-            "milliseconds": 28629,
+            "milliseconds": 1893,
             "cases": 11,
             "sha256": "f6593f6f474c859f8ad9fbd61a5c7522e425b068c4a5b93fe275f39c0b30f7ad"
         },
         "tests/Unit/Services/Cooperative/PosReturnNumberGeneratorTest.php": {
-            "milliseconds": 3772,
+            "milliseconds": 495,
             "cases": 3,
             "sha256": "03cb8853e39d072ddb371036f2792546f55050cb5993995278d86f602ba8ad28"
         },
         "tests/Unit/Services/MonitoringDefensiveTest.php": {
-            "milliseconds": 7534,
+            "milliseconds": 15264,
             "cases": 4,
             "sha256": "15ab8fede595772904087acc538e2aa7cd50c1250fe598903fe17682b6d569df"
         },
         "tests/Unit/Services/OvertimeCalculationServiceTest.php": {
-            "milliseconds": 7998,
+            "milliseconds": 23208,
             "cases": 6,
             "sha256": "a0c8dcf4eff927ac316eb449ec36567a8eccdaea2931542eae0a61142ce2f8fc"
         },
         "tests/Unit/Services/Pph21TerServiceTest.php": {
-            "milliseconds": 19918,
+            "milliseconds": 2097,
             "cases": 10,
             "sha256": "06c426ee1f2b16c796ffdac02ddcd5536ff50ddf3b0b1bbbacc4b032a7a7da05"
         },
         "tests/Unit/Support/PaginationLimitResolverTest.php": {
-            "milliseconds": 3670,
-            "cases": 3,
+            "milliseconds": 9,
+            "cases": 9,
             "sha256": "82ebbd97330c5f6cdd7f69c822a9dcbadbdd9cbe7bb1bd2b32237d4503213e6b"
         }
     }

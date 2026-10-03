@@ -105,7 +105,7 @@ class Phase4ReadinessGateTest extends TestCase
 
         foreach ([
             'Prepare isolated deterministic Playwright environment',
-            'Verify frontend reuse for the Playwright environment',
+            'Build frontend for the distinct Playwright environment',
             'Verify UI Audit global setup lifecycle',
             'Run deterministic desktop accessibility audit',
         ] as $name) {

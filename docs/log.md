@@ -1712,3 +1712,14 @@ changes, QA operations, PR #92 reconciliation, or Phase 6 work are included.
 - This reconciliation changes documentation only and makes no QA/server calls.
   Full sanitized evidence and approval boundaries are in section 19 of
   `docs/releases/PHASE-5-RC-11.md`.
+
+### RC-11-CI-FIX-07A — docs-only readiness orchestration
+
+PR #92 initially had 14 checks PASS and Phase 4 Readiness Gate FAIL in CI #524
+(37078010552): inconsistent docs-only handling required full FUNC-13 execution
+even when classification correctly returned true. FIX-07A adds an explicit
+docs-only success path, rejects failed/unknown classification and preserves full
+non-doc readiness execution. Only CI orchestration and these dossier records
+change; application/runtime/deployment source and authoritative rc.11 CI #523,
+UI Audit #310 and completed QA-02 evidence remain unaffected. No QA operation
+or new candidate occurs; owner approval remains pending and Phase 6 NOT STARTED.

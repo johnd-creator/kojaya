@@ -736,3 +736,18 @@ PR #92 remains OPEN/UNMERGED pending that approval. This task changes only
 `docs/log.md` and this dossier, preserves current-main source, and performs no
 deployment, migration, restore, seed/import, QA server change, provider send,
 credential rotation, release tag or new candidate creation.
+
+### RC-11-CI-FIX-07A — CI control correction
+
+The first reconciled PR head `9e1e56fa6196c2c7b18519bf74c48a3c79ebaead`
+received 14 successful checks and a failed Phase 4 Readiness Gate in CI #524
+(37078010552). The classifier correctly returned docs_only=true; inconsistent
+final-gate orchestration nevertheless demanded full FUNC-13 execution.
+FIX-07A corrects only that CI control: explicit docs-only SUCCESS without missing
+frontend artifacts or expensive readiness work; failed/unknown classification
+fails closed; non-doc changes retain the full FUNC-13 path. The workflow change
+itself requires new full PR CI. Authoritative rc.11 application evidence
+(CI #523, UI Audit #310, QA-02) remains unaffected; no application/runtime or
+deployment source changes, no QA operation and no rc.12. This narrowly authorized
+CI correction extends PR scope to `.github/workflows/ci.yml` alongside the two
+existing documents. Owner approval remains PENDING; Phase 6 NOT STARTED.

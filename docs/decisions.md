@@ -1703,6 +1703,23 @@ Audits of the CI pipeline revealed several optimization opportunities:
 
 ---
 
+### CI-PERF-02 execution addendum — 2026-10-04
+
+Keep the existing full validation contract while separating parallel Phase 4
+execution from its final fail-closed mandatory readiness decision. Deterministic
+LPT now supports source-controlled runtime weights with content-hash binding,
+new/changed-file static fallback, and controlled successful JUnit collection.
+Bootstrap estimates are labelled; measured full CI determines acceptance.
+Public frontend artifacts are source/digest bound and compatible generated
+inputs are checked before Playwright reuse. Whole-repository Pint uses its
+existing parallel option. CI/control changes never repromote or redeploy the
+QA application candidate. Baseline, trust boundaries and measured results are
+recorded in `docs/ci-performance.md`; all original threshold/security/database/
+UI/a11y contracts remain mandatory. This supersedes ADR-040's static-only
+execution strategy, not its coverage or regression guarantees.
+
+---
+
 ## 🎯 ADR-041: Savings Payment Ledger Correction, Cancellation, and Reconstructable Audit Trail
 
 **Status:** ✅ Accepted

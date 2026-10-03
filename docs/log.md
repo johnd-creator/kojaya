@@ -1809,3 +1809,17 @@ remains held (root/login 503), serving exact/clean, environment unchanged;
 legacy kojaya and production untouched. QA-05 PASS; Bundle A CLOSED PASS.
 Bundle B NOT EXECUTED. Full sanitized evidence:
 `docs/releases/PHASE-6-QA-RELEASE.md`.
+
+## 2026-10-04 — CI-PERF-02 measured execution optimization pilot
+
+Three successful full runs establish a 43–44-minute baseline; CI #531 is
+43m29s, with shard 1 at 36m14s and serial readiness at 5m17s. The scoped
+CI pilot introduces deterministic source-bound runtime estimates and
+JUnit measurement publication, parallel Phase 4 execution with a final
+fail-closed decision, exact-source frontend integrity/reuse, npm download
+caching, and whole-repository parallel Pint. All original testcase IDs,
+coverage/test thresholds, PostgreSQL/backup/seed/build/drift/audit/UI/a11y
+validation remain. Initial local helper/readiness tests PASS (33/293);
+performance acceptance is pending real full CI and controlled timing refinement.
+QA candidate stays exact rc.12; QA/production/legacy untouched; Bundle B not
+executed. Detailed baseline and invariants: docs/ci-performance.md.

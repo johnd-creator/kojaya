@@ -288,4 +288,52 @@ XML);
         $this->assertNotSame(0, $process->getExitCode(), 'Aggregator must fail closed when actual test count is below --min-tests, ignoring inflated parent suite attribute');
         $this->assertStringContainsString('Total tests (2) is less than expected minimum (2211)', $process->getErrorOutput().$process->getOutput());
     }
+
+    public function test_actual_coverage_merge_supports_three_five_and_six_shards(): void
+    {
+        foreach ([3, 5, 6] as $total) {
+            $this->writeCoverageFixtures($total, true);
+            $process = new Process([PHP_BINARY, $this->scriptPath(), '--total='.$total, '--artifacts-dir='.$this->tempDir, '--min-tests='.$total]);
+            $process->run();
+            $this->assertSame(0, $process->getExitCode(), $process->getOutput().$process->getErrorOutput());
+            $this->assertStringContainsString('ALL QUALITY GATES PASSED', $process->getOutput());
+            $this->assertStringContainsString('Merged Shard '.$total.' coverage', $process->getOutput());
+        }
+    }
+
+    public function test_real_uncovered_fixture_still_fails_the_unchanged_sixty_percent_gate(): void
+    {
+        $this->writeCoverageFixtures(1, false);
+        $process = new Process([PHP_BINARY, $this->scriptPath(), '--total=1', '--artifacts-dir='.$this->tempDir, '--min-tests=1']);
+        $process->run();
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString('below the minimum required threshold (60.00%)', $process->getErrorOutput());
+    }
+
+    private function writeCoverageFixtures(int $total, bool $covered): void
+    {
+        $source = $this->tempDir.'/source.php';
+        file_put_contents($source, "<?php\nfunction coverage_fixture(): int { return 1; }\n");
+        for ($shard = 1; $shard <= $total; $shard++) {
+            file_put_contents($this->tempDir.'/shard-'.$shard.'.xml', '<testsuites><testcase name="fixture_'.$shard.'" assertions="1"/></testsuites>');
+            $fixture = <<<'PHP'
+<?php
+$driver = new class extends SebastianBergmann\CodeCoverage\Driver\Driver {
+    public function nameAndVersion(): string { return 'Synthetic fixture'; }
+    public function start(): void {}
+    public function stop(): SebastianBergmann\CodeCoverage\Data\RawCodeCoverageData { return SebastianBergmann\CodeCoverage\Data\RawCodeCoverageData::fromXdebugWithoutPathCoverage([]); }
+};
+$filter = new SebastianBergmann\CodeCoverage\Filter;
+$filter->includeFile(__DIR__.'/source.php');
+$coverage = new SebastianBergmann\CodeCoverage\CodeCoverage($driver, $filter);
+$data = new SebastianBergmann\CodeCoverage\Data\ProcessedCodeCoverageData;
+$raw = SebastianBergmann\CodeCoverage\Data\RawCodeCoverageData::fromXdebugWithoutPathCoverage([__DIR__.'/source.php' => [2 => HIT]]);
+$data->initializeUnseenData($raw);
+$data->markCodeAsExecutedByTestCase('Fixture::test', $raw);
+$coverage->setData($data);
+return $coverage;
+PHP;
+            file_put_contents($this->tempDir.'/shard-'.$shard.'.cov', str_replace('HIT', $covered ? '1' : '-1', $fixture));
+        }
+    }
 }

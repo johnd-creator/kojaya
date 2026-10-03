@@ -582,7 +582,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
+      - name: Fail closed when change classification failed
+        if: needs.changes.result != 'success'
+        run: exit 1
+
+      - name: Docs-only success path
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
+        run: >-
+          printf 'Documentation-only change: existing application readiness evidence unchanged.\n'
+
       - name: Fail closed unless every required CI job passed
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         shell: bash
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
@@ -627,8 +637,10 @@ jobs:
           echo "All required upstream CI dependencies: PASS"
 
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.docs_only != 'true'
 
       - name: Setup PHP
+        if: needs.changes.outputs.docs_only != 'true'
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -636,32 +648,39 @@ jobs:
           tools: composer:v2
 
       - name: Setup Node
+        if: needs.changes.outputs.docs_only != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
 
       - name: Install PHP dependencies
+        if: needs.changes.outputs.docs_only != 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install Node dependencies
+        if: needs.changes.outputs.docs_only != 'true'
         run: npm ci --prefer-offline --no-audit
 
       - name: Download and verify built frontend assets
+        if: needs.changes.outputs.docs_only != 'true'
         uses: actions/download-artifact@v4
         with:
           name: frontend-build-assets
           path: public/build
 
       - name: Verify built frontend assets
+        if: needs.changes.outputs.docs_only != 'true'
         run: test -f public/build/manifest.json
 
       - name: Prepare isolated test environment
+        if: needs.changes.outputs.docs_only != 'true'
         run: |
           cp .env.example .env
           php artisan key:generate --force --no-interaction
 
       - name: Run focused readiness and release-preflight tests
+        if: needs.changes.outputs.docs_only != 'true'
         id: readiness-tests
         run: >-
           php artisan test --compact
@@ -671,24 +690,29 @@ jobs:
           tests/Feature/PhaseDProductionSmokeTest.php
 
       - name: Verify all four PHPUnit shards remain MECE
+        if: needs.changes.outputs.docs_only != 'true'
         id: shard-mece
         run: php bin/ci/phpunit-shard verify --total=4
 
       - name: Verify OpenAPI contract drift
+        if: needs.changes.outputs.docs_only != 'true'
         id: openapi
         run: bin/openapi.sh check
 
       - name: Verify UI baseline integrity
+        if: needs.changes.outputs.docs_only != 'true'
         id: ui-baselines
         run: npm run ui:verify-baselines
 
       - name: Install Chromium and deterministic fonts
+        if: needs.changes.outputs.docs_only != 'true'
         run: |
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y fonts-dejavu fonts-noto-core fonts-noto-ui-core
 
       - name: Prepare isolated deterministic Playwright environment
+        if: needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: playwright
         run: |
@@ -702,6 +726,7 @@ jobs:
           php artisan --env=playwright wayfinder:generate --no-interaction
 
       - name: Build frontend for the Playwright environment
+        if: needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: playwright
         run: |
@@ -709,11 +734,13 @@ jobs:
           rm -f public/hot
 
       - name: Verify UI Audit global setup lifecycle
+        if: needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: playwright
         run: npm run ui:test-global-setup
 
       - name: Run deterministic desktop accessibility audit
+        if: needs.changes.outputs.docs_only != 'true'
         id: accessibility
         env:
           APP_ENV: playwright
@@ -734,6 +761,7 @@ jobs:
         run: npm run ui:a11y -- --project=desktop
 
       - name: Disposition FUNC-12 accessibility findings
+        if: needs.changes.outputs.docs_only != 'true'
         id: accessibility-disposition
         run: node tests/visual/scripts/verify-func13-accessibility.mjs
 
@@ -741,6 +769,8 @@ jobs:
         if: always()
         env:
           UPSTREAM_RESULT: ${{ job.status }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           READINESS_TESTS: ${{ steps.readiness-tests.outcome }}
           SHARD_MECE: ${{ steps.shard-mece.outcome }}
           OPENAPI: ${{ steps.openapi.outcome }}
@@ -748,6 +778,21 @@ jobs:
           ACCESSIBILITY: ${{ steps.accessibility.outcome }}
           ACCESSIBILITY_DISPOSITION: ${{ steps.accessibility-disposition.outcome }}
         run: |
+          if [[ "$CHANGES_RESULT" == "success" && "$DOCS_ONLY" == "true" ]]; then
+            {
+              echo '## Phase 4 Readiness Gate'
+              echo '- Change classification: DOCS_ONLY'
+              echo '- Application readiness execution: NOT REQUIRED'
+              echo '- Existing exact rc.11 readiness evidence: UNAFFECTED'
+              if [[ "$UPSTREAM_RESULT" == "success" ]]; then
+                echo '- Gate status: PASS'
+              else
+                echo '- Gate status: FAIL'
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           {
             echo '## Phase 4 Readiness Gate'
             echo "- Upstream CI dependencies: ${{ needs.changes.result == 'success' && needs.dependency-audit.result == 'success' && needs.style.result == 'success' && needs.frontend-build.result == 'success' && needs.generated-drift.result == 'success' && needs.phpunit-shard.result == 'success' && needs.unit-feature-tests.result == 'success' && needs.seed-integrity-gate.result == 'success' && needs.migration-seed.result == 'success' && needs.openapi-drift.result == 'success' && needs.postgres-concurrency.result == 'success' && needs.changes.outputs.docs_only == 'false' && 'PASS' || 'HOLD' }}"

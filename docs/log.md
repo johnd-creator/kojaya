@@ -6,6 +6,59 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 29, 2026
 
+## 2026-09-29 - RC-11-FIX-01A through FIX-01D QA host hardening
+
+- The owner classified the shared host as DEV/QA after FIX-01A stopped on a
+  neighboring application's production environment label. No application on
+  the host is an authoritative production workload; the neighboring app was
+  unchanged. Future Kojaya production uses a separate server.
+- FIX-01B fetched authoritative main without changing the serving checkout,
+  created an empty dedicated QA PostgreSQL database and application role, and
+  prepared protected local backup storage. FIX-01C installed a dedicated
+  Kojaya runtime and PHP-FPM isolation, protected secrets/private storage, and
+  prepared stopped/disabled queue and scheduler controls with a readiness guard.
+- FIX-01D exercised a Kojaya-only public 503 hold with loopback smoke and
+  restoration, restricted database access to the approved private LAN, and
+  verified the owner's edge HTTP-to-HTTPS redirect preserves path/query. HTTPS
+  login returned 200; the redirect chain had no loop. Other app baselines were
+  unchanged.
+- **QA HOST HARDENING PASS; RC-11 BLOCKED.** Migration/data rehearsal, QA
+  backup/offsite retrieval/restore, PII and integration proof, deployment
+  approvals and candidate acceptance remain. RC-11-FIX-02 is next; Phase 6
+  was not started.
+
+## 2026-09-29 - RC-11-FIX-03 independent backup and recovery
+
+- Exact `v1.0.0-rc.7` candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`
+  and the isolated synthetic FIX-02B source identity were verified. The source
+  had 182 applied migrations; a sanitized structural snapshot and PostgreSQL
+  constraint/index checks were retained privately.
+- The repository-supported primary backup completed; managed verification and
+  backup health checks passed. Its checksum matched the local manifest and
+  companion record.
+- No approved independent offsite destination was configured. Per the stop
+  condition, no transfer, independent retrieval, recovery database, restore, or
+  post-restore reconciliation was attempted. Serving QA and queue/scheduler
+  controls were left unchanged.
+- **RC-11-FIX-03 BLOCKED — OFFSITE TARGET REQUIRED.** RC-11 remains blocked;
+  Phase 6 was not started.
+
+## 2026-09-29 - Phase 5 RC-11 QA Deployment Readiness
+
+- Verified the requested `main` SHA `007130ee1ecb527a8a7c324ec271c46b984c3881`
+  and full exact-main CI #487 success; candidate source tree remains `rc.6`.
+- Repository deployment SHA/backup/preflight contract, synthetic member import
+  authorization, backup tooling, and Phase 6 smoke-plan review passed.
+- Local isolated validation: 228 tests / 1,356 assertions plus the deployment
+  harness 28 / 242, all passing. Exact-main PostgreSQL CI also passed migration,
+  concurrency, and restore-drill suites.
+- **RC-11 BLOCKED:** no identified Linux QA target or PostgreSQL snapshot/data
+  rehearsal; QA offsite/recovery, traffic/worker/scheduler controls, TLS/storage/
+  PII/FCM config, trusted SSH host identity and deployment approvals lack
+  environment evidence. GitHub reports `main` unprotected and no environments.
+- No production access, migration, restore, data import, provider delivery,
+  source-code change or release tag. Phase 6 has not started.
+
 ## 2026-09-29 - Bundle B RC-09 / RC-10
 
 - RC-09 rejects symbolic deployment refs before workflow checkout and requires
@@ -1555,7 +1608,26 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
 * Jul 29, 2026 | Admin Koperasi Payment Responsive Correction | Engineering | Contained the cooperative payment history table within its responsive grid column, added an accessible horizontal-scroll region for desktop/tablet, introduced mobile payment cards with selection and approval affordances, and added layout assertions plus focused mobile accessibility coverage. |
 * Jul 29, 2026 | Admin Koperasi Sidebar Active State | Engineering | Kept the Keuangan Anggota group open for payment and dues routes, normalized active navigation matching to ignore query strings, and added responsive Playwright coverage for active submenu behavior. |
 
-*This log is maintained throughout the project lifecycle. Last updated: August 29, 2026*
+* Sep 29, 2026 | RC-11-FIX-02 PostgreSQL Rehearsal | QA Engineering | Exact candidate `007130ee1ecb527a8a7c324ec271c46b984c3881` migrated an empty isolated QA database (182 migrations), passed RC-03 safe bootstrap twice and QA preflight, and upgraded an approved sanitized source copy from 176 to 182 migrations with matching structural counts. Focused PostgreSQL migration, member-import, payment-proof and ledger tests passed (63 tests); POS/authentication suites exposed a PostgreSQL `down()` failure on a constraint-backed ledger index. The available source has one member and no payment, ledger or POS rows, so realistic data/backfill proof remains missing. FIX-02 and RC-11 remain BLOCKED; serving QA and unrelated apps were unchanged. See `docs/releases/PHASE-5-RC-11.md` section 12. |
+
+* Sep 29, 2026 | RC-11-FIX-02A PostgreSQL Rollback Remediation | QA Engineering | Reproduced rc.6 SQLSTATE 2BP01 on disposable PostgreSQL and confirmed the June 13 migration owns the UNIQUE constraint and backing ledger index. Dedicated fix PR #93 at `d241e2af0f532e9cef17f37cb4afb44411133063` preserves that constraint during June 23 metadata rollback and removes only a standalone index; forward semantics are unchanged. Target rollback/re-apply and full 182-migration rollback/re-apply passed on the disposable database; new PostgreSQL regression passed 2 tests/23 assertions. POS, authentication, ledger and payment-proof regressions passed locally. CI and UI audit passed; the four PHPUnit shards completed 3,374 tests/27,751 assertions on the exact candidate source tree. FIX-02A PASS; review candidate `v1.0.0-rc.7` remains untagged. RC-11 remains BLOCKED on data rehearsal and recovery evidence. See `docs/releases/PHASE-5-RC-11.md` section 13. Serving QA and persistent QA databases were unchanged; no tag, FIX-02B or Phase 6 was started. |
+
+* Sep 29, 2026 | RC-11-FIX-02B Synthetic Populated-Data Rehearsal | QA Engineering | Exact merged rc.7 main `0b02ad2441c1e4e8ca5f41933e33597246c07b9b` passed exact-main CI and upgraded an isolated, backed-up, synthetic 176-migration PostgreSQL dataset to 182 migrations. Three members, three payments, four cooperative ledger rows, two store accounts and six POS transactions exercised tenant backfill and preservation. Three POS transactions resolved; three ambiguous cases stayed null. One shared category duplicated and one product remapped. Populated ledger rollback/re-apply preserved all rows and its original unique constraint/index; repeated migrate had nothing to do. A six-row fake member CSV preview and PAY-006 synthetic dry-run were read-only, including expected duplicate/conflict and missing-file results. Targeted PostgreSQL-compatible files passed 88 tests/965 assertions; a separate SQLite-only POS assertion mismatched the local PostgreSQL driver, while exact-main SQLite CI passed. FIX-02B PASS for synthetic populated data. Serving QA, queue and scheduler were unchanged; RC-11 remains BLOCKED on offsite restore, PII/integration readiness and approvals. See `docs/releases/PHASE-5-RC-11.md` section 14. |
+
+* Sep 30, 2026 | RC-11-FIX-03 Encrypted Offsite Recovery Rehearsal | QA Engineering | Exact rc.7 candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b` passed isolated recovery rehearsal: verified primary backup was encrypted before remote upload, independently retrieved/decrypted, and checksum-matched; fresh recovery restore completed; representative counts, constraints, indexes, orphan checks, and 182 migration records reconciled. Migration status was 182 ran/zero pending and repeat `php artisan migrate --force` returned `Nothing to migrate`. Read-only model/relationship smoke passed with no external integrations. Serving QA remained untouched; queue and scheduler stayed stopped/disabled. FIX-03 PASS for the isolated rehearsal; RC-11 remains BLOCKED on serving QA backup/deployment proof, remaining data policy, PII/integration readiness, capacity, approvals, and candidate acceptance. PR #92 remains open; no FIX-04 or Phase 6 started. See `docs/releases/PHASE-5-RC-11.md` section 15. |
+
+* Sep 30, 2026 | RC-11-FIX-04A PII Classification and FCM QA Readiness | QA Engineering | Exact rc.7 candidate `0b02ad2441c1e4e8ca5f41933e33597246c07b9b`: current PII preflight and rollback guard passed; historical production PII was NOT APPLICABLE because the approved rehearsal dataset was synthetic and future production uses a separate server. QA FCM HTTP v1 credential structure/project consistency and provider validation passed; non-send Firebase messaging-scope OAuth readiness succeeded without persisting a token. Default and strict release-candidate Android-push preflights passed. Runtime `.env` hygiene and a full reachable-history/current-tree secret scan passed; no high-confidence credential was found. No notification, deployment, DB change, queue/scheduler start, or serving-checkout change occurred. FIX-04A PASS; RC-11 remains BLOCKED on the other outstanding evidence. PR #92 remains open and unmerged; Phase 6 was not started. See `docs/releases/PHASE-5-RC-11.md` section 16. |
+
+*This log is maintained throughout the project lifecycle. Last updated: September 30, 2026*
+
+
+## 2026-09-30 - RC-11-FIX-05A QA cutover target and backup closure
+
+- Classified the serving database as legacy/pre-cutover `kojaya` and the distinct Phase-6 target as `kojaya_qa`. Read-only facts: legacy 29.01 MiB / 176 migrations / 155 application tables; target 15.95 MiB / 182 migrations / 155 application tables.
+- Created a private, one-time custom-format legacy safety snapshot. Laravel and independent PostgreSQL identity checks matched immediately before `pg_dump`; `pg_restore --list`, SHA-256 manifest reconciliation, and restrictive permissions passed. The raw checksum and storage location remain private.
+- Diagnosed the earlier rc.7 managed-backup failure: the isolated candidate runtime had `BACKUP_ENABLED=false`. Enabled the setting only in the protected candidate environment and verified managed backup plus `backup:verify` against non-serving `kojaya_qa`. This is a readiness test, not the Phase-6 pre-deploy backup.
+- Prepared the cutover procedure: hold traffic, keep queue/scheduler stopped, configure runtime to `kojaya_qa`, rebuild configuration cache as required, verify Laravel and direct PostgreSQL identities, and require owner-approved SHA = deployment ref = resolved SHA before deployment. The rc.7 managed pre-deploy backup must pass against `kojaya_qa` before mutation.
+- No serving runtime cutover, deployment, migration, seed/import, restore, queue/scheduler start, or external provider traffic occurred. Phase 6 remains not started; explicit owner approval for QA-only entry is still required. PR #92 remains open and unmerged.
 
 ## 2026-09-30 - RC-11-FIX-05B QA Cutover Orchestrator
 
@@ -1571,6 +1643,15 @@ Application release `v0.1.0` is now published as an internal-alpha pre-release
   QA deployment leaves queue/scheduler stopped and external traffic held.
 - Production deploy entry point remains unchanged. No deployment, migration,
   service change, serving-checkout edit, or production action was performed.
+
+## 2026-09-30 - RC-11 RC.8 Reconciliation
+
+- Verified PR #94 merged as exact current main candidate 4f3afd8a5940e0ad7735f7e2ffb143a3d8ab9dd5; rc.7 is superseded. The diff adds QA cutover tooling and evidence, contains no migration-file change, and leaves bin/deploy.sh unchanged.
+- Exact rc.8 QA deployment contract: 18 tests / 127 assertions PASS. Laravel and independent PostgreSQL identity checks PASS for kojaya_qa.
+- Strict release-candidate preflight BLOCKED on PII key-map/distinctness/service readiness and required FCM configuration. Managed private backup plus independent verification PASS for non-serving kojaya_qa; no restore or migration was run.
+- No exact-main CI or UI Audit run was available or dispatched in this session; both remain BLOCKED. Queue stayed inactive; scheduler was inactive but its enablement was not found, so disabled state remains unproven.
+- Serving checkout/database remained pre-cutover; legacy kojaya was not migrated. Production deploy entry point remained unchanged. No external provider traffic, deployment, or Phase 6 occurred.
+- rc.7 owner approval does not authorize rc.8. Explicit approval for exact rc.8 SHA remains pending; RC-11 is BLOCKED.
 ## RC-11-FIX-05D — full UI audit remediation in progress
 
 Dedicated unmerged PR #96 starts from exact rc.9. Isolated logout sessions,
@@ -1604,3 +1685,41 @@ required/optional failure semantics without imposing POSIX checks on remote
 adapters. Real isolated POSIX filesystem regression tests cover
 nonrestrictive umasks and permission failures; no dependency or deployment-script
 changes, QA operations, PR #92 reconciliation, or Phase 6 work are included.
+
+## 2026-10-03 — RC-11-RC11-DOSSIER-01 final reconciliation
+
+- Authoritative untagged `v1.0.0-rc.11` is
+  `1c257b3e5ad76d9d453222213dd055d9ab18c9a9`; PR #97 is merged.
+  Exact-main CI #523 (37029602498), all 15 mandatory jobs, and full/all/all
+  UI Audit #310 (37071233636) passed. Existing evidence was retained, not rerun.
+- UI: 577 passed, zero failed/flaky, 213 policy skips, zero expected-screen
+  skips; baseline 234/234 valid, zero inventory defects; artifact contract PASS,
+  critical/serious accessibility zero, no new waiver, logout 12/12 PASS.
+- Completed QA-02 runtime handoff records identity/preflight/push readiness,
+  non-send OAuth HTTP 2xx, deployment contract and fresh backup proof PASS.
+  FIX-06A closes the historical rc.10 manual-permission correction defect:
+  rc.11 backup directory 0700 and dump/checksum/manifest 0600 automatically,
+  with no manual chmod. Provenance, checksum, archive integrity, source identity
+  and independent permission verification passed.
+- Earlier OAuth transport failures were upstream network-security policy,
+  not application JWT/FCM code; an approved narrowly scoped exception restored
+  connectivity. No token, private endpoint or credential is recorded here.
+- Historical evidence remains historical. Final technical gates PASS; owner
+  approval PENDING. Approval must bind this exact SHA, QA ONLY and `kojaya_qa`;
+  legacy `kojaya` must not be the migration target; production is not authorized.
+  Serving QA remains unchanged, no migration/restore/cutover/provider delivery
+  occurred, PR #92 stays unmerged and Phase 6 NOT STARTED.
+- This reconciliation changes documentation only and makes no QA/server calls.
+  Full sanitized evidence and approval boundaries are in section 19 of
+  `docs/releases/PHASE-5-RC-11.md`.
+
+### RC-11-CI-FIX-07A — docs-only readiness orchestration
+
+PR #92 initially had 14 checks PASS and Phase 4 Readiness Gate FAIL in CI #524
+(37078010552): inconsistent docs-only handling required full FUNC-13 execution
+even when classification correctly returned true. FIX-07A adds an explicit
+docs-only success path, rejects failed/unknown classification and preserves full
+non-doc readiness execution. Only CI orchestration and these dossier records
+change; application/runtime/deployment source and authoritative rc.11 CI #523,
+UI Audit #310 and completed QA-02 evidence remain unaffected. No QA operation
+or new candidate occurs; owner approval remains pending and Phase 6 NOT STARTED.

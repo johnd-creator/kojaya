@@ -1754,3 +1754,27 @@ is held. QA users remain empty while approval for a single admin bootstrap is
 pending. Production and legacy `kojaya` remain untouched; Bundle B is not
 executed. Exact candidate and CI links are recorded in
 `docs/releases/PHASE-6-QA-RELEASE.md`.
+
+## 2026-10-03 — Bundle A runtime recovery executed; QA-05 prerequisite blocked
+
+Promotion control PR #100 and CI #532/#533 passed. The hardened transaction
+deployed exact rc.12 `5a5ae698259d465bc5b5265fe14ca2580c9eb922` with fresh
+real traffic-hold evidence, strict preflight and independently verified private
+backup `kojaya-qa-kojaya_qa-20261003T140604Z-5a5ae69`. Migration was idempotent
+(`Nothing to migrate`, pending zero); checkout clean; maintenance OFF; protected
+runtime contents unchanged. Both transaction permission gates passed.
+QA-03 PASS: real FPM HTTP 200, 8,846 PHP files readable to the live runtime
+identity, all required runtime directories accessible, private environment/cache
+metadata retained. `QA03-RUNTIME-01` CLOSED; repair iterations one.
+
+QA-04 PASS: approved queue active, scheduler active/enabled, zero restarts and
+three successful real scheduler completions in the 229-second observation.
+Post-smoke queued/failed/outbox counts remained zero. Public smoke PASS:
+health/login, thirty static assets, CSRF, persistent anonymous web session,
+unauthenticated boundaries and OpenAPI; critical HTTP 5xx zero. Authenticated
+QA-05 remains NOT EXECUTED because users are intentionally empty and approval
+for a single existing-command admin bootstrap is pending. Users/roles unchanged;
+no seeder or provider send. Bundle A BLOCKED on this prerequisite, not a claimed
+full acceptance PASS. General traffic remains held (HTTP 503); legacy and
+production untouched; Bundle B NOT EXECUTED. The detailed evidence is in
+`docs/releases/PHASE-6-QA-RELEASE.md`.

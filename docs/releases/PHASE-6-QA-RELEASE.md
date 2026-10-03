@@ -4,7 +4,7 @@
 
 **QA-01 CLOSED. Replacement promotion — rc.12.**
 
-**Phase 5 CLOSED. Phase 6 STARTED. QA-02 — PASS on rc.11; QA-03 — FAILED; Bundle A — IN RECOVERY.**
+**Phase 5 CLOSED. Phase 6 STARTED. rc.12 redeployment PASS; QA-03 PASS; QA-04 PASS; QA-05 BLOCKED; Bundle A BLOCKED.**
 
 ## Current Bundle A replacement promotion
 
@@ -20,10 +20,11 @@ PROMOTED_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
 APPLICATION_RELEASE_CANDIDATE=v1.0.0-rc.12 (untagged)
 PROMOTION_STATUS=PROMOTED_QA_CANDIDATE
 REPAIR_ITERATIONS=1
-REDEPLOYMENT=NOT_EXECUTED
-QA_03_RETRY=NOT_EXECUTED
-QA_04=NOT_EXECUTED
-QA_05=NOT_EXECUTED
+REDEPLOYMENT=PASS
+QA_03_RETRY=PASS
+QA_04=PASS
+QA_05=NOT_EXECUTED_IN_FULL (partial smoke PASS; admin bootstrap approval pending)
+BUNDLE_A=BLOCKED_QA_05_PREREQUISITE
 EXTERNAL_QA_TRAFFIC=HELD
 ```
 
@@ -38,7 +39,8 @@ EXTERNAL_QA_TRAFFIC=HELD
 
 No tag or GitHub release is created. The hardened transaction must generate
 fresh hold evidence, strict preflight, backup and independent verification
-bound to this SHA. Actual deployment and QA-03/04/05 remain separate gates.
+bound to this SHA. Deployment and QA-03/04 have passed as recorded below;
+authenticated QA-05 remains a separate, unexecuted gate.
 General traffic remains held; production and legacy `kojaya` are untouched.
 QA contains zero users and an existing `System Admin` role. The single-account
 bootstrap approval is pending; no account, role or fixture data was created.
@@ -159,12 +161,87 @@ Symlink targets and insecure serving environment metadata fail closed.
 PREVIOUS_QA_CANDIDATE_SHA=1c257b3e5ad76d9d453222213dd055d9ab18c9a9
 REPLACEMENT_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
 REPLACEMENT_DESIGNATION=v1.0.0-rc.12 (untagged, validated and promoted)
-REDEPLOYMENT=NOT_EXECUTED
-QA_03_RETRY=NOT_EXECUTED
-QA_04=NOT_EXECUTED
-QA_05=NOT_EXECUTED
+REDEPLOYMENT=PASS
+QA_03_RETRY=PASS
+QA_04=PASS
+QA_05=NOT_EXECUTED_IN_FULL (partial smoke PASS; admin bootstrap approval pending)
 ```
 
 The replacement must be bound to the exact validated merge SHA before a fresh
 attestation or deployment. No schema or business behavior change is authorized
 by this recovery. Bundle B remains unexecuted.
+
+## rc.12 actual hardened deployment and runtime revalidation
+
+The hardened `bin/deploy-qa.sh` transaction exited zero for exact candidate
+`5a5ae698259d465bc5b5265fe14ca2580c9eb922`, replacing historical rc.11.
+Fresh public root/login requests returned HTTP 503 before a new protected
+hold attestation was generated for this SHA. Candidate and serving strict
+preflight and QA database identity checks passed. The script itself established
+runtime access before migration and after optimization; no manual serving-code
+permission repair was performed.
+
+| Runtime evidence | Result |
+| --- | --- |
+| Promotion control closure | [PR #100](https://github.com/johnd-creator/kojaya/pull/100) MERGED; [PR CI #532](https://github.com/johnd-creator/kojaya/actions/runs/37128090928) and [exact-control/main CI #533](https://github.com/johnd-creator/kojaya/actions/runs/37128184173) SUCCESS under the existing docs-only contract; control SHA `28aab8248d5f24e6f2776a77748f36e43ef54d31` is not the app candidate |
+| Fresh managed backup | `kojaya-qa-kojaya_qa-20261003T140604Z-5a5ae69`; hardened independent verification PASS; directory `0700`, dump/manifest/checksum `0600` |
+| Recovery evidence and inputs | External recovery directory `0700`, evidence files `0600`; candidate environment input `0600`; serving environment contents preserved and metadata `fauzi:kojayaqa 0640` |
+| Migration | `Nothing to migrate`; completed; pending migrations zero; no schema change |
+| Source identity | Exact approved candidate; serving checkout clean; maintenance OFF |
+| Real PHP-FPM health | HTTP 200 through approved loopback Nginx/FPM path; dedicated workers uid `996`, group `987` |
+| Effective filesystem contract | Live FPM identity checked against 8,846 PHP files: unreadable zero, untraversable directories zero, no unexpected access ACLs; all ten required runtime directories writable/traversable; `.env` and generated configuration remain `0640` |
+| Runtime write evidence | Controlled web requests created a real file session; encrypted cookie/prefix and backing file validated with the unchanged application key without exposing it; the web session persisted across requests |
+
+`QA03-RUNTIME-01=CLOSED`. QA-03 passed before the existing unit readiness
+marker was recorded and the approved units were activated. The marker records
+the actual passed gate and exact candidate; it was absent before validation.
+
+QA-04 passed after a 229-second observation window: queue loaded/active/running,
+zero restarts; scheduler loaded/active/enabled; three successful real scheduler
+completions and eleven scheduled commands DONE. No permission, database or
+scheduler failure matches appeared. Post-smoke checks reconfirmed both units
+active, zero restarts, and zero queued/failed/outbox rows. No provider send or
+FCM delivery was tested.
+
+## QA-05 partial smoke and remaining prerequisite
+
+The controlled loopback smoke passed health/up, login HTML, all thirty referenced
+static assets, CSRF cookie initialization, rejection without a token (419), and
+validation with the real token (422). Anonymous web session persistence was
+verified separately from token-API requests. Unauthenticated dashboard requests
+redirected to login; OpenAPI returned 200; protected API health rejected an
+unauthenticated request with 401. Completed smoke requests produced zero critical
+HTTP 5xx and no new PHP fatal, permission or SQL error matches.
+
+Authenticated admin login, authenticated dashboard/data, authenticated session
+persistence, logout, post-logout authorization and authenticated API health are
+NOT EXECUTED. Read-only reconciliation found zero users, sixteen existing roles
+(including `System Admin`) and 129 permissions in `kojaya_qa`, unchanged from the
+pre-smoke account baseline. The owner confirmed the user database is empty.
+No account/role fixture was created on QA and no QA seeder ran.
+
+The pending approval is for exactly one QA-only administrator
+`qa.bundlea.admin@example.test` via the existing tested `admin:create` command,
+using the existing `System Admin` role and a generated protected password on
+standard input. This would add a `users` row and its `model_has_roles` link.
+The project account-recovery instruction requires explicit authorization for
+that one-off write; elapsed time and the explanation of an empty database are
+not approval. No administrator password or API access token was generated or
+published.
+
+```text
+QA_03=PASS
+QA03_RUNTIME_01=CLOSED
+QA_04=PASS
+QA_05=NOT_EXECUTED_IN_FULL
+BACKEND_WEB_PUBLIC_SMOKE=PASS
+AUTHENTICATED_SMOKE=BLOCKED_ADMIN_BOOTSTRAP_APPROVAL
+CRITICAL_HTTP_5XX_IN_COMPLETED_SMOKE=0
+QUEUE=LOADED_ACTIVE_STABLE_IN_OBSERVED_WINDOW
+SCHEDULER=LOADED_ACTIVE_ENABLED_STABLE_IN_OBSERVED_WINDOW
+EXTERNAL_QA_TRAFFIC=HELD (public root/login HTTP 503 reconfirmed)
+LEGACY_KOJAYA_TOUCHED=NO
+PRODUCTION_TOUCHED=NO
+BUNDLE_A=BLOCKED
+BUNDLE_B=NOT_EXECUTED
+```

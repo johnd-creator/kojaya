@@ -1725,3 +1725,16 @@ UI Audit #310 and completed QA-02 evidence remain unaffected. No QA operation
 or new candidate occurs; owner approval remains pending and Phase 6 NOT STARTED.
 
 * Oct 03, 2026 | QA-01 Promotion Lock | QA Engineering | PASS: owner-authorized control/documentation lock promotes `v1.0.0-rc.11`, exact application/deploy SHA `1c257b3e5ad76d9d453222213dd055d9ab18c9a9`, as PROMOTED_QA_CANDIDATE. PR #92 is verified MERGED; separate control/main SHA `1a3641cf5303344b68c72ba8dcac524e97fdadd7` passed post-merge CI #526 / 37096571257, all 15 jobs successful. Candidate-to-control diff touches only CI control and two evidence documents, with no application/runtime change. Phase 5 CLOSED; Phase 6 STARTED; earlier pending/unmerged/not-started statements remain historical. QA ONLY, target `kojaya_qa`; legacy `kojaya` prohibited as migration target; production NOT AUTHORIZED. QA-02 runtime cutover NOT EXECUTED. No runtime, database, migration, queue, scheduler, FCM, GitHub gate/rule, tag, or release operation occurred. See `docs/releases/PHASE-6-QA-RELEASE.md` and the QA-01 reconciliation in `docs/releases/PHASE-5-RC-11.md`. |
+
+## 2026-10-03 — Bundle A runtime permission recovery
+
+QA-02 deployed rc.11 exactly and verified the QA-only database, private backup
+and idempotent migration. QA-03 found PHP-FPM HTTP 500 caused by restrictive
+checkout/cache modes; CLI boot alone had hidden the runtime boundary. A scoped
+source-control repair now deliberately establishes application, generated-cache
+and writable-storage access while preserving secret/private artifact modes.
+Regression coverage exercises a real restrictive Git checkout and fail-closed
+transaction behavior before and after migration. Replacement promotion and
+redeployment remain pending merge and required CI; rc.11 failure is retained in
+`docs/releases/PHASE-6-QA-RELEASE.md`. No business/schema change or QA manual
+permission patch is included.

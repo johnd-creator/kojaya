@@ -23,6 +23,11 @@ if ($tool === 'git') {
         $state['commands'][] = 'serving-checkout '.$sha;
         $state['serving_sha'] = $sha;
     }
+} elseif ($tool === 'php' && str_ends_with($args[0], '/bin/qa-runtime-permissions.php')) {
+    $state['permission_passes'] = ($state['permission_passes'] ?? 0) + 1;
+    $state['commands'][] = 'runtime-permissions '.$state['permission_passes'];
+    $failure = $scenario === 'runtime-permissions'
+        || ($scenario === 'post-optimize-permissions' && $state['permission_passes'] === 2);
 } elseif ($tool === 'php' && $args[0] === 'artisan') {
     $command = $args[1];
     $isCandidate = getcwd() === getenv('QA_REHEARSAL_CANDIDATE');

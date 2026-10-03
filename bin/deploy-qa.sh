@@ -156,6 +156,10 @@ clear_local_caches() {
     (cd "$worktree" && php artisan event:clear --no-interaction)
 }
 
+establish_runtime_permissions() {
+    php "$candidate_dir/bin/qa-runtime-permissions.php" "$serving_dir" "$serving_env_gid"
+}
+
 printf 'Preparing exact-SHA candidate dependencies.\n'
 run_candidate composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 run_candidate npm ci --prefer-offline --no-audit
@@ -219,6 +223,7 @@ restore_before_migration() {
         (cd "$serving_dir" && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader) || restore_status=1
         (cd "$serving_dir" && npm ci --prefer-offline --no-audit && npm run build) || restore_status=1
         clear_local_caches "$serving_dir" || restore_status=1
+        establish_runtime_permissions || restore_status=1
         if [[ "$restore_status" -eq 0 ]]; then
             printf 'Pre-migration recovery restored the previous code and runtime configuration; QA remains held.\n' >&2
         else
@@ -273,6 +278,8 @@ failure_stage=serving-dependencies
 (cd "$serving_dir" && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader)
 (cd "$serving_dir" && npm ci --prefer-offline --no-audit && npm run build)
 clear_local_caches "$serving_dir"
+failure_stage=runtime-permissions
+establish_runtime_permissions
 if [[ -n "$(git -C "$serving_dir" status --porcelain=v1 --untracked-files=all)" ]]; then
     printf 'Serving candidate contains source changes after preparation.\n' >&2
     exit 1
@@ -292,6 +299,9 @@ printf '%s\n' "$migration_state" > "$recovery_dir/migration-state"
 
 failure_stage=post-migration-optimize
 (cd "$serving_dir" && php artisan optimize)
+
+failure_stage=post-optimize-permissions
+establish_runtime_permissions
 
 failure_stage=controlled-smoke-ready
 (cd "$serving_dir" && php artisan up)

@@ -1,4 +1,10 @@
 # Phase 5 RC-11 — QA Deployment Readiness Gate
+**Current control status (2026-10-03): QA-01 execution PASS; repository closure pending.**
+**Phase 5 CLOSED; Phase 6 STARTED; QA-02 NOT EXECUTED.** See
+[Phase 6 promotion lock](PHASE-6-QA-RELEASE.md). Earlier approval-pending and
+unmerged statements remain historical; the QA-01 reconciliation below supersedes
+them for current control status.
+
 
 **Current status (2026-10-03): RC-11 TECHNICAL GATES: PASS;
 OWNER APPROVAL: PENDING — READY FOR OWNER APPROVAL.** Section 19 supersedes
@@ -751,3 +757,37 @@ itself requires new full PR CI. Authoritative rc.11 application evidence
 deployment source changes, no QA operation and no rc.12. This narrowly authorized
 CI correction extends PR scope to `.github/workflows/ci.yml` alongside the two
 existing documents. Owner approval remains PENDING; Phase 6 NOT STARTED.
+
+## QA-01 promotion lock and historical reconciliation — 2026-10-03
+
+**QA-01 — PASS. Phase 5 CLOSED. Phase 6 STARTED. QA-02 NOT EXECUTED.**
+
+The owner explicitly authorized the documentation/control promotion of
+`v1.0.0-rc.11`, exact application/deploy candidate
+`1c257b3e5ad76d9d453222213dd055d9ab18c9a9`, as
+**PROMOTED_QA_CANDIDATE**. Current repository/control head is separately
+`1a3641cf5303344b68c72ba8dcac524e97fdadd7`.
+
+[PR #92](https://github.com/johnd-creator/kojaya/pull/92) is verified MERGED
+at `2026-10-03T04:26:52Z`, with that control SHA as its merge commit.
+[Post-merge CI #526 / 37096571257](https://github.com/johnd-creator/kojaya/actions/runs/37096571257)
+is a completed successful main push on the exact control SHA; all 15 jobs
+succeeded. The exact candidate-to-control GitHub comparison contains only
+`.github/workflows/ci.yml`, `docs/log.md`, and this dossier, with no
+application/runtime source change. The control head does not replace rc.11
+as the QA deployment candidate.
+
+The merged dossier's [section 19](https://github.com/johnd-creator/kojaya/blob/1a3641cf5303344b68c72ba8dcac524e97fdadd7/docs/releases/PHASE-5-RC-11.md#19-final-rc11-dossier-reconciliation--2026-10-03)
+records final rc.11 technical readiness and application CI/UI evidence.
+Its `OWNER APPROVAL: PENDING`, `PR #92 OPEN/UNMERGED`, and `Phase 6 NOT
+STARTED` statements are superseded for current control status by this owner's
+QA-01 instruction, the verified merge, and this PASS. All earlier evidence,
+including local historical BLOCKED assessments, remains preserved. The earlier
+`RC-11-RC11-QA-02` readiness handoff does not mean the subsequent Phase 6 QA-02
+runtime cutover was executed.
+
+The binding lock and evidence are in [PHASE-6-QA-RELEASE.md](PHASE-6-QA-RELEASE.md):
+QA ONLY, database `kojaya_qa`, legacy `kojaya` prohibited as migration target,
+production NOT AUTHORIZED. QA-01 performed no runtime/database/migration,
+queue/scheduler/FCM operation, deployment, tag/release creation, or GitHub
+gate/rule change. QA-02 remains NOT EXECUTED and requires a separate instruction.

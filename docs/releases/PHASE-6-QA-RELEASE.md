@@ -4,7 +4,7 @@
 
 **QA-01 — EXECUTION PASS; REPOSITORY CLOSURE PENDING**
 
-**Phase 5 CLOSED. Phase 6 STARTED. QA-02 — NOT EXECUTED.**
+**Phase 5 CLOSED. Phase 6 STARTED. QA-02 — PASS on rc.11; QA-03 — FAILED; Bundle A — IN RECOVERY.**
 
 ## QA-01 — Promotion lock
 
@@ -87,3 +87,44 @@ recorded in the repository-closure handoff and GitHub PR/run metadata.
 
 The owner authorized branch creation, commit, push, PR and merge for this
 documentation closure. This authority does not extend to QA-02 runtime cutover.
+
+## Bundle A runtime recovery — QA03-RUNTIME-01
+
+The owner authorized up to three scoped source-control repair iterations and
+automatic re-promotion only after all required CI passes. Production and legacy
+`kojaya` remain outside scope. General QA traffic remains held.
+
+Historical candidate `1c257b3e5ad76d9d453222213dd055d9ab18c9a9` passed
+QA-02 deployment, managed backup verification, strict preflight and QA database
+identity. Migration completed with zero pending migrations. QA-03 then failed:
+CLI boot passed, but PHP-FPM returned HTTP 500 because checkout/cache files
+were deployment-user-only. Queue and scheduler remained inactive; QA-04/05
+were not executed. This failure history is retained.
+
+A real temporary Git checkout under `umask 077` reproduces `0600` PHP files.
+The prior transaction tests mocked Git/dependency/build commands and therefore
+did not assert filesystem access. The scoped repair retains `umask 077` and
+adds explicit runtime permission establishment before migration and after
+optimization, including the pre-migration recovery path. The runtime group
+comes from verified serving environment metadata, not a hardcoded account.
+
+Tracked application source and dependencies/static assets are readable and
+traversable; executable tools retain execution permission. Runtime storage
+paths are group-writable with group inheritance. Generated configuration caches
+remain private to deployment/runtime identities. Environment inputs, credentials,
+managed backup descendants and external recovery evidence are not normalized.
+Symlink targets and insecure serving environment metadata fail closed.
+
+```text
+PREVIOUS_QA_CANDIDATE_SHA=1c257b3e5ad76d9d453222213dd055d9ab18c9a9
+REPLACEMENT_QA_CANDIDATE_SHA=PENDING_MERGE_AND_REQUIRED_CI
+REPLACEMENT_DESIGNATION=v1.0.0-rc.12 (untagged, pending validation)
+REDEPLOYMENT=NOT_EXECUTED
+QA_03_RETRY=NOT_EXECUTED
+QA_04=NOT_EXECUTED
+QA_05=NOT_EXECUTED
+```
+
+The replacement must be bound to the exact validated merge SHA before a fresh
+attestation or deployment. No schema or business behavior change is authorized
+by this recovery. Bundle B remains unexecuted.

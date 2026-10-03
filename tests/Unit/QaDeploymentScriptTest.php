@@ -196,8 +196,10 @@ class QaDeploymentScriptTest extends TestCase
             'candidate-backup:verify',
             'php artisan down',
             'serving-checkout '.self::TARGET,
+            'runtime-permissions 1',
             'serving-qa:deployment-identity',
             'serving-migrate --force --no-interaction',
+            'runtime-permissions 2',
             'serving-up ',
         ] as $expected) {
             $positions[] = $this->positionStartingWith($commands, $expected);
@@ -229,6 +231,26 @@ class QaDeploymentScriptTest extends TestCase
         $productionScript = file_get_contents(dirname(__DIR__, 2).'/bin/deploy.sh');
         $this->assertStringContainsString('--strict-production', $productionScript);
         $this->assertStringNotContainsString('--strict-release-candidate', $productionScript);
+    }
+
+    public function test_runtime_permission_failure_before_migration_restores_previous_state(): void
+    {
+        $result = $this->deploy('runtime-permissions');
+        $this->assertNotSame(0, $result->getExitCode());
+        $this->assertSame('not-started', $this->state()['migration']);
+        $this->assertSame(self::PREVIOUS, $this->state()['serving_sha']);
+        $this->assertNotContains('serving-migrate --force --no-interaction', $this->state()['commands']);
+        $this->assertServingEnvMetadataRestored();
+    }
+
+    public function test_post_optimize_permission_failure_keeps_migrated_candidate_held(): void
+    {
+        $result = $this->deploy('post-optimize-permissions');
+        $this->assertNotSame(0, $result->getExitCode());
+        $this->assertSame('completed', $this->state()['migration']);
+        $this->assertSame(self::TARGET, $this->state()['serving_sha']);
+        $this->assertNotContains('serving-up --no-interaction', $this->state()['commands']);
+        $this->assertStringContainsString('stage=post-optimize-permissions migration=completed', $result->getErrorOutput());
     }
 
     private function servingEnvMetadata(): array

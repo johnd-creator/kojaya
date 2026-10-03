@@ -2,11 +2,51 @@
 
 **Assessment date:** 2026-10-03 (Asia/Jakarta)
 
-**QA-01 — EXECUTION PASS; REPOSITORY CLOSURE PENDING**
+**QA-01 CLOSED. Replacement promotion — rc.12.**
 
 **Phase 5 CLOSED. Phase 6 STARTED. QA-02 — PASS on rc.11; QA-03 — FAILED; Bundle A — IN RECOVERY.**
 
-## QA-01 — Promotion lock
+## Current Bundle A replacement promotion
+
+The owner's bounded recovery instruction authorizes automatic replacement
+promotion for this deployment/runtime repair after merge and fully passing CI.
+The exact repair merge is now the deploy candidate. Subsequent documentation
+commits remain control evidence and must not replace this application identity.
+
+```text
+PREVIOUS_QA_CANDIDATE_SHA=1c257b3e5ad76d9d453222213dd055d9ab18c9a9
+REPLACEMENT_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
+PROMOTED_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
+APPLICATION_RELEASE_CANDIDATE=v1.0.0-rc.12 (untagged)
+PROMOTION_STATUS=PROMOTED_QA_CANDIDATE
+REPAIR_ITERATIONS=1
+REDEPLOYMENT=NOT_EXECUTED
+QA_03_RETRY=NOT_EXECUTED
+QA_04=NOT_EXECUTED
+QA_05=NOT_EXECUTED
+EXTERNAL_QA_TRAFFIC=HELD
+```
+
+| Replacement evidence | Result |
+| --- | --- |
+| Scoped source repair | [PR #99](https://github.com/johnd-creator/kojaya/pull/99), merged; branch `fix/qa-runtime-readability` |
+| Final source-head CI | [CI #530](https://github.com/johnd-creator/kojaya/actions/runs/37122719074), head `36b03a1d07c42fbce37d92299e4ff92717d56c52`; all 15 mandatory jobs SUCCESS; four shards completed 3,427 tests / 28,150 assertions |
+| Exact candidate CI | [CI #531](https://github.com/johnd-creator/kojaya/actions/runs/37125296562), push on main, exact replacement SHA; all 15 mandatory jobs SUCCESS, including full PHPUnit, PostgreSQL, build/drift/audit and readiness gates |
+| UI evidence | [UI Audit #312](https://github.com/johnd-creator/kojaya/actions/runs/37122719078), final source head SUCCESS; candidate tree exactly equals tested source tree `64c4a36ca18cd34698f384a541ca9c4544517ce2` |
+| Focused regression | 27 filesystem/QA transaction tests PASS, 223 assertions; broader deployment/private-backup/preflight set completed 100 tests without failures, 689 assertions |
+| Scope comparison | [rc.11 to replacement](https://github.com/johnd-creator/kojaya/compare/1c257b3e5ad76d9d453222213dd055d9ab18c9a9...5a5ae698259d465bc5b5265fe14ca2580c9eb922): deployment/runtime repair, regression tests, inherited CI control and release history only; no business code or migrations |
+
+No tag or GitHub release is created. The hardened transaction must generate
+fresh hold evidence, strict preflight, backup and independent verification
+bound to this SHA. Actual deployment and QA-03/04/05 remain separate gates.
+General traffic remains held; production and legacy `kojaya` are untouched.
+QA contains zero users and an existing `System Admin` role. The single-account
+bootstrap approval is pending; no account, role or fixture data was created.
+
+The following QA-01 lock and its original execution boundary are historical.
+The current recovery authority and replacement identity above govern Bundle A.
+
+## Historical QA-01 — original rc.11 promotion lock
 
 The owner authorized this control/documentation lock on 2026-10-03. The
 application release candidate and repository/control head are separate
@@ -117,8 +157,8 @@ Symlink targets and insecure serving environment metadata fail closed.
 
 ```text
 PREVIOUS_QA_CANDIDATE_SHA=1c257b3e5ad76d9d453222213dd055d9ab18c9a9
-REPLACEMENT_QA_CANDIDATE_SHA=PENDING_MERGE_AND_REQUIRED_CI
-REPLACEMENT_DESIGNATION=v1.0.0-rc.12 (untagged, pending validation)
+REPLACEMENT_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
+REPLACEMENT_DESIGNATION=v1.0.0-rc.12 (untagged, validated and promoted)
 REDEPLOYMENT=NOT_EXECUTED
 QA_03_RETRY=NOT_EXECUTED
 QA_04=NOT_EXECUTED

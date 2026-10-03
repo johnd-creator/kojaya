@@ -1738,3 +1738,19 @@ transaction behavior before and after migration. Replacement promotion and
 redeployment remain pending merge and required CI; rc.11 failure is retained in
 `docs/releases/PHASE-6-QA-RELEASE.md`. No business/schema change or QA manual
 permission patch is included.
+
+## 2026-10-03 — Bundle A replacement candidate promotion
+
+The scoped runtime permission repair merged through PR #99 at
+`5a5ae698259d465bc5b5265fe14ca2580c9eb922`. Final source-head CI #530
+passed all 15 mandatory jobs (3,427 PHPUnit tests / 28,150 assertions) and
+UI Audit #312 passed. Exact-merge/main CI #531 also passed all 15 mandatory
+jobs. The merged tree matches the tested source tree. Under the owner's
+bounded automatic re-promotion authority, this exact SHA is promoted as
+untagged `v1.0.0-rc.12`; rc.11 remains historical QA-02 PASS / QA-03 FAIL.
+There is no business or schema change. Repair iteration count is one.
+Fresh hardened redeployment and QA-03/04/05 remain pending; general QA traffic
+is held. QA users remain empty while approval for a single admin bootstrap is
+pending. Production and legacy `kojaya` remain untouched; Bundle B is not
+executed. Exact candidate and CI links are recorded in
+`docs/releases/PHASE-6-QA-RELEASE.md`.

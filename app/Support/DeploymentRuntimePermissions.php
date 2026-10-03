@@ -70,7 +70,7 @@ class DeploymentRuntimePermissions
         foreach (['storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs'] as $relative) {
             $path = $root.'/'.$relative;
             $this->prepareWritableDirectory($root, $path, $runtimeGroup);
-            $this->normalizeTree($root, $path, 02770, 0660, $runtimeGroup);
+            $this->normalizeTree($root, $path, 02770, 0660, $runtimeGroup, preserveRuntimeOwned: true);
         }
         $this->prepareWritableDirectory($root, $root.'/bootstrap/cache', $runtimeGroup);
         $this->normalizeTree($root, $root.'/bootstrap/cache', 02770, 0640, $runtimeGroup);
@@ -82,10 +82,13 @@ class DeploymentRuntimePermissions
             throw new RuntimeException('Cannot prepare a runtime directory.');
         }
         $this->assertRegularPath($root, $path);
+        if ($this->isRuntimeOwnedAndAccessible($path, $group, true)) {
+            return;
+        }
         $this->setPermissions($path, 02770, $group);
     }
 
-    private function normalizeTree(string $root, string $path, int $directoryMode, int $fileMode, ?int $group = null): void
+    private function normalizeTree(string $root, string $path, int $directoryMode, int $fileMode, ?int $group = null, bool $preserveRuntimeOwned = false): void
     {
         if (! file_exists($path) && ! is_link($path)) {
             return;
@@ -98,17 +101,38 @@ class DeploymentRuntimePermissions
                 $parent = dirname($parent);
             }
         }
-        $this->setPermissions($path, $directoryMode, $group);
+        if (! $preserveRuntimeOwned || $group === null || ! $this->isRuntimeOwnedAndAccessible($path, $group, true)) {
+            $this->setPermissions($path, $directoryMode, $group);
+        }
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
         /** @var SplFileInfo $entry */
         foreach ($iterator as $entry) {
             $this->assertRegularPath($root, $entry->getPathname());
+            if ($preserveRuntimeOwned && $group !== null && $this->isRuntimeOwnedAndAccessible($entry->getPathname(), $group, $entry->isDir())) {
+                continue;
+            }
             $mode = $entry->isDir() ? $directoryMode : $fileMode;
             if (! $entry->isDir() && $fileMode === 0644 && ($entry->getPerms() & 0111) !== 0) {
                 $mode = 0755;
             }
             $this->setPermissions($entry->getPathname(), $mode, $group);
         }
+    }
+
+    /** Existing runtime-owned state is verified, never chowned or widened by deployment. */
+    private function isRuntimeOwnedAndAccessible(string $path, int $group, bool $directory): bool
+    {
+        if (! function_exists('posix_geteuid') || fileowner($path) === posix_geteuid()) {
+            return false;
+        }
+        $owner = posix_getpwuid(fileowner($path));
+        $mode = fileperms($path) & 07777;
+        if ($owner === false || $owner['gid'] !== $group || filegroup($path) !== $group
+            || ($mode & 0002) !== 0 || ($mode & ($directory ? 0770 : 0600)) !== ($directory ? 0770 : 0600)) {
+            throw new RuntimeException('Existing runtime-owned state has unsafe ownership or access.');
+        }
+
+        return true;
     }
 
     private function assertRegularPath(string $root, string $path): void
@@ -127,6 +151,10 @@ class DeploymentRuntimePermissions
 
     private function setPermissions(string $path, int $mode, ?int $group = null): void
     {
+        clearstatcache(true, $path);
+        if ((fileperms($path) & 07777) === $mode && ($group === null || filegroup($path) === $group)) {
+            return;
+        }
         if (($group !== null && ! @chgrp($path, $group)) || ! @chmod($path, $mode)) {
             throw new RuntimeException('Cannot establish runtime filesystem permissions.');
         }

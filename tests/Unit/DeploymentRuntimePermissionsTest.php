@@ -85,6 +85,39 @@ class DeploymentRuntimePermissionsTest extends TestCase
         $this->assertMode('.env', 0644);
     }
 
+    public function test_existing_runtime_owned_log_is_verified_without_changing_its_owner_or_permissions(): void
+    {
+        $runtime = posix_getpwnam('nobody');
+        $this->assertIsArray($runtime);
+        $group = $runtime['gid'];
+        foreach (['storage', 'storage/app', 'storage/app/private', 'storage/framework', 'storage/framework/cache', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache'] as $relative) {
+            $path = $this->directory.'/'.$relative;
+            if (! is_dir($path)) {
+                mkdir($path, 0700, true);
+            }
+            chmod($path, 02770);
+            $this->command(['sudo', '-n', '/usr/bin/chown', '--no-dereference', posix_geteuid().':'.$group, $path]);
+            $this->command(['sudo', '-n', '/usr/bin/chmod', '2770', $path]);
+        }
+        foreach (['.env', 'bootstrap/cache/config.php', 'bootstrap/cache/packages.php', 'storage/framework/views/view.php', 'storage/logs/laravel.log'] as $relative) {
+            $path = $this->directory.'/'.$relative;
+            chmod($path, str_starts_with($relative, 'storage/') ? 0660 : 0640);
+            $this->command(['sudo', '-n', '/usr/bin/chown', '--no-dereference', posix_geteuid().':'.$group, $path]);
+        }
+        $log = $this->directory.'/storage/logs/runtime.log';
+        file_put_contents($log, 'non-secret runtime fixture');
+        chmod($log, 0644);
+        $this->command(['sudo', '-n', '/usr/bin/chown', '--no-dereference', $runtime['uid'].':'.$group, $log]);
+
+        (new DeploymentRuntimePermissions)->apply($this->directory, $group);
+
+        $this->assertMode('storage/logs/runtime.log', 0644);
+        $this->assertSame($runtime['uid'], fileowner($log));
+        $this->assertSame('non-secret runtime fixture', file_get_contents($log));
+        $this->assertMode('.env', 0640);
+        $this->assertMode('storage/app/private/backups/database/evidence.dump', 0600);
+    }
+
     public function test_symlinked_runtime_target_fails_without_changing_external_private_file(): void
     {
         $outside = $this->directory.'/private-credential';

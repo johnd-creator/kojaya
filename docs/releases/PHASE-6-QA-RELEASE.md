@@ -4,7 +4,7 @@
 
 **QA-01 CLOSED. Replacement promotion — rc.12.**
 
-**Phase 5 CLOSED. Phase 6 STARTED. rc.12 redeployment PASS; QA-03 PASS; QA-04 PASS; QA-05 BLOCKED; Bundle A BLOCKED.**
+**Phase 5 CLOSED. Phase 6 STARTED. rc.12 redeployment PASS; QA-03 PASS; QA-04 PASS; QA-05 PASS; Bundle A CLOSED PASS.**
 
 ## Current Bundle A replacement promotion
 
@@ -23,8 +23,8 @@ REPAIR_ITERATIONS=1
 REDEPLOYMENT=PASS
 QA_03_RETRY=PASS
 QA_04=PASS
-QA_05=NOT_EXECUTED_IN_FULL (partial smoke PASS; admin bootstrap approval pending)
-BUNDLE_A=BLOCKED_QA_05_PREREQUISITE
+QA_05=PASS
+BUNDLE_A=CLOSED_PASS
 EXTERNAL_QA_TRAFFIC=HELD
 ```
 
@@ -40,10 +40,10 @@ EXTERNAL_QA_TRAFFIC=HELD
 No tag or GitHub release is created. The hardened transaction must generate
 fresh hold evidence, strict preflight, backup and independent verification
 bound to this SHA. Deployment and QA-03/04 have passed as recorded below;
-authenticated QA-05 remains a separate, unexecuted gate.
-General traffic remains held; production and legacy `kojaya` are untouched.
-QA contains zero users and an existing `System Admin` role. The single-account
-bootstrap approval is pending; no account, role or fixture data was created.
+authenticated QA-05 and safe temporary-account cleanup have passed as recorded
+in the closure section below. General traffic remains held; production and
+legacy `kojaya` are untouched. QA again contains zero users after verified
+removal of the one explicitly approved temporary administrator.
 
 The following QA-01 lock and its original execution boundary are historical.
 The current recovery authority and replacement identity above govern Bundle A.
@@ -203,7 +203,10 @@ scheduler failure matches appeared. Post-smoke checks reconfirmed both units
 active, zero restarts, and zero queued/failed/outbox rows. No provider send or
 FCM delivery was tested.
 
-## QA-05 partial smoke and remaining prerequisite
+## Historical QA-05 partial smoke and pending prerequisite
+
+This section records the state before explicit bootstrap approval and is
+superseded by the completed QA-05 and Bundle A closure below.
 
 The controlled loopback smoke passed health/up, login HTML, all thirty referenced
 static assets, CSRF cookie initialization, rejection without a token (419), and
@@ -245,3 +248,91 @@ PRODUCTION_TOUCHED=NO
 BUNDLE_A=BLOCKED
 BUNDLE_B=NOT_EXECUTED
 ```
+
+## QA-05 approved authenticated smoke — Bundle A closure
+
+The owner explicitly approved **QA-05 ADMIN BOOTSTRAP ONLY**, superseding the
+historical pending-approval record above. Read-only checks confirmed APP_ENV=qa,
+live database kojaya_qa, zero users and the existing System Admin role.
+The existing tested admin:create --password-stdin command created exactly one
+temporary QA-only administrator, qa.bundlea.admin@example.test, and one role
+link. A strong private password was passed on stdin from a 0600 file inside a
+0700 directory. It never appeared in arguments, logs or published evidence.
+No seeder, additional account, role, permission, employee, member or business
+fixture was created. The account was temporary test infrastructure only.
+
+Controlled requests used the existing operator loopback and actual QA
+Nginx/PHP-FPM runtime serving exact rc.12
+`5a5ae698259d465bc5b5265fe14ca2580c9eb922`.
+
+| Authenticated QA-05 check | Result |
+| --- | --- |
+| Admin web login | PASS; HTTP 200, identity verified, session regenerated |
+| Authenticated dashboard | PASS; HTML HTTP 200, correct Dashboard component and user |
+| Deferred dashboard data | PASS; real Inertia partial response HTTP 200 |
+| Session persistence | PASS; repeated authenticated requests retained the validated encrypted-cookie session and runtime session file |
+| Web logout | PASS; HTTP 204, session invalidated and regenerated |
+| Post-logout authorization | PASS; dashboard HTTP 302 to login |
+| Admin token API login/session | PASS; granular abilities, reports:read present, no wildcard; session HTTP 200 |
+| Authenticated API health | PASS; HTTP 200 and data.status=ok |
+| API access boundary | PASS; unauthenticated and revoked-token health HTTP 401 |
+| API logout | PASS; HTTP 200; temporary token revoked and absence verified |
+| Critical HTTP 5xx | ZERO across all controlled smoke requests |
+| Queue/scheduler stability | PASS in 506 seconds: queue active/running with zero restarts; timer active/enabled; nine successful scheduler completions |
+
+Earlier health/login/static-assets/CSRF/anonymous-session evidence remains
+valid for this same immutable candidate. No new application fatal, permission
+or database errors appeared. One retained CLI-only DecryptException resulted
+from an initial smoke-client cookie-decoding mistake; corrected read-only
+validation passed. Inertia initially returned expected asset-version
+negotiation HTTP 409 before the smoke client supplied its version. These were
+client adjustments, with no application change and no HTTP 5xx. No evidence
+was cleared.
+
+After authenticated evidence capture, the existing tested authenticated
+DELETE /settings/profile path removed the temporary account using its current
+password and CSRF token. The existing model deletion hook detached the role
+link. Read-only verification confirmed users, role links and personal access
+tokens returned to zero. Every other table's row count matched baseline except
+eleven retained authentication audit records. Role, permission and
+role-permission contents remained identical by digest; no business data
+changed. Password absence was verified in new runtime logs and audit records
+without disclosure. The protected credential file and directory were removed.
+No temporary-account or credential cleanup remains before Phase 7.
+
+The queue had previously exited successfully at its existing max-time=3600
+boundary. The existing approved QA unit was restarted for this controlled
+verification. Its configuration remains unchanged: Restart=on-failure does
+not restart normal one-hour expiry, so that expiry requires an operator
+restart. Stability PASS is scoped to the observed window, not unattended
+operation beyond the configured lifetime. The scheduler remains enabled and
+active. Queued/failed/cooperative outbox rows remain zero; no provider send
+was tested.
+
+```text
+QA_03=PASS
+QA03_RUNTIME_01=CLOSED
+QA_04=PASS
+QA_05=PASS
+ADMIN_BOOTSTRAP=PASS (exactly one approved temporary QA-only account)
+AUTHENTICATED_SMOKE=PASS
+TEMPORARY_ACCOUNT_CLEANUP=VERIFIED_REMOVED_VIA_EXISTING_APPLICATION_PATH
+TEMPORARY_ROLE_LINK=REMOVED
+TEMPORARY_API_TOKEN=REVOKED_AND_ABSENT
+PRIVATE_CREDENTIAL_FILE=REMOVED
+CRITICAL_HTTP_5XX=0
+QUEUE=LOADED_ACTIVE_STABLE_IN_OBSERVED_WINDOW (existing one-hour lifetime)
+SCHEDULER=LOADED_ACTIVE_ENABLED_STABLE_IN_OBSERVED_WINDOW
+EXTERNAL_QA_TRAFFIC=HELD (public root/login HTTP 503 reconfirmed)
+SERVING_CANDIDATE=5a5ae698259d465bc5b5265fe14ca2580c9eb922
+SERVING_CHECKOUT=CLEAN
+APPROVED_RUNTIME_ENV=UNCHANGED
+LEGACY_KOJAYA_TOUCHED=NO
+PRODUCTION_TOUCHED=NO
+BUNDLE_A=CLOSED_PASS
+BUNDLE_B=NOT_EXECUTED
+```
+
+This closure changes control documentation only; serving remains exact rc.12.
+No traffic release, deployment, source change, migration, financial/member
+acceptance, Android integration or FCM execution occurs in this closure.

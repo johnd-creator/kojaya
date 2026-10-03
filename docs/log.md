@@ -1778,3 +1778,34 @@ no seeder or provider send. Bundle A BLOCKED on this prerequisite, not a claimed
 full acceptance PASS. General traffic remains held (HTTP 503); legacy and
 production untouched; Bundle B NOT EXECUTED. The detailed evidence is in
 `docs/releases/PHASE-6-QA-RELEASE.md`.
+
+## 2026-10-03 — QA-05 authenticated smoke and Bundle A closure
+
+The owner explicitly approved exactly one temporary QA-only administrator,
+qa.bundlea.admin@example.test in kojaya_qa, using the existing tested
+admin:create --password-stdin command and existing System Admin role.
+Only one user and role link were created. Generated credentials remained
+private; no seeder or business fixture ran. This was test infrastructure only.
+
+Controlled actual-FPM smoke on exact rc.12
+`5a5ae698259d465bc5b5265fe14ca2580c9eb922` passed login, initial/deferred
+dashboard, authenticated session persistence, logout and post-logout rejection.
+Admin API health/session passed; unauthenticated and revoked-token requests
+returned 401. Token revoked; critical HTTP 5xx zero. One retained CLI-only
+smoke-client cookie-decoding error was corrected; no application fatal,
+database or permission error occurred.
+
+After evidence capture, the existing tested profile deletion path removed the
+account and role link. Users/role links/API tokens returned to zero; business
+table counts and authorization definitions matched baseline. Eleven
+authentication audit records remain. The protected password file/directory
+were removed; no temporary-account cleanup remains.
+
+Queue active/running with zero restarts and scheduler active/enabled were
+verified over 506 seconds with nine successful completions. The unchanged
+max-time=3600/Restart=on-failure lifecycle requires an operator restart after
+normal hourly expiry; PASS describes the observed window. Public traffic
+remains held (root/login 503), serving exact/clean, environment unchanged;
+legacy kojaya and production untouched. QA-05 PASS; Bundle A CLOSED PASS.
+Bundle B NOT EXECUTED. Full sanitized evidence:
+`docs/releases/PHASE-6-QA-RELEASE.md`.

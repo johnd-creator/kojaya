@@ -1,29 +1,45 @@
 # Phase 6 — Bundle B server checkpoint
 
-This checkpoint supersedes the prior pending server statuses while retaining their failure history. Android and physical-device acceptance remain assigned to the development PC.
+Assessment: 2026-10-04 UTC. This checkpoint supersedes pending server statuses and preserves the earlier failures. Bundle B remains incomplete pending development-PC acceptance.
 
-```
-PREVIOUS_QA_CANDIDATE_SHA=5a5ae698259d465bc5b5265fe14ca2580c9eb922
-HISTORICAL_RC13_SHA=4607ae5db36e5d6909572ac81f6bb95c727b5d21
+```text
 REPLACEMENT_DESIGNATION=v1.0.0-rc.14 (untagged)
-REPLACEMENT_APPLICATION_CANDIDATE_SHA=043b5b004d66f04e60eef2b0c7a8cdb38fce278a
-PROMOTION_STATUS=PROMOTED_QA_CANDIDATE
-PROMOTED_QA_CANDIDATE_SHA=043b5b004d66f04e60eef2b0c7a8cdb38fce278a
+APPLICATION_CANDIDATE_SHA=043b5b004d66f04e60eef2b0c7a8cdb38fce278a
+PROMOTION_STATUS=PROMOTED_AND_DEPLOYED_QA_CANDIDATE
 REPAIR_ITERATIONS=3
-QA_06=REVALIDATION_PENDING
-QA_07=NOT_EXECUTED
-QA_08_BACKEND_PREREQUISITE=REVALIDATION_PENDING
-QA_09_BACKEND_PREREQUISITE=REVALIDATION_PENDING
+QA_03=PASS
+QA_04=PASS
+QA_05_APPLICABLE_AUTH_SMOKE=PASS
+QA_06=PASS
+QA_07=PASS
+QA_08_BACKEND_PREREQUISITE=READY
+QA_09_BACKEND_PREREQUISITE=READY
 ANDROID_QA_08=NOT_EXECUTED_ON_QA_SERVER
 PHYSICAL_DEVICE_QA_09=NOT_EXECUTED_ON_QA_SERVER
-BUNDLE_B=INCOMPLETE
+BUNDLE_B=INCOMPLETE_PC_HANDOFF
 PUBLIC_QA_TRAFFIC=HELD
 ```
 
-The first runtime repair made tracked user-guide articles readable under the existing deployment permissions contract. The second aligned five paginated member response schemas with the existing API payloads. The third applies the private shared file-creation mask only to QA PHP-FPM requests; CLI and other environments preserve their masks and existing deployment ownership guards remain unchanged.
+The clean, exact candidate serves QA with 182 applied migrations, none pending, maintenance off, and all 30 compiled assets returning HTTP 200. Only the application version configuration changed; the application key and other configuration were preserved. Final rc.14 validation recorded 192 HTTP requests with zero HTTP 5xx.
 
-The initial member HTTP 500, queue replay failure, and two pre-migration rc.13 deployment failures remain retained. Neither failed cutover started migrations. Financial acceptance has not yet run. Exact-SHA CI has passed and the owner-authorized bounded recovery promotes this candidate. Hardened deployment and applicable runtime gates remain required before member and financial revalidation.
+QA-06 passed registration, pending-member restrictions, separate verification/final approval, persistent member identity, authenticated web/API access, logout, cross-member isolation, and deactivation/token rejection/reactivation. Two synthetic members remain active, using existing roles.
 
-[Repair PR #104](https://github.com/johnd-creator/kojaya/pull/104), [repair PR #106](https://github.com/johnd-creator/kojaya/pull/106), [PR CI #549](https://github.com/johnd-creator/kojaya/actions/runs/37196118601), and [UI audit #315](https://github.com/johnd-creator/kojaya/actions/runs/37196118626) passed the applicable source checks. PR CI #549 passed all 18 mandatory jobs with 3,451 tests, 28,445 assertions, zero errors/failures/skipped tests and 81.42% line coverage against the unchanged 60% gate. Exact-candidate [CI #550](https://github.com/johnd-creator/kojaya/actions/runs/37197521587) passed all 18 mandatory jobs with the same complete test totals and 81.41% line coverage against the unchanged 60% gate.
+QA-07 passed savings/payment idempotency, maker-checker approval, dues reconciliation, protected PDF receipts, financial isolation, loan calculation and distinct manager review/final approval. Fourteen independent readback invariants passed. Two payments, two ledger entries and two receipts reconcile to Rp125,000 savings. One approved loan has Rp500,000 principal, Rp515,000 scheduled total and three installments; no disbursement occurred. These are synthetic QA artifacts, not production/reference data.
 
-Only minimum synthetic QA fixtures are authorized. Secrets, device tokens, detailed operational configuration and personal data are excluded from this checkpoint. Production and legacy data remain prohibited. The development-PC workspace is `F:\kojayaapp`; its Android SHA/build and physical-device reception remain unverified. Bundle B cannot pass before those gates complete.
+QA-08 backend readiness includes ten populated responses validated against the served OpenAPI schemas and tested 401/403/422 boundaries. Android source, build, endpoint consumption and application behavior require development-PC execution.
+
+QA-09 backend readiness includes matching FCM configuration/credentials, OAuth success, HTTP v1 validate-only HTTP 200 without delivery, a domain outbox database-worker pending-to-sent transition, and a targeted historical replay without duplicate effects. Both general outbox records are sent; six cooperative outbox records are delivered. The worker and scheduler are active, with repeated successful scheduler completions, zero queued/failed jobs and no worker restart. Device registration rejection boundaries passed; no device token was fabricated. Real token association, reception and notification tap remain untested.
+
+Five fixture accounts remain for audit relationships and PC continuation. All API tokens were revoked, old tokens rejected and web sessions logged out. Staff/peer plaintext test credentials were removed; one member credential remains private for the PC handoff. Known test secrets were absent from application logs and audit records. Financial/account deletion was not improvised. Reference counts remain 16 roles, 129 permissions and 476 role-permission links; no seeder ran. The original reference checksum serializer was unavailable, so final unchanged hashes are not claimed.
+
+The initial member HTTP 500, queue replay failure, two pre-migration rc.13 cutover failures and one pre-migration rc.14 cutover failure remain retained. Final rc.14 cutover succeeded after the durable third repair and bounded runtime metadata recovery. Read-only operator diagnostic SQL errors and expired-client session setup responses are classified separately from runtime acceptance. No fourth source repair or financial policy change occurred.
+
+[Repair PR #104](https://github.com/johnd-creator/kojaya/pull/104) corrected user-guide permissions and pagination schemas. [Repair PR #106](https://github.com/johnd-creator/kojaya/pull/106) scopes the private file-creation mask to QA PHP-FPM, preserving CLI/other environments and deployment ownership guards. [PR CI #549](https://github.com/johnd-creator/kojaya/actions/runs/37196118601) and [UI audit #315](https://github.com/johnd-creator/kojaya/actions/runs/37196118626) passed. Exact-candidate [CI #550](https://github.com/johnd-creator/kojaya/actions/runs/37197521587) passed all 18 mandatory jobs: 3,451 tests, 28,445 assertions, zero errors/failures/skipped tests, 81.41% line coverage against the unchanged 60% gate.
+
+Public QA traffic remains held with HTTPS HTTP 503. Shared PHP-FPM masters were unchanged. Production and legacy data were not accessed or changed.
+
+## Development-PC handoff
+
+Use the authoritative workspace `F:\kojayaapp`. Record its actual Git SHA, working-tree state, QA build variant and Firebase project identity. Verify controlled QA HTTPS access while keeping general traffic held; no Android source was searched, copied, cloned or built on this server.
+
+Run the Android tests/lint and QA build, then exercise member authentication, session/logout, profile, savings, dues, payments/receipts, loans and authorization boundaries against the approved backend. On a physical device verify permission, real token registration, recipient-correct notification delivery and tap behavior through the normal backend/outbox path. Retain delivery evidence and complete supported fixture/credential cleanup afterward. Backend readiness does not substitute for Android or physical-device acceptance; Bundle B must remain incomplete until both pass.

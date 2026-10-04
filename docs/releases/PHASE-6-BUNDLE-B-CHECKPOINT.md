@@ -11,8 +11,9 @@ Assessment: 2026-10-04 UTC. QA-only; Bundle B remains incomplete pending develop
 ```text
 REPLACEMENT_DESIGNATION=v1.0.0-rc.13 (untagged)
 REPLACEMENT_CANDIDATE_SHA=4607ae5db36e5d6909572ac81f6bb95c727b5d21
-PROMOTION_STATUS=PENDING_EXACT_MAIN_CI
-EXACT_MAIN_CI=545 / 37192820123 / IN_PROGRESS
+PROMOTION_STATUS=PROMOTED_QA_CANDIDATE
+PROMOTED_QA_CANDIDATE_SHA=4607ae5db36e5d6909572ac81f6bb95c727b5d21
+EXACT_MAIN_CI=545 / 37192820123 / SUCCESS
 QA_06=REVALIDATION_PENDING
 QA_07=NOT_EXECUTED
 QA_08_BACKEND=REVALIDATION_PENDING
@@ -22,4 +23,4 @@ PHYSICAL_DEVICE_QA_09=NOT_EXECUTED_ON_QA_SERVER
 BUNDLE_B=INCOMPLETE
 ```
 
-Promotion/deployment and final server statuses remain conditional on successful exact-candidate CI and runtime revalidation. Prior evidence remains retained. This checkpoint contains no credentials, device tokens, personal data or detailed operational configuration. Production and the legacy database are outside the authorized scope.
+[Exact-candidate CI #545](https://github.com/johnd-creator/kojaya/actions/runs/37192820123) passed all 18 mandatory jobs. The owner-authorized bounded recovery promotes this exact rc.13 candidate. Deployment and final server statuses remain pending hardened cutover and runtime revalidation. Prior evidence remains retained. This checkpoint contains no credentials, device tokens, personal data or detailed operational configuration. Production and the legacy database are outside the authorized scope.

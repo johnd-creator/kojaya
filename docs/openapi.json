@@ -1022,6 +1022,33 @@
                     }
                 }
             },
+            "PaginatedResourceResponse": {
+                "type": "object",
+                "required": [
+                    "data",
+                    "links",
+                    "meta",
+                    "success"
+                ],
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/ApiPaginationLinks"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/ApiPaginationMeta"
+                    },
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                }
+            },
             "MemberStoreAccountResource": {
                 "type": "object",
                 "required": [
@@ -2234,7 +2261,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                    "$ref": "#/components/schemas/PaginatedResourceResponse"
                                 }
                             }
                         }
@@ -2754,7 +2781,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                    "$ref": "#/components/schemas/PaginatedResponse"
                                 }
                             }
                         }
@@ -2856,7 +2883,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                    "$ref": "#/components/schemas/PaginatedMemberInvoiceResponse"
                                 }
                             }
                         }
@@ -3050,7 +3077,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                    "$ref": "#/components/schemas/PaginatedResourceResponse"
                                 }
                             }
                         }
@@ -3693,7 +3720,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                    "$ref": "#/components/schemas/PaginatedLoanResponse"
                                 }
                             }
                         }

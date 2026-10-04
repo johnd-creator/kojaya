@@ -1,0 +1,99 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/** @return array<string, string> */
+function frontendArtifactDigests(string $directory): array
+{
+    if (! is_dir($directory) || is_link($directory)) {
+        throw new RuntimeException('Frontend artifact directory is missing or linked.');
+    }
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
+    foreach ($iterator as $file) {
+        if ($file->isLink()) {
+            throw new RuntimeException('Frontend artifact must not contain symlinks.');
+        }
+        if (! $file->isFile()) {
+            continue;
+        }
+        $path = substr($file->getPathname(), strlen($directory) + 1);
+        if ($path === 'ci-provenance.json') {
+            continue;
+        }
+        if (str_starts_with(basename($path), '.') || str_contains($path, '..')) {
+            throw new RuntimeException('Unexpected private or traversal artifact path.');
+        }
+        $files[$path] = hash_file('sha256', $file->getPathname());
+    }
+    ksort($files);
+    if (! isset($files['manifest.json'])) {
+        throw new RuntimeException('Frontend manifest is missing.');
+    }
+
+    return $files;
+}
+
+/** @return array<string, string> */
+function generatedWayfinderDigests(string $root): array
+{
+    $files = [];
+    foreach (['actions', 'routes'] as $name) {
+        $directory = $root.'/resources/js/'.$name;
+        if (! is_dir($directory) || is_link($directory)) {
+            throw new RuntimeException('Generated Wayfinder inputs are missing or linked.');
+        }
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            if ($file->isLink()) {
+                throw new RuntimeException('Generated inputs must not contain symlinks.');
+            }
+            if ($file->isFile()) {
+                $files[substr($file->getPathname(), strlen($root) + 1)] = hash_file('sha256', $file->getPathname());
+            }
+        }
+    }
+    ksort($files);
+    if ($files === []) {
+        throw new RuntimeException('Generated Wayfinder inputs are empty.');
+    }
+
+    return $files;
+}
+
+function runFrontendArtifact(string $mode, string $directory, string $sha, ?string $root = null): void
+{
+    $root ??= dirname(__DIR__, 2);
+    if (preg_match('/\A[0-9a-f]{40}\z/D', $sha) !== 1) {
+        throw new RuntimeException('Invalid exact source SHA.');
+    }
+    $files = frontendArtifactDigests($directory);
+    $path = $directory.'/ci-provenance.json';
+    if ($mode === 'create') {
+        file_put_contents($path, json_encode(['version' => 1, 'sha' => $sha, 'files' => $files, 'generated' => generatedWayfinderDigests($root)], JSON_THROW_ON_ERROR).PHP_EOL);
+    } elseif (in_array($mode, ['verify', 'verify-generated'], true)) {
+        if (! is_file($path) || is_link($path)) {
+            throw new RuntimeException('Frontend provenance is missing or linked.');
+        }
+        $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        if (($data['version'] ?? null) !== 1 || ($data['sha'] ?? null) !== $sha || ($data['files'] ?? null) !== $files) {
+            throw new RuntimeException('Frontend artifact source or integrity mismatch.');
+        }
+        if ($mode === 'verify-generated' && ($data['generated'] ?? null) !== generatedWayfinderDigests($root)) {
+            throw new RuntimeException('Build inputs differ in the consumer environment.');
+        }
+    } else {
+        throw new RuntimeException('Unknown frontend artifact operation.');
+    }
+}
+
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    try {
+        runFrontendArtifact($argv[1] ?? '', $argv[2] ?? 'public/build', getenv('GITHUB_SHA') ?: '');
+        echo 'Exact-source frontend artifact integrity: PASS'.PHP_EOL;
+    } catch (Throwable $exception) {
+        fwrite(STDERR, '[FAIL-CLOSED] '.$exception->getMessage().PHP_EOL);
+        exit(1);
+    }
+}

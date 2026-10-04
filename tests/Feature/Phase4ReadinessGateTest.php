@@ -75,8 +75,8 @@ class Phase4ReadinessGateTest extends TestCase
 
         $job = substr($workflow, $jobStart);
         $this->assertStringContainsString('if: ${{ always() }}', $job);
-        $this->assertStringContainsString('if [[ "$DOCS_ONLY" != "false" ]]', $job);
-        $this->assertStringContainsString('if [[ "$result" != "success" ]]', $job);
+        $this->assertStringContainsString('DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}', $job);
+        $this->assertStringContainsString('run: php bin/ci/readiness-results', $job);
 
         foreach ([
             'changes',
@@ -90,6 +90,7 @@ class Phase4ReadinessGateTest extends TestCase
             'migration-seed',
             'openapi-drift',
             'postgres-concurrency',
+            'phase4-execution',
         ] as $dependency) {
             $this->assertStringContainsString("      - {$dependency}\n", $job);
         }
@@ -100,11 +101,11 @@ class Phase4ReadinessGateTest extends TestCase
         $workflow = Yaml::parseFile(base_path('.github/workflows/ci.yml'));
         $this->assertSame('testing', $workflow['env']['APP_ENV']);
 
-        $steps = collect($workflow['jobs']['phase4-readiness']['steps'])->keyBy('name');
+        $steps = collect($workflow['jobs']['phase4-execution']['steps'])->keyBy('name');
 
         foreach ([
             'Prepare isolated deterministic Playwright environment',
-            'Build frontend for the Playwright environment',
+            'Build frontend for the distinct Playwright environment',
             'Verify UI Audit global setup lifecycle',
             'Run deterministic desktop accessibility audit',
         ] as $name) {

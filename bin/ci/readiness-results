@@ -1,0 +1,34 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/** @param array<string, string> $results */
+function verifyReadinessResults(string $docsOnly, array $results): void
+{
+    $required = ['changes', 'dependency-audit', 'style', 'frontend-build', 'generated-drift',
+        'phpunit-shard', 'unit-feature-tests', 'seed-integrity-gate', 'migration-seed',
+        'openapi-drift', 'postgres-concurrency', 'phase4-execution'];
+    if (! in_array($docsOnly, ['true', 'false'], true) || array_diff($required, array_keys($results)) !== []) {
+        throw new RuntimeException('Unknown classification or missing mandatory readiness result.');
+    }
+    foreach ($required as $job) {
+        if ($results[$job] !== 'success') {
+            throw new RuntimeException('Required job '.$job.' did not succeed.');
+        }
+    }
+}
+
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    try {
+        $needs = json_decode(getenv('CI_NEEDS') ?: '', true, 512, JSON_THROW_ON_ERROR);
+        if (! is_array($needs)) {
+            throw new RuntimeException('Malformed readiness results.');
+        }
+        verifyReadinessResults(getenv('DOCS_ONLY') ?: '', array_map(static fn (array $job): string => $job['result'] ?? '', $needs));
+        echo 'Every mandatory readiness result: PASS'.PHP_EOL;
+    } catch (Throwable $exception) {
+        fwrite(STDERR, '[FAIL-CLOSED] '.$exception->getMessage().PHP_EOL);
+        exit(1);
+    }
+}

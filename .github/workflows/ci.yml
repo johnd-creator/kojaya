@@ -12,6 +12,7 @@ permissions:
 
 env:
   APP_ENV: testing
+  PHPUNIT_SHARD_COUNT: '6'
 
 jobs:
   changes:
@@ -19,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docs_only: ${{ steps.classify.outputs.docs_only }}
+      shard_count: ${{ steps.shards.outputs.shard_count }}
+      shard_matrix: ${{ steps.shards.outputs.shard_matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,79 +37,12 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-
-          base_sha="$BEFORE_SHA"
-          head_sha="$CURRENT_SHA"
-
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            base_sha="$PR_BASE_SHA"
-            head_sha="$PR_HEAD_SHA"
-          fi
-
-          if [[ ! "$base_sha" =~ ^[0-9a-fA-F]{40}$ ]] || [[ ! "$head_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            printf 'Unable to resolve a complete comparison range; running full CI.\n'
-            printf 'docs_only=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          mapfile -t changed_files < <(git diff --name-only "$base_sha" "$head_sha")
-
-          if ((${#changed_files[@]} == 0)); then
-            printf 'No changed files detected; running full CI.\n'
-            printf 'docs_only=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          is_documentation_path() {
-            [[ "$1" == "CHANGELOG.md" || "$1" == "README.md" || "$1" =~ ^docs/.+\.md$ ]]
-          }
-
-          classify_paths() {
-            local result=true
-            local file
-
-            for file in "$@"; do
-              if ! is_documentation_path "$file"; then
-                result=false
-                break
-              fi
-            done
-
-            printf '%s' "$result"
-          }
-
-          assert_classification() {
-            local expected="$1"
-            shift
-            local actual
-
-            actual="$(classify_paths "$@")"
-            if [[ "$actual" != "$expected" ]]; then
-              printf 'Classifier regression for expected=%s actual=%s paths=%s\n' "$expected" "$actual" "$*" >&2
-              return 1
-            fi
-          }
-
-          assert_classification true docs/example.md
-          assert_classification true docs/nested/example.md
-          assert_classification true CHANGELOG.md
-          assert_classification true README.md
-          assert_classification false .github/workflows/ci.yml
-          assert_classification false app/Example.php
-          assert_classification false app/src/Example.kt
-          assert_classification false resources/js/app.js
-          assert_classification false config/app.php
-          assert_classification false database/migrations/example.php
-          assert_classification false composer.lock
-          assert_classification false docs/example.mdx
-          assert_classification false docs/example.txt
-          assert_classification false notes.md
-          assert_classification false docs/example.md app/Example.php
-
-          docs_only="$(classify_paths "${changed_files[@]}")"
-
-          printf 'Changed paths classified as docs_only=%s.\n' "$docs_only"
+          docs_only="$(bash bin/ci/classify-changes)"
           printf 'docs_only=%s\n' "$docs_only" >> "$GITHUB_OUTPUT"
+
+      - name: Configure validated deterministic shard matrix
+        id: shards
+        run: php bin/ci/phpunit-shard matrix --total="$PHPUNIT_SHARD_COUNT" >> "$GITHUB_OUTPUT"
 
   dependency-audit:
     name: Dependency Audit
@@ -133,6 +69,7 @@ jobs:
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           node-version: '22'
+          cache: npm
       - run: composer install --no-interaction --prefer-dist --no-progress
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
@@ -165,7 +102,7 @@ jobs:
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
       - run: composer install --no-interaction --prefer-dist --no-progress
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      - run: vendor/bin/pint --test
+      - run: vendor/bin/pint --test --parallel --max-processes=2
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
 
   frontend-build:
@@ -193,6 +130,7 @@ jobs:
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
           node-version: '22'
+          cache: npm
       - run: composer install --no-interaction --prefer-dist --no-progress
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: npm ci --prefer-offline --no-audit
@@ -207,6 +145,9 @@ jobs:
           APP_ENV: local
       - run: npm run build
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+      - name: Bind frontend artifact to exact source and file digests
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php bin/ci/frontend-artifact create public/build
       - uses: actions/upload-artifact@v4
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         with:
@@ -216,7 +157,7 @@ jobs:
 
   generated-drift:
     name: Generated Drift
-    needs: changes
+    needs: [changes, frontend-build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -228,6 +169,10 @@ jobs:
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only == 'true'
         run: printf 'Generated Drift skipped for documentation-only changes.\n'
 
+      - name: Fail closed if frontend build failed
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: test "${{ needs.frontend-build.result }}" = success
+
       - uses: actions/checkout@v4
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - uses: shivammathur/setup-php@v2
@@ -235,13 +180,7 @@ jobs:
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, fileinfo, json, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml
-      - uses: actions/setup-node@v4
-        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        with:
-          node-version: '22'
       - run: composer install --no-interaction --prefer-dist --no-progress
-        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      - run: npm ci --prefer-offline --no-audit
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: cp .env.example .env
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
@@ -257,18 +196,24 @@ jobs:
           test -n "$(find resources/js/actions -type f -print -quit)"
           test -n "$(find resources/js/routes -type f -print -quit)"
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-      - run: npm run build
+      - uses: actions/download-artifact@v4
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        with:
+          name: frontend-build-assets
+          path: public/build
+      - name: Verify exact-source frontend build
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php bin/ci/frontend-artifact verify public/build
 
   phpunit-shard:
-    name: PHPUnit Shard (${{ matrix.shard }}/4)
+    name: PHPUnit Shard (${{ matrix.shard }}/${{ needs.changes.outputs.shard_count }})
     needs: [changes, frontend-build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.changes.outputs.shard_matrix) }}
     steps:
       - name: Fail closed when change classification fails
         if: needs.changes.result != 'success'
@@ -303,24 +248,24 @@ jobs:
           path: public/build
       - name: Verify frontend build assets
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: test -f public/build/manifest.json
+        run: php bin/ci/frontend-artifact verify public/build
       - run: cp .env.example .env
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - name: Verify shard partition integrity
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: php bin/ci/phpunit-shard verify --total=4
+        run: php bin/ci/phpunit-shard verify --total=${{ needs.changes.outputs.shard_count }}
       - name: Generate shard configuration
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: >-
           php bin/ci/phpunit-shard generate-config
           --shard=${{ matrix.shard }}
-          --total=4
+          --total=${{ needs.changes.outputs.shard_count }}
           --output=phpunit.shard.xml
           --coverage-file=build/artifacts/shard-${{ matrix.shard }}.cov
           --junit-file=build/artifacts/shard-${{ matrix.shard }}.xml
-      - name: Run PHPUnit Shard ${{ matrix.shard }}/4
+      - name: Run PHPUnit Shard ${{ matrix.shard }}/${{ needs.changes.outputs.shard_count }}
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: php artisan test --compact --parallel --configuration=phpunit.shard.xml
         env:
@@ -375,7 +320,11 @@ jobs:
           merge-multiple: true
       - name: Aggregate Shard Results & Enforce Quality Gates
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: php bin/ci/phpunit-aggregate --total=4 --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
+        run: php bin/ci/phpunit-aggregate --total=${{ needs.changes.outputs.shard_count }} --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
+      - name: Publish controlled per-file runtime measurements
+        if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
+        run: php bin/ci/phpunit-timings - "$GITHUB_SHA" build/artifacts/shard-*.xml
+
 
 
   seed-integrity-gate:
@@ -416,7 +365,7 @@ jobs:
           path: public/build
       - name: Verify frontend build assets
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: test -f public/build/manifest.json
+        run: php bin/ci/frontend-artifact verify public/build
       - run: cp .env.example .env
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - run: php artisan key:generate
@@ -564,20 +513,9 @@ jobs:
           DB_USERNAME: kojaya
           DB_PASSWORD: kojaya
 
-  phase4-readiness:
-    name: Phase 4 Readiness Gate
-    needs:
-      - changes
-      - dependency-audit
-      - style
-      - frontend-build
-      - generated-drift
-      - phpunit-shard
-      - unit-feature-tests
-      - seed-integrity-gate
-      - migration-seed
-      - openapi-drift
-      - postgres-concurrency
+  phase4-execution:
+    name: Phase 4 Readiness Execution
+    needs: [changes, frontend-build]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -591,50 +529,13 @@ jobs:
         run: >-
           printf 'Documentation-only change: existing application readiness evidence unchanged.\n'
 
-      - name: Fail closed unless every required CI job passed
+      - name: Fail closed on unknown classification or frontend failure
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        shell: bash
         env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
-          DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}
-          STYLE_RESULT: ${{ needs.style.result }}
-          FRONTEND_BUILD_RESULT: ${{ needs.frontend-build.result }}
-          GENERATED_DRIFT_RESULT: ${{ needs.generated-drift.result }}
-          PHPUNIT_SHARD_RESULT: ${{ needs.phpunit-shard.result }}
-          UNIT_FEATURE_TESTS_RESULT: ${{ needs.unit-feature-tests.result }}
-          SEED_INTEGRITY_RESULT: ${{ needs.seed-integrity-gate.result }}
-          MIGRATION_SEED_RESULT: ${{ needs.migration-seed.result }}
-          OPENAPI_DRIFT_RESULT: ${{ needs.openapi-drift.result }}
-          POSTGRES_RESULT: ${{ needs.postgres-concurrency.result }}
         run: |
-          set -euo pipefail
-
-          if [[ "$DOCS_ONLY" != "false" ]]; then
-            echo "::error::FUNC-13 requires the full CI path; docs_only=$DOCS_ONLY"
-            exit 1
-          fi
-
-          for result_name in \
-            CHANGES_RESULT \
-            DEPENDENCY_AUDIT_RESULT \
-            STYLE_RESULT \
-            FRONTEND_BUILD_RESULT \
-            GENERATED_DRIFT_RESULT \
-            PHPUNIT_SHARD_RESULT \
-            UNIT_FEATURE_TESTS_RESULT \
-            SEED_INTEGRITY_RESULT \
-            MIGRATION_SEED_RESULT \
-            OPENAPI_DRIFT_RESULT \
-            POSTGRES_RESULT; do
-            result="${!result_name}"
-            if [[ "$result" != "success" ]]; then
-              echo "::error::Required upstream job $result_name ended with $result"
-              exit 1
-            fi
-          done
-
-          echo "All required upstream CI dependencies: PASS"
+          test "$DOCS_ONLY" = false
+          test "${{ needs.frontend-build.result }}" = success
 
       - uses: actions/checkout@v4
         if: needs.changes.outputs.docs_only != 'true'
@@ -671,7 +572,7 @@ jobs:
 
       - name: Verify built frontend assets
         if: needs.changes.outputs.docs_only != 'true'
-        run: test -f public/build/manifest.json
+        run: php bin/ci/frontend-artifact verify public/build
 
       - name: Prepare isolated test environment
         if: needs.changes.outputs.docs_only != 'true'
@@ -689,10 +590,10 @@ jobs:
           tests/Feature/ProductionReadinessP0P2Test.php
           tests/Feature/PhaseDProductionSmokeTest.php
 
-      - name: Verify all four PHPUnit shards remain MECE
+      - name: Verify all selected PHPUnit shards remain MECE
         if: needs.changes.outputs.docs_only != 'true'
         id: shard-mece
-        run: php bin/ci/phpunit-shard verify --total=4
+        run: php bin/ci/phpunit-shard verify --total=${{ needs.changes.outputs.shard_count }}
 
       - name: Verify OpenAPI contract drift
         if: needs.changes.outputs.docs_only != 'true'
@@ -725,7 +626,7 @@ jobs:
           php artisan --env=playwright storage:link --force --no-interaction
           php artisan --env=playwright wayfinder:generate --no-interaction
 
-      - name: Build frontend for the Playwright environment
+      - name: Build frontend for the distinct Playwright environment
         if: needs.changes.outputs.docs_only != 'true'
         env:
           APP_ENV: playwright
@@ -765,11 +666,11 @@ jobs:
         id: accessibility-disposition
         run: node tests/visual/scripts/verify-func13-accessibility.mjs
 
-      - name: Summarize Phase 4 readiness evidence
+
+      - name: Summarize Phase 4 execution evidence
         if: always()
         env:
-          UPSTREAM_RESULT: ${{ job.status }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
+          EXECUTION_RESULT: ${{ job.status }}
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           READINESS_TESTS: ${{ steps.readiness-tests.outcome }}
           SHARD_MECE: ${{ steps.shard-mece.outcome }}
@@ -778,30 +679,54 @@ jobs:
           ACCESSIBILITY: ${{ steps.accessibility.outcome }}
           ACCESSIBILITY_DISPOSITION: ${{ steps.accessibility-disposition.outcome }}
         run: |
-          if [[ "$CHANGES_RESULT" == "success" && "$DOCS_ONLY" == "true" ]]; then
-            {
-              echo '## Phase 4 Readiness Gate'
-              echo '- Change classification: DOCS_ONLY'
-              echo '- Application readiness execution: NOT REQUIRED'
-              echo '- Existing exact rc.11 readiness evidence: UNAFFECTED'
-              if [[ "$UPSTREAM_RESULT" == "success" ]]; then
-                echo '- Gate status: PASS'
-              else
-                echo '- Gate status: FAIL'
-              fi
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
           {
-            echo '## Phase 4 Readiness Gate'
-            echo "- Upstream CI dependencies: ${{ needs.changes.result == 'success' && needs.dependency-audit.result == 'success' && needs.style.result == 'success' && needs.frontend-build.result == 'success' && needs.generated-drift.result == 'success' && needs.phpunit-shard.result == 'success' && needs.unit-feature-tests.result == 'success' && needs.seed-integrity-gate.result == 'success' && needs.migration-seed.result == 'success' && needs.openapi-drift.result == 'success' && needs.postgres-concurrency.result == 'success' && needs.changes.outputs.docs_only == 'false' && 'PASS' || 'HOLD' }}"
-            echo "- Phase4ReadinessGateTest and release-preflight suites: ${READINESS_TESTS:-not run}"
+            echo '## Phase 4 Readiness Execution'
+            echo "- Documentation-only: $DOCS_ONLY"
+            echo "- Focused readiness tests: ${READINESS_TESTS:-not run}"
             echo "- Shard MECE: ${SHARD_MECE:-not run}"
             echo "- OpenAPI: ${OPENAPI:-not run}"
             echo "- UI baseline integrity: ${UI_BASELINES:-not run}"
             echo "- Accessibility audit: ${ACCESSIBILITY:-not run}"
-            echo "- FUNC-12 accessibility finding disposition: ${ACCESSIBILITY_DISPOSITION:-not run}"
-            echo '- Known PARTIAL findings: documented in docs/phase-4/FUNC-13-phase4-readiness-gate.md'
-            echo "- Job status: ${UPSTREAM_RESULT}"
+            echo "- Finding disposition: ${ACCESSIBILITY_DISPOSITION:-not run}"
+            echo '- Known PARTIAL findings: docs/phase-4/FUNC-13-phase4-readiness-gate.md'
+            echo "- Execution status: $EXECUTION_RESULT"
+            echo '- Final decision belongs to the separate mandatory readiness gate.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+  phase4-readiness:
+    name: Phase 4 Readiness Gate
+    needs:
+      - changes
+      - dependency-audit
+      - style
+      - frontend-build
+      - generated-drift
+      - phpunit-shard
+      - unit-feature-tests
+      - seed-integrity-gate
+      - migration-seed
+      - openapi-drift
+      - postgres-concurrency
+      - phase4-execution
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail closed unless every required CI job passed
+        env:
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: php bin/ci/readiness-results
+      - name: Summarize final readiness decision
+        if: always()
+        env:
+          DECISION: ${{ job.status }}
+          DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
+        run: |
+          {
+            echo '## Phase 4 Readiness Gate'
+            echo "- Documentation-only: $DOCS_ONLY"
+            echo "- All mandatory upstream results: $DECISION"
+            echo '- Phase 4 execution is an independently required upstream job.'
           } >> "$GITHUB_STEP_SUMMARY"

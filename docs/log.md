@@ -1809,3 +1809,46 @@ remains held (root/login 503), serving exact/clean, environment unchanged;
 legacy kojaya and production untouched. QA-05 PASS; Bundle A CLOSED PASS.
 Bundle B NOT EXECUTED. Full sanitized evidence:
 `docs/releases/PHASE-6-QA-RELEASE.md`.
+
+## 2026-10-04 — CI-PERF-02 measured execution optimization pilot
+
+Three successful full runs establish a 43–44-minute baseline; CI #531 is
+43m29s, with shard 1 at 36m14s and serial readiness at 5m17s. The scoped
+CI pilot introduces deterministic source-bound runtime estimates and
+JUnit measurement publication, parallel Phase 4 execution with a final
+fail-closed decision, exact-source frontend integrity, npm download
+caching, and whole-repository parallel Pint. All original testcase IDs,
+coverage/test thresholds, PostgreSQL/backup/seed/build/drift/audit/UI/a11y
+validation remain. Initial local helper/readiness tests PASS (33/293);
+performance acceptance is pending real full CI and controlled timing refinement.
+QA candidate stays exact rc.12; QA/production/legacy untouched; Bundle B not
+executed. Detailed baseline and invariants: docs/ci-performance.md.
+
+CI #538 rejected Playwright artifact reuse because generated inputs differed.
+Iteration 2 restores the independent environment-specific build; the failed
+pilot remains recorded and cannot qualify as performance PASS.
+
+The complete pilot PHPUnit gate passed 3442 tests / 28340 assertions, zero
+errors/failures/skips and 81.40% coverage; full workflow FAIL at 32m12s.
+Iteration 2 replaces the estimate with measured source-bound JUnit worker
+timings, retains four runners and four existing ParaTest workers, and preserves
+heavy-first file order within each shard. Affected regressions PASS (33/300).
+
+Iteration 2 full CI #539 passed all 16 jobs, 3442 tests / 28347 assertions,
+zero skips/errors/failures, and 81.40% coverage in 36m09s. This is only
+16.86% improvement and does not meet performance acceptance. Phase 4's
+5m41s execution was parallel, and its final decision took 7s. The final
+third iteration selects six standard shards with the latest complete JUnit
+observations and one validated count/matrix output for all aggregation.
+No gate, threshold, required aggregate name, runner type or policy is changed.
+
+Iteration 3 first validation / CI #540 took 23m26s but FAIL: two pre-existing
+CI assertions in PhaseDOpenApiSnapshotTest and Sprint4ReliabilityDxTest still
+required literal four-shard configuration. Only those CI-contract assertions
+are corrected to require the dynamic matrix and shared validated count, with
+an added binding assertion in each file. All business tests/assertions remain.
+The six-shard workflow, timings and execution design are frozen; this is
+completion/revalidation of iteration 3, not another optimization experiment.
+All 50 affected helper/readiness/feature tests PASS (568 assertions); Pint,
+YAML, whitespace and no stale four-shard contract matching PASS. Real full
+revalidation is pending. The failed attempt remains visible in the evidence.

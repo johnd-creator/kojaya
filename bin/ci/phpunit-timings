@@ -1,0 +1,128 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Load immutable runtime weights. Missing history uses the static estimator;
+ * malformed history aborts rather than silently changing the partition.
+ *
+ * @return array<string, mixed>
+ */
+function loadPhpunitTimings(string $path): array
+{
+    if (! is_file($path)) {
+        throw new RuntimeException('Timing manifest is missing: '.$path);
+    }
+
+    $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+    if (! is_array($data) || ($data['version'] ?? null) !== 1
+        || ! is_int($data['fallback_ms_per_weight'] ?? null) || $data['fallback_ms_per_weight'] < 1
+        || ! is_array($data['files'] ?? null) || $data['files'] === []) {
+        throw new RuntimeException('Invalid timing manifest header.');
+    }
+
+    foreach ($data['files'] as $file => $entry) {
+        if (! is_string($file) || preg_match('#\Atests/(?:Feature|Unit)/[A-Za-z0-9_/]+Test\.php\z#D', $file) !== 1
+            || ! is_array($entry) || ! is_int($entry['milliseconds'] ?? null) || $entry['milliseconds'] < 1
+            || ! is_int($entry['cases'] ?? null) || $entry['cases'] < 1
+            || ! is_string($entry['sha256'] ?? null) || preg_match('/\A[0-9a-f]{64}\z/D', $entry['sha256']) !== 1) {
+            throw new RuntimeException('Invalid timing entry.');
+        }
+    }
+
+    return $data;
+}
+
+/**
+ * Aggregate testcase durations, including setup/teardown, once per source file.
+ * JUnit files must contain successful, disjoint, complete canonical execution.
+ *
+ * @param  list<string>  $reports
+ * @param  list<string>  $canonical
+ * @return array<string, mixed>
+ */
+function buildPhpunitTimings(array $reports, array $canonical, string $root, string $source): array
+{
+    $files = [];
+    $seen = [];
+    foreach ($reports as $report) {
+        $document = new DOMDocument;
+        $previousErrors = libxml_use_internal_errors(true);
+        try {
+            $loaded = $document->load($report, LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousErrors);
+        }
+        if (! $loaded || $document->doctype !== null) {
+            throw new RuntimeException('Invalid JUnit report.');
+        }
+        $xpath = new DOMXPath($document);
+        if ($xpath->query('//error|//failure|//skipped|//testsuite[@errors>0 or @failures>0 or @skipped>0]')->length > 0) {
+            throw new RuntimeException('Timing inputs must be successful zero-skip reports.');
+        }
+        foreach ($xpath->query('//testcase') as $case) {
+            $path = str_replace('\\', '/', $case->getAttribute('file'));
+            if ($path === '') {
+                $path = str_replace('\\', '/', $case->parentNode->getAttribute('file'));
+            }
+            if (str_contains($path, '/tests/')) {
+                $path = 'tests/'.explode('/tests/', $path, 2)[1];
+            }
+            if (! in_array($path, $canonical, true)) {
+                throw new RuntimeException('JUnit file is outside the canonical partition: '.$path);
+            }
+            $seconds = $case->getAttribute('time');
+            if (! is_numeric($seconds) || ! is_finite((float) $seconds) || (float) $seconds < 0) {
+                throw new RuntimeException('Invalid testcase timing.');
+            }
+            $key = $path.'|'.$case->getAttribute('class').'|'.$case->getAttribute('classname').'|'.$case->getAttribute('name');
+            if (isset($seen[$key])) {
+                throw new RuntimeException('Duplicate testcase in timing reports.');
+            }
+            $seen[$key] = true;
+            $files[$path] ??= ['milliseconds' => 0, 'cases' => 0, 'sha256' => hash_file('sha256', $root.'/'.$path)];
+            $files[$path]['milliseconds'] += max(1, (int) round((float) $seconds * 1000));
+            $files[$path]['cases']++;
+        }
+    }
+    if (array_diff($canonical, array_keys($files)) !== [] || $files === []) {
+        throw new RuntimeException('Timing reports are missing canonical test files.');
+    }
+    ksort($files);
+    $ratios = [];
+    foreach ($files as $path => $entry) {
+        $ratios[] = $entry['milliseconds'] / calculateFileWeight($root.'/'.$path)['weight'];
+    }
+    sort($ratios);
+
+    return [
+        'version' => 1,
+        'source' => $source,
+        'fallback_ms_per_weight' => max(1, (int) ceil($ratios[(int) floor((count($ratios) - 1) * 0.9)])),
+        'files' => $files,
+    ];
+}
+
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    define('PHPUNIT_SHARD_TESTING', true);
+    require_once __DIR__.'/phpunit-shard';
+    try {
+        if (count($argv) < 4) {
+            throw new RuntimeException('Usage: php bin/ci/phpunit-timings <output.json> <source-label> <junit.xml> [...]');
+        }
+        $root = dirname(__DIR__, 2);
+        $canonical = getCanonicalTestFiles($root, getExcludedFiles($root.'/phpunit.xml', $root));
+        $data = buildPhpunitTimings(array_slice($argv, 3), $canonical, $root, $argv[2]);
+        if ($argv[1] === '-') {
+            echo 'TIMING_MANIFEST_JSON='.json_encode($data, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL;
+        } else {
+            file_put_contents($argv[1], json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL);
+        }
+        echo 'Timing manifest generated for '.count($data['files']).' canonical files.'.PHP_EOL;
+    } catch (Throwable $exception) {
+        fwrite(STDERR, '[FAIL-CLOSED] '.$exception->getMessage().PHP_EOL);
+        exit(1);
+    }
+}

@@ -44,6 +44,7 @@ class DeploymentRuntimePermissions
             }
             [$metadata, $relative] = explode("\t", $entry, 2);
             if (preg_match('#\A(?:app|bootstrap|config|database|lang|public|resources|routes|bin)/#', $relative) !== 1
+                && preg_match('#\Adocs/user-guide/.+\.md\z#', $relative) !== 1
                 && ! in_array($relative, ['artisan', 'composer.json', 'composer.lock'], true)) {
                 continue;
             }

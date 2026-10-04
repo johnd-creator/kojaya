@@ -565,6 +565,16 @@ class OpenApiGenerator
                     'total' => ['type' => 'integer'],
                 ],
             ],
+            'PaginatedResourceResponse' => [
+                'type' => 'object',
+                'required' => ['data', 'links', 'meta', 'success'],
+                'properties' => [
+                    'data' => ['type' => 'array', 'items' => ['type' => 'object']],
+                    'links' => ['$ref' => '#/components/schemas/ApiPaginationLinks'],
+                    'meta' => ['$ref' => '#/components/schemas/ApiPaginationMeta'],
+                    'success' => ['type' => 'boolean', 'example' => true],
+                ],
+            ],
             'MemberStoreAccountResource' => [
                 'type' => 'object',
                 'required' => [
@@ -879,6 +889,10 @@ class OpenApiGenerator
             $method === 'get' && $uri === 'api/v1/dues/invoices' => ['$ref' => '#/components/schemas/PaginatedMemberInvoiceResponse'],
             $method === 'post' && $uri === 'api/v1/dues/payments/batch' => ['$ref' => '#/components/schemas/BatchCooperativePaymentResponse'],
             $method === 'post' && in_array($uri, ['api/v1/dues/payments', 'api/v1/dues/payments/{payment}/approve'], true) => ['$ref' => '#/components/schemas/CooperativePaymentResponse'],
+            $method === 'get' && $uri === 'api/v1/member/savings/ledger' => ['$ref' => '#/components/schemas/PaginatedResponse'],
+            $method === 'get' && $uri === 'api/v1/member/dues/invoices' => ['$ref' => '#/components/schemas/PaginatedMemberInvoiceResponse'],
+            $method === 'get' && $uri === 'api/v1/member/loans' => ['$ref' => '#/components/schemas/PaginatedLoanResponse'],
+            $method === 'get' && in_array($uri, ['api/v1/member/payments', 'api/v1/member/notifications'], true) => ['$ref' => '#/components/schemas/PaginatedResourceResponse'],
             $method === 'get' && $uri === 'api/v1/member/store-account/summary' => ['$ref' => '#/components/schemas/MemberStoreAccountSummaryResponse'],
             $method === 'get' && $uri === 'api/v1/member/store-account/ledger' => ['$ref' => '#/components/schemas/PaginatedMemberStoreLedgerResponse'],
             default => null,

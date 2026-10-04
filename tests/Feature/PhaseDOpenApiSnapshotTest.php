@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\CooperativeMember;
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class PhaseDOpenApiSnapshotTest extends TestCase
@@ -92,6 +96,41 @@ class PhaseDOpenApiSnapshotTest extends TestCase
         $schemas = $spec['components']['schemas'] ?? [];
 
         $this->assertArrayHasKey('PaginatedResponse', $schemas, 'PaginatedResponse schema missing from OpenAPI spec.');
+    }
+
+    public function test_member_paginated_response_schemas_match_real_empty_http_responses(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'employee_id' => null,
+        ]);
+        Sanctum::actingAs($user, ['member:read']);
+        $spec = $this->getJson('/api/openapi.json')->assertOk()->json();
+        $schema = $spec['components']['schemas']['PaginatedResponse'];
+        $this->assertSame('array', $schema['properties']['data']['type']);
+
+        foreach ([
+            '/api/v1/member/savings/ledger' => 'PaginatedResponse',
+            '/api/v1/member/dues/invoices' => 'PaginatedMemberInvoiceResponse',
+            '/api/v1/member/payments' => 'PaginatedResourceResponse',
+            '/api/v1/member/loans' => 'PaginatedLoanResponse',
+            '/api/v1/member/notifications' => 'PaginatedResourceResponse',
+        ] as $path => $schemaName) {
+            $this->assertSame(
+                '#/components/schemas/'.$schemaName,
+                $spec['paths'][$path]['get']['responses']['200']['content']['application/json']['schema']['$ref'],
+                $path,
+            );
+            $response = $this->getJson($path)->assertOk()->assertJsonPath('success', true);
+            $this->assertSame([], $response->json('data'), $path);
+            foreach (['current_page', 'last_page', 'per_page', 'total'] as $field) {
+                $prefix = $schemaName === 'PaginatedResponse' ? '' : 'meta.';
+                $this->assertIsInt($response->json($prefix.$field), $path.' '.$field);
+            }
+        }
     }
 
     public function test_openapi_spec_error_schema_exists(): void

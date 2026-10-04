@@ -108,8 +108,9 @@ class Sprint4ReliabilityDxTest extends TestCase
         $workflow = file_get_contents(base_path('.github/workflows/ci.yml'));
 
         $this->assertStringContainsString('bin/openapi.sh check', $workflow);
-        $this->assertStringContainsString('shard: [1, 2, 3, 4]', $workflow);
-        $this->assertStringContainsString('php bin/ci/phpunit-shard verify --total=4', $workflow);
+        $this->assertStringContainsString('shard: ${{ fromJSON(needs.changes.outputs.shard_matrix) }}', $workflow);
+        $this->assertStringContainsString('php bin/ci/phpunit-shard verify --total=${{ needs.changes.outputs.shard_count }}', $workflow);
+        $this->assertStringContainsString('shard_count: ${{ steps.shards.outputs.shard_count }}', $workflow);
         $this->assertStringContainsString('php artisan test --compact --parallel --configuration=phpunit.shard.xml', $workflow);
         $this->assertStringContainsString('coverage: xdebug', $workflow);
         $this->assertStringContainsString('phpunit-aggregate', $workflow);

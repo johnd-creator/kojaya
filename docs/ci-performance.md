@@ -72,9 +72,17 @@ unbounded counts fail closed. The existing `PHPUnit Parallel` and final
 | --- | --- | --- | --- | --- |
 | 1: calibrated estimate, four shards | [#538](https://github.com/johnd-creator/kojaya/actions/runs/37161183209) | 32m12s | 15m14s / 25m42s / 17m25s / 30m05s | FAIL: Phase 4 input equivalence; PHPUnit PASS |
 | 2: measured weights/order, four shards | [#539](https://github.com/johnd-creator/kojaya/actions/runs/37163301328) | 36m09s | 31m12s / 30m43s / 33m25s / 20m33s | All 16 jobs PASS; only 16.86% improvement, target unmet |
-| 3: latest complete measurements, six shards | pending | pending | pending | No acceptance claim until completed |
+| 3a: six-shard validation | [#540](https://github.com/johnd-creator/kojaya/actions/runs/37165618347) | 23m26s | 18m09s / 21m49s / 20m28s / 10m38s / 20m36s / 10m30s | FAIL: two CI contract tests still asserted literal four-shard configuration |
+| 3b: same six-shard design, corrected CI contracts | pending | pending | pending | Full revalidation pending |
 
-Both earlier runs remain in the evidence; no favorable run is cherry-picked.
+Every attempt remains in the evidence; no favorable run is cherry-picked.
+Attempt 3a failed only the stale CI assertion blocks in PhaseDOpenApiSnapshotTest
+and Sprint4ReliabilityDxTest. Those exact assertions now require the dynamic
+matrix and the same validated count output, with one extra output-binding
+assertion per file. All original business assertions and test method IDs stay
+intact. This is completion of iteration 3, not a fourth optimization design;
+workflow, shard count, manifest and execution strategy are frozen.
+The failed 23m26s run cannot qualify as acceptance.
 Iteration 2 passed 3,442 tests / 28,347 assertions, zero errors/failures/skips,
 81.40% coverage. Phase 4 execution took 5m41s in parallel; final readiness
 only 7 seconds. Its UI/a11y audit passed 105 checks. Generated Drift took
@@ -157,7 +165,8 @@ Pint uses its existing two-process option and still checks the whole repository.
 
 Iterations 1 and 2 are fully recorded above. The third and final optimization
 iteration uses six shards, the newest complete timing observations, unchanged
-four-worker execution and dynamic aggregate counts. Local validation and the
-real full run will be recorded before any PASS claim or merge. The maximum is
+four-worker execution and dynamic aggregate counts. Local validation passes 50 tests / 568 assertions across CI helpers, readiness
+and both complete corrected feature test files. Full revalidation is required
+before any PASS claim or merge. The maximum is
 three code optimization iterations. QA candidate, deployment and data remain
 unchanged; Bundle B is NOT EXECUTED.

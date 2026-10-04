@@ -1841,3 +1841,14 @@ zero skips/errors/failures, and 81.40% coverage in 36m09s. This is only
 third iteration selects six standard shards with the latest complete JUnit
 observations and one validated count/matrix output for all aggregation.
 No gate, threshold, required aggregate name, runner type or policy is changed.
+
+Iteration 3 first validation / CI #540 took 23m26s but FAIL: two pre-existing
+CI assertions in PhaseDOpenApiSnapshotTest and Sprint4ReliabilityDxTest still
+required literal four-shard configuration. Only those CI-contract assertions
+are corrected to require the dynamic matrix and shared validated count, with
+an added binding assertion in each file. All business tests/assertions remain.
+The six-shard workflow, timings and execution design are frozen; this is
+completion/revalidation of iteration 3, not another optimization experiment.
+All 50 affected helper/readiness/feature tests PASS (568 assertions); Pint,
+YAML, whitespace and no stale four-shard contract matching PASS. Real full
+revalidation is pending. The failed attempt remains visible in the evidence.

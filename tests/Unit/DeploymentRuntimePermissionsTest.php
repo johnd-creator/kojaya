@@ -42,6 +42,32 @@ class DeploymentRuntimePermissionsTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_tracked_user_guide_articles_are_readable_without_exposing_other_documentation(): void
+    {
+        mkdir($this->directory.'/docs/user-guide', 0700, true);
+        file_put_contents($this->directory.'/docs/user-guide/role-responsibility-matrix.md', '# Runtime role guide');
+        file_put_contents($this->directory.'/docs/private-evidence.md', 'private operational evidence');
+        file_put_contents($this->directory.'/docs/user-guide/private-credential', 'private tracked non-article artifact');
+        chmod($this->directory.'/docs/private-evidence.md', 0600);
+        chmod($this->directory.'/docs/user-guide/private-credential', 0600);
+        $this->command(['git', 'add', 'docs/user-guide/role-responsibility-matrix.md', 'docs/private-evidence.md', 'docs/user-guide/private-credential']);
+        $this->command(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'runtime documentation fixture']);
+        unlink($this->directory.'/docs/user-guide/role-responsibility-matrix.md');
+        $this->command(['bash', '-c', 'umask 077; git checkout -- docs/user-guide/role-responsibility-matrix.md']);
+        $this->assertMode('docs/user-guide/role-responsibility-matrix.md', 0600);
+
+        (new DeploymentRuntimePermissions)->apply($this->directory, filegroup($this->directory.'/.env'));
+
+        $this->assertMode('docs', 0755);
+        $this->assertMode('docs/user-guide', 0755);
+        $this->assertMode('docs/user-guide/role-responsibility-matrix.md', 0644);
+        $this->assertMode('docs/private-evidence.md', 0600);
+        $this->assertMode('docs/user-guide/private-credential', 0600);
+        $this->assertMode('.env', 0640);
+        $this->assertMode('storage/app/private/backups/database/evidence.dump', 0600);
+        $this->assertSame('# Runtime role guide', file_get_contents($this->directory.'/docs/user-guide/role-responsibility-matrix.md'));
+    }
+
     public function test_real_restrictive_git_checkout_and_generated_files_become_runtime_accessible_without_exposing_private_artifacts(): void
     {
         $this->assertMode('bootstrap/app.php', 0600);

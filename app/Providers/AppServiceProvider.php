@@ -82,6 +82,7 @@ use App\Services\Integrations\MidtransPaymentProvider;
 use App\Services\Integrations\PaymentGatewayProvider;
 use App\Services\Security\PiiCryptoService;
 use App\Support\DatabaseMigrationSafety;
+use App\Support\QaRuntimeFileCreationMask;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -120,6 +121,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        QaRuntimeFileCreationMask::apply((string) $this->app->environment(), PHP_SAPI);
         $this->configureDefaults();
         $this->configureUiAuditClock();
         $this->registerPolicies();

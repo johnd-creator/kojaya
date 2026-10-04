@@ -1833,3 +1833,11 @@ errors/failures/skips and 81.40% coverage; full workflow FAIL at 32m12s.
 Iteration 2 replaces the estimate with measured source-bound JUnit worker
 timings, retains four runners and four existing ParaTest workers, and preserves
 heavy-first file order within each shard. Affected regressions PASS (33/300).
+
+Iteration 2 full CI #539 passed all 16 jobs, 3442 tests / 28347 assertions,
+zero skips/errors/failures, and 81.40% coverage in 36m09s. This is only
+16.86% improvement and does not meet performance acceptance. Phase 4's
+5m41s execution was parallel, and its final decision took 7s. The final
+third iteration selects six standard shards with the latest complete JUnit
+observations and one validated count/matrix output for all aggregation.
+No gate, threshold, required aggregate name, runner type or policy is changed.

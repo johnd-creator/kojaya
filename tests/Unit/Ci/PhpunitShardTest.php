@@ -5,6 +5,7 @@ namespace Tests\Unit\Ci;
 use Illuminate\Filesystem\Filesystem;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Symfony\Component\Process\Process;
 
 if (! defined('PHPUNIT_SHARD_TESTING')) {
     define('PHPUNIT_SHARD_TESTING', true);
@@ -49,6 +50,22 @@ class PhpunitShardTest extends TestCase
             $this->assertCount(count($files), array_unique($assigned));
             $this->assertSame(10000, array_sum(array_column($first, 'weight')));
             $this->assertSame('tests/Unit/NewTest.php', $first[1]['files'][0], 'The heaviest file must reach the ParaTest queue first.');
+        }
+    }
+
+    public function test_matrix_outputs_use_the_selected_count_and_reject_malformed_counts(): void
+    {
+        $script = dirname(__DIR__, 3).'/bin/ci/phpunit-shard';
+        foreach ([2, 4, 5, 6] as $count) {
+            $process = new Process([PHP_BINARY, $script, 'matrix', '--total='.$count]);
+            $process->mustRun();
+            $this->assertSame('shard_count='.$count.PHP_EOL.'shard_matrix='.json_encode(range(1, $count)).PHP_EOL, $process->getOutput());
+        }
+        foreach (['', '0', '-1', 'malformed', '6x', '17', true] as $count) {
+            $process = new Process([PHP_BINARY, $script, 'matrix', $count === true ? '--total' : '--total='.$count]);
+            $process->run();
+            $this->assertSame(1, $process->getExitCode());
+            $this->assertStringContainsString('FAIL-CLOSED', $process->getErrorOutput());
         }
     }
 

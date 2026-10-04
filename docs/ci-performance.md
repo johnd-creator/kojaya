@@ -47,37 +47,58 @@ the successful full CI baselines remain authoritative.
 
 ## Execution design and trust boundaries
 
-Four runner shards remain, with the existing four ParaTest workers per shard.
-Deterministic greedy LPT uses a committed JUnit timing manifest, source hashes
-and conservative static fallback for new or changed files. Invalid/missing
-manifests fail closed. The original bootstrap manifest was explicitly an
-estimate; iteration 2 replaces it with all 305 files measured by successful
-PHPUnit shards in CI #538. That workflow failed Phase 4 input equivalence and
-is not an acceptance run. JUnit sums are worker time across parallel processes,
-not wall time; the original parallel command/process count remains unchanged.
+Final iteration selects six standard runner shards, retaining the existing four
+ParaTest workers per runner. Deterministic greedy LPT uses a committed JUnit
+manifest with source hashes and conservative static fallback for new or changed
+files. Invalid/missing manifests fail closed. The original bootstrap manifest
+was labelled an estimate. Final weights are the complete 305-file observations
+from successful full validation CI #539; its wall time missed performance
+acceptance. JUnit sums are parallel worker time, not runner wall time.
 
-Within each measured shard, generated XML preserves descending runtime order
-with path ties, so expensive files reach ParaTest's queue first. Previously
-alphabetical execution could leave a heavy file late in the worker queue.
-Static-only helper use retains its original alphabetical output. There is no
-random order, mutable cache or external timing service. The collector rejects
-failed/skipped/duplicate/malformed/incomplete JUnit reports. Changed CI test
-files keep their original recorded hashes and safely use static fallback.
+Generated XML preserves descending runtime order with path ties, so expensive
+files reach ParaTest's existing queue first. Static-only helper use retains
+alphabetical output. No random order, mutable runtime cache or external timing
+service chooses partitions. The collector rejects failed/skipped/duplicate/
+malformed/incomplete reports. Changed CI files retain their recorded hashes
+and receive conservative fallback until measured again.
 
-Pilot shard jobs were 15m14s / 25m42s / 17m25s / 30m05s. PHPUnit aggregation
-passed 3,442 tests / 28,340 assertions, zero errors/failures/skips, 81.40%
-coverage. The full failed workflow took 32m12s and is retained as evidence.
-Measured LPT totals are almost equal at about 4.85 million worker milliseconds
-per runner; five/six shards also balance but introduce extra runner/setup/
-artifact cost. Four plus heavy-first worker scheduling is selected for the
-next controlled full measurement before spending more runner capacity.
+`PHPUNIT_SHARD_COUNT` is the only workflow count setting. The classifier emits
+validated count/matrix outputs; `fromJSON` creates the matrix and every MECE,
+configuration and aggregation command uses that same output. Empty/malformed/
+unbounded counts fail closed. The existing `PHPUnit Parallel` and final
+`Phase 4 Readiness Gate` required check names are retained.
 
-The largest measured worker-time files are SEED-09 SeedIntegrityGateTest
-(851.666s), RoleSmokeTest (566.015s), CooperativeResetTestDataCommandTest
-(546.182s), SensitiveEmployeeFileStorageTest (541.400s), and
-ErpPayrollOrganizationIsolationTest (516.674s). These contain repeated
-application/database fixture setup; their validations remain intact. Values
-are JUnit worker time, not observed runner duration.
+| Optimization iteration | Full run | Wall | Shard jobs | Result |
+| --- | --- | --- | --- | --- |
+| 1: calibrated estimate, four shards | [#538](https://github.com/johnd-creator/kojaya/actions/runs/37161183209) | 32m12s | 15m14s / 25m42s / 17m25s / 30m05s | FAIL: Phase 4 input equivalence; PHPUnit PASS |
+| 2: measured weights/order, four shards | [#539](https://github.com/johnd-creator/kojaya/actions/runs/37163301328) | 36m09s | 31m12s / 30m43s / 33m25s / 20m33s | All 16 jobs PASS; only 16.86% improvement, target unmet |
+| 3: latest complete measurements, six shards | pending | pending | pending | No acceptance claim until completed |
+
+Both earlier runs remain in the evidence; no favorable run is cherry-picked.
+Iteration 2 passed 3,442 tests / 28,347 assertions, zero errors/failures/skips,
+81.40% coverage. Phase 4 execution took 5m41s in parallel; final readiness
+only 7 seconds. Its UI/a11y audit passed 105 checks. Generated Drift took
+26 seconds versus 66 baseline; whole-repository Pint 45 versus 447 seconds.
+
+The latest corpus totals 27,275,148 worker milliseconds. Modelling the existing
+four-worker queues gives longest estimated execution of 28m35s with four
+shards, 22m52s with five, and 22m04s with six. These estimates exclude startup,
+transfer, merge and runner variance and are not measured acceptance. Six adds
+headroom for peer-runner variance; marginal improvement over five is bounded
+by the largest indivisible file. Additional setup is two short ~20-second
+runner preparations and two artifact transfers, which run concurrently.
+Full job count becomes 18, within the documented standard Free-plan ceiling
+of 20 concurrent jobs; actual account-wide queueing remains part of wall time.
+No plan, policy, runner type or paid infrastructure changes. Reference:
+[GitHub Actions limits](https://docs.github.com/en/actions/reference/limits).
+
+The largest latest measured worker-time files are SEED-09 SeedIntegrityGateTest
+(1,323.857s), PosTransactionVoidOrganizationIsolationTest (852.826s),
+CooperativeReportsOrganizationIsolationTest (796.155s), CooperativeFeatureTest
+(780.288s), and CooperativeResetTestDataCommandTest (765.437s). These contain
+repeated application/database fixture work, and all validations remain intact.
+The observed corpus increased ~41% between runs, so forecasts remain uncertain
+and the final full measurement decides acceptance.
 
 MECE covers every canonical file once. The existing aggregate merges raw
 Xdebug coverage, enforces zero skips/failures/errors, >=2,211 tests and >=60%
@@ -121,10 +142,12 @@ Pint uses its existing two-process option and still checks the whole repository.
   no QA/shared DB used. A temporary extracted SQLite extension is local only.
 - `php artisan test --compact tests/Unit/Ci tests/Feature/Phase4ReadinessGateTest.php`:
   33 tests / 293 assertions PASS initially; the retained-build refinement
-  passes 33 tests / 300 assertions, including heavy-first ordering; no warnings, failures or skips.
-- `php bin/ci/phpunit-shard verify --total=4`: 305 canonical files assigned,
+  passes 33 tests / 300 assertions, including heavy-first ordering. The
+  six-shard count refinement passes 34 tests / 324 assertions; no warnings, failures or skips.
+- `php bin/ci/phpunit-shard verify --total=4`: 305 canonical files assigned with both four and six shards,
   zero missing/duplicates. Helper regressions also cover 2/4/5/6 partitions.
-- Before/after PHPUnit catalog: 3,427 -> 3,442 IDs, missing zero, duplicates zero.
+- Before/after PHPUnit catalog: 3,427 -> 3,442 IDs initially, then 3,443
+  with matrix validation; missing zero, duplicates zero.
 - `vendor/bin/pint --dirty --format agent` and explicit PHP CI helper formatting:
   PASS. YAML parse and `git diff --check`: PASS.
 - Source-bound frontend create/verify-generated: PASS; tampering/wrong SHA,
@@ -132,11 +155,9 @@ Pint uses its existing two-process option and still checks the whole repository.
 
 ## Performance validation status
 
-Iteration 1 full CI #538 completed FAIL in 32m12s; Phase 4 failed closed at the
-frontend input-equivalence check. This pilot cannot qualify as PASS. The
-Playwright-specific build is restored for iteration 2. Estimated balance is not a
-performance acceptance claim. Iteration 2 aims at approximately 23–27 minutes
-with measured weights and heavy-first worker scheduling; actual JUnit timings will drive the
-next refinement within the maximum three iterations. No success will be
-claimed until all mandatory full jobs finish and measured improvement reaches
-at least 20%. Final results and exact control identity will be appended here.
+Iterations 1 and 2 are fully recorded above. The third and final optimization
+iteration uses six shards, the newest complete timing observations, unchanged
+four-worker execution and dynamic aggregate counts. Local validation and the
+real full run will be recorded before any PASS claim or merge. The maximum is
+three code optimization iterations. QA candidate, deployment and data remain
+unchanged; Bundle B is NOT EXECUTED.

@@ -48,7 +48,13 @@ class CiWorkflowTest extends TestCase
         $this->assertCount(12, $jobs['phase4-readiness']['needs']);
         $this->assertSame('PHPUnit Parallel', $jobs['unit-feature-tests']['name']);
         $this->assertFalse($jobs['phpunit-shard']['strategy']['fail-fast']);
-        $this->assertSame([1, 2, 3, 4], $jobs['phpunit-shard']['strategy']['matrix']['shard']);
+        $this->assertSame('6', $workflow['env']['PHPUNIT_SHARD_COUNT']);
+        $this->assertSame('${{ fromJSON(needs.changes.outputs.shard_matrix) }}', $jobs['phpunit-shard']['strategy']['matrix']['shard']);
+        $this->assertSame('${{ steps.shards.outputs.shard_count }}', $jobs['changes']['outputs']['shard_count']);
+        foreach (['phpunit-shard', 'unit-feature-tests', 'phase4-execution'] as $job) {
+            $this->assertStringContainsString('--total=${{ needs.changes.outputs.shard_count }}', implode('\n', array_column($jobs[$job]['steps'], 'run')));
+        }
+        $this->assertStringNotContainsString('--total=4', file_get_contents($this->root().'/.github/workflows/ci.yml'));
         $commands = implode('\n', array_column($jobs['unit-feature-tests']['steps'], 'run'));
         $this->assertStringContainsString('--min-coverage=60 --min-tests=2211', $commands);
         $this->assertStringNotContainsString('continue-on-error', file_get_contents($this->root().'/.github/workflows/ci.yml'));

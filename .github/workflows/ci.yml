@@ -12,6 +12,7 @@ permissions:
 
 env:
   APP_ENV: testing
+  PHPUNIT_SHARD_COUNT: '6'
 
 jobs:
   changes:
@@ -19,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docs_only: ${{ steps.classify.outputs.docs_only }}
+      shard_count: ${{ steps.shards.outputs.shard_count }}
+      shard_matrix: ${{ steps.shards.outputs.shard_matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,6 +39,10 @@ jobs:
           set -euo pipefail
           docs_only="$(bash bin/ci/classify-changes)"
           printf 'docs_only=%s\n' "$docs_only" >> "$GITHUB_OUTPUT"
+
+      - name: Configure validated deterministic shard matrix
+        id: shards
+        run: php bin/ci/phpunit-shard matrix --total="$PHPUNIT_SHARD_COUNT" >> "$GITHUB_OUTPUT"
 
   dependency-audit:
     name: Dependency Audit
@@ -199,14 +206,14 @@ jobs:
         run: php bin/ci/frontend-artifact verify public/build
 
   phpunit-shard:
-    name: PHPUnit Shard (${{ matrix.shard }}/4)
+    name: PHPUnit Shard (${{ matrix.shard }}/${{ needs.changes.outputs.shard_count }})
     needs: [changes, frontend-build]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.changes.outputs.shard_matrix) }}
     steps:
       - name: Fail closed when change classification fails
         if: needs.changes.result != 'success'
@@ -248,17 +255,17 @@ jobs:
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
       - name: Verify shard partition integrity
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: php bin/ci/phpunit-shard verify --total=4
+        run: php bin/ci/phpunit-shard verify --total=${{ needs.changes.outputs.shard_count }}
       - name: Generate shard configuration
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: >-
           php bin/ci/phpunit-shard generate-config
           --shard=${{ matrix.shard }}
-          --total=4
+          --total=${{ needs.changes.outputs.shard_count }}
           --output=phpunit.shard.xml
           --coverage-file=build/artifacts/shard-${{ matrix.shard }}.cov
           --junit-file=build/artifacts/shard-${{ matrix.shard }}.xml
-      - name: Run PHPUnit Shard ${{ matrix.shard }}/4
+      - name: Run PHPUnit Shard ${{ matrix.shard }}/${{ needs.changes.outputs.shard_count }}
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: php artisan test --compact --parallel --configuration=phpunit.shard.xml
         env:
@@ -313,7 +320,7 @@ jobs:
           merge-multiple: true
       - name: Aggregate Shard Results & Enforce Quality Gates
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
-        run: php bin/ci/phpunit-aggregate --total=4 --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
+        run: php bin/ci/phpunit-aggregate --total=${{ needs.changes.outputs.shard_count }} --artifacts-dir=build/artifacts --min-coverage=60 --min-tests=2211
       - name: Publish controlled per-file runtime measurements
         if: needs.changes.result == 'success' && needs.changes.outputs.docs_only != 'true'
         run: php bin/ci/phpunit-timings - "$GITHUB_SHA" build/artifacts/shard-*.xml
@@ -583,10 +590,10 @@ jobs:
           tests/Feature/ProductionReadinessP0P2Test.php
           tests/Feature/PhaseDProductionSmokeTest.php
 
-      - name: Verify all four PHPUnit shards remain MECE
+      - name: Verify all selected PHPUnit shards remain MECE
         if: needs.changes.outputs.docs_only != 'true'
         id: shard-mece
-        run: php bin/ci/phpunit-shard verify --total=4
+        run: php bin/ci/phpunit-shard verify --total=${{ needs.changes.outputs.shard_count }}
 
       - name: Verify OpenAPI contract drift
         if: needs.changes.outputs.docs_only != 'true'

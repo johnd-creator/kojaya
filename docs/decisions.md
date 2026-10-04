@@ -1711,6 +1711,8 @@ LPT now supports source-controlled runtime weights with content-hash binding,
 new/changed-file static fallback, controlled successful JUnit collection,
 and deterministic heavy-first file order in the existing ParaTest worker queue.
 Bootstrap estimates are labelled; measured full CI determines acceptance.
+Final iteration uses six shards from one validated matrix/count output shared
+by partition checks, configuration and coverage aggregation.
 Public frontend artifacts are source/digest bound. Playwright retains its
 distinct environment-specific build after the pilot rejected input equivalence. Whole-repository Pint uses its
 existing parallel option. CI/control changes never repromote or redeploy the

@@ -28,6 +28,7 @@ Commands:
   list               List test files assigned to a specific shard.
   generate-config    Generate a PHPUnit XML configuration file for a specific shard.
   summary            Print test file count and estimated weight distribution across shards.
+  matrix             Emit validated GitHub count/matrix outputs without loading test history.
 
 Options:
   --total=<int>            Total number of shards (default: 4).
@@ -263,6 +264,18 @@ function runShardCli(array $argv, string $root): void
     if ($command === null || in_array($command, ['help', '-h', '--help'], true)) {
         printShardHelp();
         exit(0);
+    }
+
+    if ($command === 'matrix') {
+        $count = (string) $options['total'];
+        if (is_bool($options['total']) || preg_match('/\A[1-9][0-9]*\z/D', $count) !== 1 || (int) $count > 16) {
+            fwrite(STDERR, '[FAIL-CLOSED] Invalid bounded shard count.'.PHP_EOL);
+            exit(1);
+        }
+        echo 'shard_count='.$count.PHP_EOL;
+        echo 'shard_matrix='.json_encode(range(1, (int) $count), JSON_THROW_ON_ERROR).PHP_EOL;
+
+        return;
     }
 
     $totalShards = max(1, (int) $options['total']);

@@ -76,12 +76,20 @@ PHPUnit memakai konfigurasi repository: `APP_ENV=testing`, `DB_CONNECTION=sqlite
 - Frontend build: **PASS**; satu warning CSS optimizer berasal dari selector dokumentasi yang sudah ada.
 - ESLint scoped tiga halaman: **PASS, 0 errors**, delapan warning import/order/unused yang sudah ada.
 - Prettier scoped: **PASS**.
-- UI Chrome headless atas build lokal: **PASS**, viewport 1440×900 dan 390×844. Seluruh HTTP diintersep dengan fixture sintetis; tidak ada backend/server/DB yang diakses. Memeriksa default direct, empat nominal/payload preview, perubahan input membatalkan preview, perpindahan calculated/direct, tidak ada overflow horizontal, dan tidak ada error browser.
+- UI Chrome headless atas build lokal: **PASS**, viewport 1440×900 dan 390×844. Seluruh HTTP diintersep dengan fixture sintetis; tidak ada backend/server/DB yang diakses. Memeriksa default direct, empat nominal/payload preview, perubahan input membatalkan preview, histori calculated dan direct, dialog post/void pada mode direct, perpindahan calculated/direct, tidak ada overflow horizontal, dan tidak ada error browser.
 - Pint dan `git diff --check` wajib PASS pada diff akhir.
 
 Reproduksi UI: `npm run build`, lalu `node --test tests/node/direct-opening-balance-ui.test.mjs` dengan Chrome terpasang. Reproduksi regresi gabungan: PHPUnit konfigurasi default dengan filter `MemberImport|GoogleSso|OpeningBalance|Dues|ContributionsDuesPayments|MemberAccountLink|CooperativeMember|PeriodLock|EmailVerification`, SQLite memory, dan memory_limit=1G.
 
 Boost/codebase-memory MCP dan berkas skill domain tidak tersedia pada sesi ini. Discovery memakai sumber langsung, konvensi sibling, schema migration yang ada, dependensi terpasang, dan dokumentasi resmi; tidak ada dependency yang ditambahkan untuk mengganti tool tersebut.
+
+## Koreksi gate CI dan review visual
+
+CI #562 pada head `7a6b19a62a005abf99c3514386f1ccf9f61d136c` menemukan high dependency advisories pada lockfile baseline, bukan paket yang ditambahkan oleh empat koreksi. Patch closure memperbarui dependency existing Vue dan keluarganya dari 3.5.29 ke 3.5.43 serta source-map-js dari 1.2.1 ke 1.2.2, termasuk patch transitive compiler yang diperlukan. Constraint `package.json` tidak berubah; himpunan path package lock tidak bertambah/berkurang.
+
+Rujukan: [Vue/server-renderer advisory](https://github.com/advisories/GHSA-g2v6-rqmx-r4w6), [source-map-js advisory](https://github.com/advisories/GHSA-68fv-2mgg-jv7q). `npm audit --omit=dev --audit-level=high` lulus sesudah patch; satu advisory moderate qs tetap mengikuti threshold CI yang ada. Build client dan SSR, lint/format scoped, serta UI desktop/mobile diulang dan lulus memakai install terisolasi dari lockfile baru; dependency checkout pengguna tidak diubah.
+
+Audit visual #316 pada head awal menunjukkan lima mismatch screenshot desktop: empat tampilan iuran yang mendapatkan informasi jendela bank dan satu default saldo awal yang beralih ke input langsung. Perubahan visual ini harus diperiksa terhadap actual/diff dan baseline hanya diperbarui untuk tampilan yang memang berubah; baseline unrelated tidak boleh diganti. Histori dan aksi post/void juga diverifikasi tetap terlihat tanpa beralih ke mode calculated.
 
 ## Batas penutupan
 

@@ -9,6 +9,7 @@
 ## 2026-10-06 - QAR-CORRECTION-BUNDLE-01 (Development PC)
 
 - Implemented F004 environment-neutral gated member import, F006 safe Google email verification synchronization, F007 bank collection window (25 through 7) and current-period member catch-up, and F008 direct reconciled opening balances using existing batch/line storage.
+- Mandatory dependency audit required compatible patches of existing Vue/server-renderer and source-map-js packages; package constraints and the package set remain unchanged. Client/SSR build and desktop/mobile UI regression passed with the refreshed lockfile.
 - Owner clarified that the bank executes autodebit; cooperative operators approve confirmed results or collect manually. Existing payment authorization and posting remain; no bank debit provider/job was invented.
 - Targeted regressions and 364 cross-domain tests (2286 assertions) passed on isolated SQLite memory. Local frontend build, scoped checks, and synthetic desktop/mobile browser UI test passed. PostgreSQL concurrency suites remain outside the local default configuration.
 - Evidence: [Phase 6.5 Operational Rehearsal correction bundle](releases/PHASE-6-5-QA-OPERATIONAL-REHEARSAL.md). Separate commits and one PR require green mandatory CI and human review. No merge, QA deployment/runtime change, production change, migration, real payment, or fabricated monthly financial history was executed.

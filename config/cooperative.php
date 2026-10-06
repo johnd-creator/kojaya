@@ -16,7 +16,7 @@ if (! is_string($bootstrapOrganizationName) || trim($bootstrapOrganizationName) 
 return [
     /*
     |--------------------------------------------------------------------------
-    | Member Import Execution Feature Gate (DEV Only)
+    | Member Import Execution Feature Gate
     |--------------------------------------------------------------------------
     |
     | When set to false, actual persistence of member imports (ONB-06) is blocked.

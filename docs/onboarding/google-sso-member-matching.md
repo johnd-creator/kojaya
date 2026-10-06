@@ -1,5 +1,7 @@
 # ONB-07 — Google SSO Member Matching
 
+> Rekonsiliasi QAR-F004: "DEV Member Import" / "DEV Import Execution" adalah nama checkpoint historis ONB-06. Implementasi saat ini memakai istilah Member Import dan gerbang `COOPERATIVE_MEMBER_IMPORT_EXECUTION_ENABLED` pada lingkungan target yang diotorisasi. Impor hanya mempersistensikan anggota PENDING; akun dan transaksi finansial tetap alur terpisah.
+
 Dokumentasi arsitektur dan spesifikasi implementasi untuk penautan identitas Google SSO ke data kanonikal anggota koperasi (`CooperativeMember`) pada Kojaya.
 
 ---

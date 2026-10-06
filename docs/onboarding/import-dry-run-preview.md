@@ -1,5 +1,7 @@
 # Spesifikasi & Implementasi Member Import Dry-Run / Preview (ONB-05)
 
+> Rekonsiliasi QAR-F004: "DEV Member Import" / "DEV Import Execution" adalah nama checkpoint historis ONB-06. Implementasi saat ini memakai istilah Member Import dan gerbang `COOPERATIVE_MEMBER_IMPORT_EXECUTION_ENABLED` pada lingkungan target yang diotorisasi. Impor hanya mempersistensikan anggota PENDING; akun dan transaksi finansial tetap alur terpisah.
+
 Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementasi resmi untuk Member Import Dry-Run / Preview (ONB-05)** pada ekosistem **Kojaya** (`johnd-creator/kojaya`). Modul ini mengorkestrasi alur pratinjau (simulasi *dry-run*) berkas impor anggota berformat CSV kanonikal 12 kolom menggunakan validator resmi [ONB-04 Backend Import Validator](./backend-import-validator.md) tanpa melakukan persistensi basis data maupun penyimpanan berkas permanen.
 
 ---

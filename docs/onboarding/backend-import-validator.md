@@ -1,6 +1,6 @@
 # Spesifikasi & Implementasi Backend Import Validator (ONB-04)
 
-Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementasi resmi untuk Backend Import Validator (ONB-04)** pada ekosistem **Kojaya** (`johnd-creator/kojaya`). Validator ini bertindak sebagai gerbang kanonikal (*canonical gate*) yang bersifat **read-only, deterministik, dan fail-closed** untuk memvalidasi berkas/data impor anggota sebelum tahap simulasi (*dry-run* ONB-05) dan eksekusi persistensi (*staging/DEV import* ONB-06).
+Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementasi resmi untuk Backend Import Validator (ONB-04)** pada ekosistem **Kojaya** (`johnd-creator/kojaya`). Validator ini bertindak sebagai gerbang kanonikal (*canonical gate*) yang bersifat **read-only, deterministik, dan fail-closed** untuk memvalidasi berkas/data impor anggota sebelum tahap simulasi (*dry-run* ONB-05) dan eksekusi persistensi (*member import* ONB-06, dengan gerbang eksekusi lingkungan target).
 
 ---
 

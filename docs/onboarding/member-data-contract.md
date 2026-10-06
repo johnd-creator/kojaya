@@ -1,5 +1,7 @@
 # Kojaya Member Data Contract — Canonical Onboarding Specification (ONB-01 FROZEN)
 
+> Rekonsiliasi QAR-F004: "DEV Member Import" / "DEV Import Execution" adalah nama checkpoint historis ONB-06. Implementasi saat ini memakai istilah Member Import dan gerbang `COOPERATIVE_MEMBER_IMPORT_EXECUTION_ENABLED` pada lingkungan target yang diotorisasi. Impor hanya mempersistensikan anggota PENDING; akun dan transaksi finansial tetap alur terpisah.
+
 Dokumen ini adalah **kontrak data anggota kanonikal (ONB-01 FROZEN)** untuk seluruh ekosistem **Kojaya** (`johnd-creator/kojaya`), yang berfungsi sebagai **Single Source of Truth** bagi seluruh alur Onboarding Anggota (Fase 2):
 
 ```text

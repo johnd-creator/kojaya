@@ -81,6 +81,8 @@ class MemberGoogleSsoMatchingService
                 );
             }
 
+            $this->syncVerifiedEmail($user, $googleUser);
+
             return MemberGoogleSsoMatchResult::successExisting(
                 $user,
                 $existingSocial,
@@ -90,9 +92,7 @@ class MemberGoogleSsoMatchingService
 
         // STEP 2: First-time Google Match (NO existing provider binding)
         $email = (string) $googleUser->getEmail();
-        $isVerified = (bool) (data_get($googleUser->user, 'email_verified')
-            ?? data_get($googleUser->user, 'verified_email')
-            ?? false);
+        $isVerified = $this->reportsVerifiedEmail($googleUser);
 
         if ($email === '' || ! $isVerified) {
             return MemberGoogleSsoMatchResult::failure(
@@ -173,6 +173,38 @@ class MemberGoogleSsoMatchingService
         }
     }
 
+    public function reportsVerifiedEmail(SocialiteUser $googleUser): bool
+    {
+        $value = data_get($googleUser->user, 'email_verified')
+            ?? data_get($googleUser->user, 'verified_email');
+
+        return $value === true || $value === 'true';
+    }
+
+    public function syncVerifiedEmail(User $user, SocialiteUser $googleUser): void
+    {
+        $email = strtolower(trim((string) $googleUser->getEmail()));
+        if ($user->email_verified_at !== null || ! $this->reportsVerifiedEmail($googleUser)
+            || $email === '' || $email !== strtolower(trim((string) $user->email))) {
+            return;
+        }
+
+        $member = $user->cooperativeMember;
+        if ($member && $email !== strtolower(trim((string) $member->email))) {
+            return;
+        }
+
+        if (User::query()->whereRaw('LOWER(TRIM(email)) = ?', [$email])->whereKeyNot($user->id)->exists()
+            || CooperativeMember::query()->whereRaw('LOWER(TRIM(email)) = ?', [$email])
+                ->when($member, fn ($query) => $query->whereKeyNot($member->id))->exists()
+            || SocialAccount::query()->where('provider', GoogleSsoService::PROVIDER)
+                ->whereRaw('LOWER(TRIM(provider_email)) = ?', [$email])->where('user_id', '!=', $user->id)->exists()) {
+            return;
+        }
+
+        $user->forceFill(['email_verified_at' => now()])->save();
+    }
+
     /**
      * Check if member status & validation_status are eligible for SSO identity matching.
      */
@@ -220,6 +252,12 @@ class MemberGoogleSsoMatchingService
                 throw new RuntimeException(self::CODE_MEMBER_USER_CONFLICT);
             }
 
+            if (strtolower(trim((string) $member->email)) !== $normalizedEmail
+                || ! $this->reportsVerifiedEmail($googleUser)
+                || CooperativeMember::query()->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])->whereKeyNot($member->id)->exists()) {
+                throw new RuntimeException(self::CODE_MEMBER_AMBIGUOUS);
+            }
+
             // Recheck provider_id hasn't been claimed concurrently
             if (SocialAccount::query()
                 ->where('provider', GoogleSsoService::PROVIDER)
@@ -230,6 +268,11 @@ class MemberGoogleSsoMatchingService
 
             // Recheck users.email collision
             if (User::query()->whereRaw('LOWER(TRIM(email)) = ?', [$normalizedEmail])->exists()) {
+                throw new RuntimeException(self::CODE_USER_EMAIL_CONFLICT);
+            }
+
+            if (SocialAccount::query()->where('provider', GoogleSsoService::PROVIDER)
+                ->whereRaw('LOWER(TRIM(provider_email)) = ?', [$normalizedEmail])->exists()) {
                 throw new RuntimeException(self::CODE_USER_EMAIL_CONFLICT);
             }
 

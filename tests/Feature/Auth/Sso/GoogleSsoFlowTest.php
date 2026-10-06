@@ -91,7 +91,7 @@ class GoogleSsoFlowTest extends TestCase
             ->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
-        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertNotNull($user->fresh()->email_verified_at);
         $this->assertDatabaseHas('social_accounts', [
             'user_id' => $user->id,
             'provider' => 'google',

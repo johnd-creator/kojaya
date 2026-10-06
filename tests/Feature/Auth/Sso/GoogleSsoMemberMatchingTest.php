@@ -68,7 +68,7 @@ class GoogleSsoMemberMatchingTest extends TestCase
         $response->assertRedirect();
 
         $this->assertAuthenticatedAs($user);
-        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertNotNull($user->fresh()->email_verified_at);
     }
 
     /**
@@ -1103,6 +1103,64 @@ class GoogleSsoMemberMatchingTest extends TestCase
         $this->assertTrue($resultExisting->success);
         $this->assertSame('login_existing', $resultExisting->resultCode);
         $this->assertSame('login_existing', $resultExisting->toArray()['result']);
+    }
+
+    public function test_existing_binding_does_not_verify_member_email_mismatch_or_collision(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'safe@example.test']);
+        $member = CooperativeMember::factory()->create(['user_id' => $user->id, 'email' => 'other@example.test']);
+        SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google', 'provider_id' => 'safe-id']);
+        $service = app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class);
+        $google = $this->fakeSocialiteUser('safe-id', 'safe@example.test', true);
+        $this->assertTrue($service->resolve($google)->success);
+        $this->assertNull($user->fresh()->email_verified_at);
+        $member->update(['email' => $user->email]);
+        CooperativeMember::factory()->create(['email' => $user->email]);
+        $this->assertTrue($service->resolve($google)->success);
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_string_false_is_not_explicit_google_verification(): void
+    {
+        $google = $this->fakeSocialiteUser('false-id', 'false@example.test', true);
+        $google->user['email_verified'] = 'false';
+        $result = app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class)->resolve($google);
+        $this->assertFalse($result->success);
+        $this->assertDatabaseMissing('users', ['email' => 'false@example.test']);
+    }
+
+    public function test_existing_verified_timestamp_is_preserved(): void
+    {
+        $user = User::factory()->create(['email' => 'verified@example.test', 'email_verified_at' => '2026-01-01 12:00:00']);
+        SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google', 'provider_id' => 'verified-id']);
+        app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class)->resolve(
+            $this->fakeSocialiteUser('verified-id', $user->email, true)
+        );
+        $this->assertSame('2026-01-01 12:00:00', $user->fresh()->email_verified_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_existing_binding_syncs_matching_normalized_member_email_and_profile_status(): void
+    {
+        $user = User::factory()->unverified()->create(['email' => 'Match@Example.test']);
+        $member = CooperativeMember::factory()->create(['user_id' => $user->id, 'email' => 'match@example.test']);
+        SocialAccount::factory()->create(['user_id' => $user->id, 'provider' => 'google', 'provider_id' => 'normalized-id']);
+        $google = $this->fakeSocialiteUser('normalized-id', ' match@example.test ', true);
+        $google->user['email_verified'] = 'true';
+        $this->assertTrue(app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class)->resolve($google)->success);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+        $profile = app(\App\Services\Cooperative\MemberProfileCompletenessService::class)->summarize($member->fresh());
+        $this->assertTrue($profile['login']['email_verified']);
+    }
+
+    public function test_first_link_fails_closed_when_email_is_bound_to_another_social_identity(): void
+    {
+        CooperativeMember::factory()->create(['user_id' => null, 'email' => 'collision@example.test', 'status' => 'ACTIVE', 'validation_status' => 'ACTIVE']);
+        $other = User::factory()->unverified()->create(['email' => 'other-owner@example.test']);
+        SocialAccount::factory()->create(['user_id' => $other->id, 'provider' => 'google', 'provider_id' => 'other-id', 'provider_email' => 'collision@example.test']);
+        $result = app(\App\Services\Auth\Sso\MemberGoogleSsoMatchingService::class)->resolve($this->fakeSocialiteUser('new-id', 'collision@example.test', true));
+        $this->assertFalse($result->success);
+        $this->assertDatabaseMissing('users', ['email' => 'collision@example.test']);
+        $this->assertNull($other->fresh()->email_verified_at);
     }
 
     private function mockSocialite(string $googleId, string $email, bool $verified, ?string $name = null): void

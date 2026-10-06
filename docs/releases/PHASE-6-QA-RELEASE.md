@@ -1,5 +1,134 @@
 # Phase 6 — QA Release
 
+## QA-OPS-QUEUE-01 — historical durable queue lifecycle and public traffic release
+
+This is a historical operational checkpoint recorded before completion
+of QA-08/QA-09 and Bundle C. Current Phase 6 final status is recorded in
+[PHASE-6-BUNDLE-C-ACCEPTANCE.md](PHASE-6-BUNDLE-C-ACCEPTANCE.md): Phase 6 CLOSED PASS.
+
+All operational results and configuration below describe this checkpoint's
+execution time. Earlier Bundle A/replacement-promotion sections later in this
+document are also historical; they do not supersede the final acceptance report.
+
+Verified 2026-10-05 UTC, QA only. Serving application remains
+`v1.0.0-rc.14`, exact commit
+`043b5b004d66f04e60eef2b0c7a8cdb38fce278a`. No application runtime
+source, dependency, candidate, migration, DNS, firewall or production change.
+This operations evidence supersedes the historical hourly queue-lifecycle
+limitation and held-public-traffic state below.
+
+The locally managed `/etc/systemd/system/kojaya-qa-queue.service` started
+at 2026-10-04 11:59:49 UTC and deactivated successfully at 12:59:51 UTC.
+Its `--max-time=3600` worker exited normally; `Restart=on-failure` left it
+inactive. Repository deployment scripts control the unit but do not define it.
+The base unit and its execution/security settings remain intact. The durable
+local drop-in
+`/etc/systemd/system/kojaya-qa-queue.service.d/qa-worker-lifecycle.conf` is:
+
+```ini
+[Service]
+Restart=always
+RestartSec=5s
+```
+
+After daemon reload, enable and restart, effective policy is `Restart=always`,
+delay `5s`, service enabled/active/running; the actual command retains
+`queue:work database --sleep=3 --tries=3 --max-time=3600`. Laravel
+`queue:restart` induced a graceful successful exit and systemd automatically
+started a new worker, with restart counter 1. No one-hour wait or reboot was
+performed. Production configuration was not changed; any future production
+unit should be reviewed separately for the same successful-exit restart policy.
+
+An existing synthetic acceptance outbox already in terminal `sent` state was
+dispatched through the existing `ProcessNotificationOutbox` job on the database
+queue. The job was observed queued and completed by the worker; its terminal
+guard preserved the outbox and notification count. No provider delivery or
+business transaction was initiated. Queued jobs and failed jobs returned to 0.
+
+Pre-release gates passed: exact clean checkout, `APP_ENV=qa`, debug false,
+independently verified `kojaya_qa` database, zero pending migrations,
+maintenance off, active PHP-FPM, enabled/active scheduler timer and healthy
+queue. Recent bounded log review found no critical markers; older Laravel
+error entries predate this release and were not used as new release failures.
+
+The existing Nginx hold and normal configuration variants were inspected.
+The established `kojaya-qa-normal` variant replaced only the active Kojaya QA
+site configuration; `nginx -t` passed and Nginx reloaded. The intentional public
+`return 503` hold was removed using the existing mechanism. The held variant
+remains available for rollback. No application redeployment or migration ran.
+
+Public HTTPS requests through `https://qa.kojaya.id` passed with certificate
+verification enabled: root redirected normally, login returned 200, CSRF login
+and member page/session persistence passed, logout succeeded and subsequent
+member access redirected to login. Member API login, profile, session,
+dashboard, financial reads and notifications passed. Anonymous boundaries
+returned 401, admin routes returned 403 for the member, a forged member query
+preserved the authenticated member scope, and revoked-token session returned
+401. Device registration reachability was verified by anonymous 401 and
+authenticated empty-payload 422; no device was registered and no FCM sent.
+
+The primary smoke recorded 44 requests with zero HTTP 5xx. Supplemental checks
+verified the main JavaScript/CSS assets (200), unauthenticated API payment
+proof (401), and web proof/receipt protections (login redirects). Tested `.env`,
+Git configuration, private-storage, payment-proof directories and backup/dump
+paths returned 403/404; no stack trace, credential/environment content or
+directory listing was detected in tested responses. This is a bounded exposure
+check, not an exhaustive security audit or an independent off-server probe.
+
+After public smoke, Laravel log had no new bytes, PHP-FPM log was empty, and
+Nginx logs had no new critical markers or HTTP 5xx. Queue remained active,
+scheduler active/enabled, maintenance off and database identity unchanged.
+Application candidate remained exact rc.14; production and legacy `kojaya`
+were untouched. This documentation-only evidence does not change the deployed
+application candidate; evidence is published through a separate docs-only PR.
+
+```text
+STATUS_AT_EXECUTION_TIME
+QA_OPS_QUEUE_01=PASS
+QUEUE_RESTART=always
+QUEUE_RESTART_SEC=5s
+QUEUE_MAX_TIME=3600
+QUEUE_ENABLED=YES
+QUEUE_STATE=ACTIVE_RUNNING
+QA_TRAFFIC_RELEASE=PASS
+PUBLIC_QA=https://qa.kojaya.id
+PUBLIC_QA_ACCESS=ACCESSIBLE
+INTENTIONAL_HTTP_503=REMOVED
+TLS=PASS
+LOGIN_SESSION=PASS
+API=PASS
+ASSETS=PASS
+AUTHORIZATION=PASS
+TRAFFIC_HOLD=RELEASED
+CRITICAL_HTTP_5XX=0
+QA_08_ANDROID=NEXT_ON_DEVELOPMENT_PC
+QA_09_PHYSICAL_FCM=AFTER_QA_08
+BUNDLE_B=IN_PROGRESS
+```
+
+At this checkpoint the next planned work was QA-08/QA-09.
+Those gates and subsequent Bundle C acceptance have since completed;
+see [PHASE-6-BUNDLE-C-ACCEPTANCE.md](PHASE-6-BUNDLE-C-ACCEPTANCE.md).
+No Android workspace access or QA-08/QA-09 execution occurred at this checkpoint.
+
+### Subsequent acceptance reconciliation — 2026-10-06
+
+[PR #110](https://github.com/johnd-creator/kojaya/pull/110) merged the final
+Phase 6 acceptance into main `54847ac1549550501ed2e0bf88a07a3a4e34da29`.
+This reconciliation preserves the QA-OPS-QUEUE-01 facts, including its graceful
+restart test; the later QA-11 natural recycle evidence is in the final report.
+It introduces no new runtime, deployment or production action.
+
+```text
+SUBSEQUENT_BUNDLE_B=CLOSED_PASS
+SUBSEQUENT_QA_10=PASS
+SUBSEQUENT_QA_11=PASS
+SUBSEQUENT_QA_12=PASS
+PHASE_6_FINAL=CLOSED_PASS
+FINAL_EVIDENCE=PHASE-6-BUNDLE-C-ACCEPTANCE.md
+PRODUCTION_RELEASE=NOT_EXECUTED
+```
+
 **Assessment date:** 2026-10-03 (Asia/Jakarta)
 
 **QA-01 CLOSED. Replacement promotion — rc.12.**

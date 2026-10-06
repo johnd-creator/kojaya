@@ -69,6 +69,8 @@ class CooperativeOpeningBalanceWizardController extends Controller
                     'status_tone' => $batch->status->tone(),
                     'total_amount' => (float) $batch->total_amount,
                     'months_count' => $batch->months_count,
+                    'mode' => $batch->metadata['mode'] ?? 'CALCULATED',
+                    'cut_off_date' => $batch->metadata['cut_off_date'] ?? null,
                     'period_start' => optional($batch->calculation_start_period)->toDateString(),
                     'period_end' => optional($batch->calculation_end_period)->toDateString(),
                     'source_type' => $batch->source_type,

@@ -18,10 +18,17 @@ class StoreOpeningBalanceDraftRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'calculation_start_period' => ['required', 'date_format:Y-m-d'],
-            'calculation_end_period' => ['required', 'date_format:Y-m-d', 'after_or_equal:calculation_start_period'],
-            'contribution_types' => ['required', 'array', 'min:1'],
-            'contribution_types.*' => ['integer', 'exists:cooperative_contribution_types,id'],
+            'mode' => ['sometimes', 'in:DIRECT,CALCULATED'],
+            'cut_off_date' => ['required_if:mode,DIRECT', 'exclude_unless:mode,DIRECT', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'direct_amounts' => ['required_if:mode,DIRECT', 'exclude_unless:mode,DIRECT', 'array:POKOK,WAJIB,SUKARELA,KHUSUS'],
+            ...array_combine(
+                array_map(fn (string $category) => 'direct_amounts.'.$category, \App\Services\Cooperative\CooperativeOpeningBalanceWizardService::CATEGORIES),
+                array_fill(0, 4, ['required_if:mode,DIRECT', 'exclude_unless:mode,DIRECT', 'numeric', 'min:0', 'max:999999999999.99', 'decimal:0,2']),
+            ),
+            'calculation_start_period' => ['exclude_if:mode,DIRECT', 'required_unless:mode,DIRECT', 'date_format:Y-m-d'],
+            'calculation_end_period' => ['exclude_if:mode,DIRECT', 'required_unless:mode,DIRECT', 'date_format:Y-m-d', 'after_or_equal:calculation_start_period'],
+            'contribution_types' => ['exclude_if:mode,DIRECT', 'required_unless:mode,DIRECT', 'array', 'min:1'],
+            'contribution_types.*' => ['exclude_if:mode,DIRECT', 'integer', 'exists:cooperative_contribution_types,id'],
             'include_current_month' => ['nullable', 'boolean'],
             'overrides' => ['nullable', 'array'],
             'overrides.*' => ['array'],
@@ -54,6 +61,9 @@ class StoreOpeningBalanceDraftRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if ($this->input('mode') === 'DIRECT') {
+                return;
+            }
             $overrides = $this->input('overrides', []);
             $contributionTypes = collect($this->input('contribution_types', []))
                 ->mapWithKeys(function ($id) {

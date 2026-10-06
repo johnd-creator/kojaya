@@ -1860,3 +1860,7 @@ completion/revalidation of iteration 3, not another optimization experiment.
 All 50 affected helper/readiness/feature tests PASS (568 assertions); Pint,
 YAML, whitespace and no stale four-shard contract matching PASS. Real full
 revalidation is pending. The failed attempt remains visible in the evidence.
+
+### 2026-10-06 — QAR correction: visual CI reconciliation
+
+Core CI #563 passed all 17 jobs at 405843b8. Reviewed the five intended F007/F008 screenshot differences against exact-head all-viewport capture #317 (234/234 generated). Updated only their 15 existing desktop/tablet/mobile baselines; kept inventory, thresholds and workflow unchanged. Replaced a one-shot documentation image-load check with a retrying assertion after #318 recorded a successful retry. Final PR CI remains required; no merge, QA access or deployment.

@@ -94,3 +94,11 @@ Audit visual #316 pada head awal menunjukkan lima mismatch screenshot desktop: e
 ## Batas penutupan
 
 Bundle baru READY bila mandatory CI pada exact PR head hijau. PR tetap untuk review manusia. Merge, deployment QA, activation scheduler/queue, pengiriman FCM, debit bank, dan production release tidak dijalankan oleh task ini.
+
+### CI visual reconciliation — 2026-10-06
+
+Core CI #563 pada `405843b81efbce79e604b998e2f1261442c2b4a8` PASS seluruh 17 job, termasuk Dependency Audit dan PostgreSQL Concurrency. Compare visual #318 masih gagal pada lima layar iuran/saldo awal yang berubah sesuai F007/F008. Capture #317 pada exact head yang sama PASS: 234/234 screenshot desktop/tablet/mobile dihasilkan, tanpa layar gagal/skipped.
+
+Lima layar ditinjau terhadap baseline lama: tiga state halaman iuran admin (open/partial/no-results), halaman iuran system admin, dan saldo awal anggota. Perbedaan yang diterima adalah kartu jendela koleksi bank dan form Saldo Langsung; riwayat batch tetap terlihat, form tersusun pada viewport sempit. Hanya 15 PNG untuk lima layar tersebut pada tiga viewport diperbarui dari artifact #317; screenshot lain, threshold, inventory dan workflow tidak diubah.
+
+Compare #318 juga mencatat satu tes gambar dokumentasi yang lulus saat retry. Assertion lama membaca ukuran gambar sekali sebelum selesai dimuat. Tes kini memakai polling assertion terhadap complete/naturalWidth/naturalHeight, tetap gagal bila gambar tidak pernah berhasil dimuat. Hasil CI setelah commit reconciliation tetap harus PASS sebelum rekomendasi READY. Tidak ada perubahan aplikasi/deployment dalam koreksi visual ini.

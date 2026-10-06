@@ -158,7 +158,7 @@ class MemberImportPreviewController extends Controller
 
     /**
      * Execute transactional member import after server-side revalidation,
-     * tamper-resistant preview proof verification, and DEV gate check.
+     * tamper-resistant preview proof verification, and execution gate check.
      */
     public function execute(
         ExecuteMemberImportRequest $request,
@@ -169,7 +169,7 @@ class MemberImportPreviewController extends Controller
         $user = $request->user();
         abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value), 403);
 
-        // DEV Execution Gate Check
+        // Execution Gate Check
         if (! config('cooperative.member_import_execution_enabled', false)) {
             abort(403, 'Eksekusi impor anggota saat ini dinonaktifkan.');
         }
@@ -216,13 +216,13 @@ class MemberImportPreviewController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Import anggota ke DEV berhasil dipersistensikan.',
+                'message' => 'Import anggota berhasil dipersistensikan.',
                 'data' => $result->toArray(),
             ]);
         }
 
         return redirect()->route('cooperative.members.import')
-            ->with('success', 'Import anggota ke DEV berhasil dipersistensikan.')
+            ->with('success', 'Import anggota berhasil dipersistensikan.')
             ->with('import_result', $result->toArray());
     }
 

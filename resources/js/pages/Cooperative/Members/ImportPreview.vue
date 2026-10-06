@@ -269,7 +269,7 @@ const currentOrgName = computed(() => {
                 <h3
                   class="text-base font-bold text-emerald-900 dark:text-emerald-100"
                 >
-                  Import Anggota ke DEV Berhasil Dipersistensikan
+                  Import Anggota Berhasil Dipersistensikan
                 </h3>
                 <p class="mt-1 text-sm text-emerald-800 dark:text-emerald-300">
                   Sebanyak
@@ -678,8 +678,8 @@ const currentOrgName = computed(() => {
                   <Upload class="mr-2 size-4" />
                   {{
                     executeForm.processing
-                      ? "Mengimpor ke DEV..."
-                      : "Import ke DEV"
+                      ? "Mengimpor anggota..."
+                      : "Eksekusi Impor"
                   }}
                 </Button>
               </div>
@@ -692,7 +692,7 @@ const currentOrgName = computed(() => {
                   variant="outline"
                   class="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
                 >
-                  DEV Gate Nonaktif
+                  Execution Gate Nonaktif
                 </Badge>
                 <Button
                   disabled
@@ -1107,9 +1107,7 @@ const currentOrgName = computed(() => {
                 <Upload class="size-6" />
               </div>
               <div>
-                <h3 class="text-lg font-bold">
-                  Konfirmasi Eksekusi Impor ke DEV
-                </h3>
+                <h3 class="text-lg font-bold">Konfirmasi Eksekusi Impor</h3>
                 <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   Harap periksa parameter sebelum melakukan persistensi ke basis
                   data.
@@ -1150,10 +1148,10 @@ const currentOrgName = computed(() => {
             <div
               class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200"
             >
-              <p class="font-semibold">Peringatan Persistensi DEV:</p>
+              <p class="font-semibold">Peringatan Persistensi:</p>
               <p class="mt-1">
                 Data akan ditulis secara transaksional (all-or-nothing) ke basis
-                data DEV. Seluruh anggota akan berstatus
+                data lingkungan target. Seluruh anggota akan berstatus
                 <strong>PENDING</strong> dan tetap memerlukan alur verifikasi
                 operasional (ONB-03).
               </p>
@@ -1191,7 +1189,7 @@ const currentOrgName = computed(() => {
                 {{
                   executeForm.processing
                     ? "Memproses Transaksi..."
-                    : "Ya, Eksekusi Impor ke DEV"
+                    : "Ya, Eksekusi Impor"
                 }}
               </Button>
             </div>

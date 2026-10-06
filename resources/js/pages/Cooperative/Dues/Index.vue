@@ -58,6 +58,12 @@ type Tone = "emerald" | "amber" | "rose" | "sky" | "violet" | "zinc";
 const emptyValue = "__all__";
 
 const props = defineProps<{
+  bankCollectionWindow: {
+    period: string;
+    opens_on: string;
+    closes_on: string;
+    is_open: boolean;
+  };
   invoices: any;
   filters: {
     period?: string;
@@ -471,6 +477,26 @@ const kpiCards = computed(() => [
           </div>
         </div>
       </section>
+
+      <Card class="mb-4">
+        <CardContent class="space-y-1 pt-4 text-sm">
+          <p class="font-medium">
+            Jendela autodebit bank untuk iuran
+            {{ bankCollectionWindow.period }}:
+            {{ bankCollectionWindow.opens_on }} s/d
+            {{ bankCollectionWindow.closes_on }}
+          </p>
+          <p>
+            {{
+              bankCollectionWindow.is_open
+                ? "Jendela operasional terbuka."
+                : "Di luar jendela operasional."
+            }}
+            Bank mengeksekusi autodebit; admin mencatat dan menyetujui hasil
+            bank atau penerimaan manual berdasarkan bukti.
+          </p>
+        </CardContent>
+      </Card>
 
       <section
         v-if="monthlyDuesInfo"

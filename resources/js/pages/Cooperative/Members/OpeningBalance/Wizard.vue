@@ -92,6 +92,8 @@ type HistoryBatch = {
   status_tone: Tone;
   total_amount: number;
   months_count: number;
+  mode: "DIRECT" | "CALCULATED";
+  cut_off_date: string | null;
   period_start: string | null;
   period_end: string | null;
   source_type: string | null;
@@ -145,6 +147,12 @@ const steps = [
 ];
 
 const form = useForm({
+  mode: "DIRECT" as "DIRECT" | "CALCULATED",
+  cut_off_date: props.default_period.end ?? "",
+  direct_amounts: { POKOK: 0, WAJIB: 0, SUKARELA: 0, KHUSUS: 0 } as Record<
+    Category,
+    string | number
+  >,
   calculation_start_period: props.default_period.start ?? "",
   calculation_end_period: props.default_period.end ?? "",
   include_current_month: false,
@@ -189,6 +197,22 @@ const preview = ref<{
   }>;
   has_conflicts: boolean;
 } | null>(null);
+
+const directCategories: Category[] = ["POKOK", "WAJIB", "SUKARELA", "KHUSUS"];
+const directTotal = computed(() =>
+  directCategories.reduce(
+    (sum, category) => sum + (Number(form.direct_amounts[category]) || 0),
+    0,
+  ),
+);
+const directErrors = computed(() => Object.values(form.errors));
+watch(
+  () => form.data(),
+  () => {
+    preview.value = null;
+  },
+  { deep: true },
+);
 
 const isCalculating = ref(false);
 const calculationError = ref<string | null>(null);
@@ -508,8 +532,144 @@ watch(
         </CardContent>
       </Card>
 
+      <div v-if="canShowWizard && canManage" class="mb-6 flex flex-wrap gap-2">
+        <Button
+          :variant="form.mode === 'DIRECT' ? 'default' : 'outline'"
+          @click="form.mode = 'DIRECT'"
+          >Saldo Langsung</Button
+        >
+        <Button
+          :variant="form.mode === 'CALCULATED' ? 'default' : 'outline'"
+          @click="form.mode = 'CALCULATED'"
+          >Perhitungan Periode</Button
+        >
+      </div>
+
       <div v-if="canShowWizard && canManage" class="grid gap-6 lg:grid-cols-3">
-        <Card class="lg:col-span-2">
+        <Card v-if="form.mode === 'DIRECT'" class="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Saldo Awal Anggota</CardTitle>
+            <CardDescription
+              >Masukkan saldo akhir hasil rekonsiliasi buku lama per tanggal
+              cut-off.</CardDescription
+            >
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="max-w-xs">
+              <Label for="direct-cutoff">Per tanggal</Label>
+              <Input
+                id="direct-cutoff"
+                v-model="form.cut_off_date"
+                type="date"
+              />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div v-for="category in directCategories" :key="category">
+                <Label :for="`direct-${category}`"
+                  >Simpanan {{ category }}</Label
+                >
+                <Input
+                  :id="`direct-${category}`"
+                  v-model="form.direct_amounts[category]"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <p class="text-lg font-semibold">
+              Total: {{ formatCurrency(directTotal) }}
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label for="direct-source">Sumber</Label>
+                <select
+                  id="direct-source"
+                  v-model="form.source_type"
+                  class="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                >
+                  <option
+                    v-for="(label, value) in source_types"
+                    :key="value"
+                    :value="value"
+                  >
+                    {{ label }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <Label for="direct-reference">Referensi sumber (opsional)</Label
+                ><Input id="direct-reference" v-model="form.source_reference" />
+              </div>
+              <div>
+                <Label for="direct-document-date"
+                  >Tanggal dokumen (opsional)</Label
+                ><Input
+                  id="direct-document-date"
+                  v-model="form.source_document_date"
+                  type="date"
+                />
+              </div>
+              <div>
+                <Label for="direct-notes">Catatan</Label
+                ><Textarea id="direct-notes" v-model="form.notes" />
+              </div>
+            </div>
+            <div
+              v-if="directErrors.length || calculationError"
+              role="alert"
+              class="text-destructive text-sm"
+            >
+              <p v-for="error in directErrors" :key="error">{{ error }}</p>
+              <p>{{ calculationError }}</p>
+            </div>
+            <div
+              v-if="preview"
+              class="space-y-2 rounded-md border p-4"
+              aria-live="polite"
+            >
+              <p class="font-medium">
+                Pratinjau per {{ formatDate(preview.calculation_end_period) }}
+              </p>
+              <p v-for="line in preview.lines" :key="line.category_snapshot">
+                {{ line.category_snapshot }}:
+                {{ formatCurrency(line.total_amount) }}
+              </p>
+              <p class="font-semibold">
+                Total: {{ formatCurrency(preview.total_amount) }}
+              </p>
+              <div
+                v-if="preview.has_conflicts"
+                role="alert"
+                class="text-amber-700"
+              >
+                <p
+                  v-for="conflict in preview.conflicts"
+                  :key="`${conflict.category}-${conflict.entry_type}-${conflict.period}`"
+                >
+                  {{ conflict.message }}
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                :disabled="
+                  isCalculating || directTotal <= 0 || !form.cut_off_date
+                "
+                @click="calculatePreview"
+                >{{ isCalculating ? "Memeriksa..." : "Preview" }}</Button
+              >
+              <Button
+                :disabled="!preview || form.processing"
+                @click="submitDraft"
+                >{{ form.processing ? "Menyimpan..." : "Simpan Draft" }}</Button
+              >
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card v-else class="lg:col-span-2">
           <CardHeader>
             <CardTitle class="flex items-center gap-2">
               <Calculator class="size-5" />
@@ -1001,8 +1161,11 @@ watch(
                     {{ formatCurrency(batch.total_amount) }}
                   </CardTitle>
                   <CardDescription>
-                    {{ batch.months_count }} bulan &middot;
-                    {{ formatDate(batch.period_start ?? "") }} &ndash;
+                    <template v-if="batch.mode === 'DIRECT'"
+                      >Saldo langsung per
+                      {{ formatDate(batch.cut_off_date) }}</template
+                    ><template v-else>{{ batch.months_count }} bulan</template>
+                    &middot; {{ formatDate(batch.period_start ?? "") }} &ndash;
                     {{ formatDate(batch.period_end ?? "") }}
                   </CardDescription>
                 </CardHeader>

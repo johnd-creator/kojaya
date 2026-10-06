@@ -11,14 +11,14 @@ class DuesGenerationService
 {
     public function __construct(private readonly CooperativePeriodLockService $periodLockService) {}
 
-    public function generateForPeriod(string $period): int
+    public function generateForPeriod(string $period, ?int $memberId = null): int
     {
         $this->periodLockService->assertUnlocked($period);
 
-        $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
+        $periodDate = CarbonImmutable::createFromFormat('!Y-m', $period)->startOfMonth();
         $created = 0;
 
-        $this->pruneUnpaidIneligibleInvoices($period, $periodDate);
+        $this->pruneUnpaidIneligibleInvoices($period, $periodDate, $memberId);
 
         $types = CooperativeContributionType::query()
             ->savingsDues()
@@ -28,6 +28,7 @@ class DuesGenerationService
 
         CooperativeMember::query()
             ->active()
+            ->when($memberId !== null, fn ($query) => $query->whereKey($memberId))
             ->orderBy('id')
             ->chunkById(100, function ($members) use ($period, $periodDate, $types, &$created): void {
                 foreach ($members as $member) {
@@ -62,6 +63,31 @@ class DuesGenerationService
             });
 
         return $created;
+    }
+
+    /**
+     * Bank executes the debit; operators record/approve confirmed receipts.
+     *
+     * @return array{opens_at: CarbonImmutable, closes_at: CarbonImmutable}
+     */
+    public function autodebitWindow(string $period): array
+    {
+        $month = CarbonImmutable::createFromFormat('!Y-m', $period);
+        if (! $month || $month->format('Y-m') !== $period) {
+            throw new \InvalidArgumentException('Periode iuran tidak valid.');
+        }
+
+        return [
+            'opens_at' => $month->day(25)->startOfDay(),
+            'closes_at' => $month->addMonth()->day(7)->endOfDay(),
+        ];
+    }
+
+    public function isAutodebitWindowOpen(string $period, CarbonImmutable $at): bool
+    {
+        $window = $this->autodebitWindow($period);
+
+        return $at->betweenIncluded($window['opens_at'], $window['closes_at']);
     }
 
     public function ensureOneTimeInvoice(CooperativeMember $member, string $code = 'POKOK'): ?CooperativeDuesInvoice
@@ -119,12 +145,13 @@ class DuesGenerationService
         return CarbonImmutable::parse($joinedAt)->startOfMonth()->lessThanOrEqualTo($periodDate);
     }
 
-    private function pruneUnpaidIneligibleInvoices(string $period, CarbonImmutable $periodDate): int
+    private function pruneUnpaidIneligibleInvoices(string $period, CarbonImmutable $periodDate, ?int $memberId = null): int
     {
         $deleted = 0;
 
         CooperativeDuesInvoice::query()
             ->with('member')
+            ->when($memberId !== null, fn ($query) => $query->where('cooperative_member_id', $memberId))
             ->where('period', $period)
             ->where('status', 'UNPAID')
             ->whereDoesntHave('payments')

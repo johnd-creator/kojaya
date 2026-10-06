@@ -77,6 +77,10 @@ class CooperativeOpeningBalanceWizardService
      */
     public function preview(CooperativeMember $member, array $input): array
     {
+        if (($input['mode'] ?? 'CALCULATED') === 'DIRECT') {
+            return $this->previewDirect($member, $input);
+        }
+
         $rawStart = (string) ($input['calculation_start_period'] ?? $member->tanggal_aktif?->toDateString() ?? '');
         $rawEnd = (string) ($input['calculation_end_period'] ?? now()->subMonth()->endOfMonth()->toDateString());
         $includeCurrentMonth = (bool) ($input['include_current_month'] ?? false);
@@ -103,6 +107,66 @@ class CooperativeOpeningBalanceWizardService
             'months_count' => $months,
             'lines' => $lines,
             'total_amount' => round($total, 2),
+            'conflicts' => $conflicts,
+            'has_conflicts' => $conflicts !== [],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function previewDirect(CooperativeMember $member, array $input): array
+    {
+        $validated = \Illuminate\Support\Facades\Validator::make($input, [
+            'cut_off_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'direct_amounts' => ['required', 'array:POKOK,WAJIB,SUKARELA,KHUSUS'],
+            ...array_combine(
+                array_map(fn (string $category) => 'direct_amounts.'.$category, self::CATEGORIES),
+                array_fill(0, count(self::CATEGORIES), ['required', 'numeric', 'min:0', 'max:999999999999.99', 'decimal:0,2']),
+            ),
+        ])->validate();
+        $cutoff = $validated['cut_off_date'];
+        $lines = [];
+        foreach (self::CATEGORIES as $category) {
+            $amount = round((float) $validated['direct_amounts'][$category], 2);
+            if ($amount <= 0) {
+                continue;
+            }
+            $types = CooperativeContributionType::query()->where('category', $category)->where('is_active', true)->get();
+            if ($types->count() !== 1) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'direct_amounts.'.$category => 'Kategori harus memiliki tepat satu jenis simpanan aktif.',
+                ]);
+            }
+            $type = $types->first();
+            $lines[] = [
+                'cooperative_contribution_type_id' => $type->id,
+                'category_snapshot' => $category,
+                'period_start' => $cutoff,
+                'period_end' => $cutoff,
+                'months_count' => 0,
+                'unit_amount' => $amount,
+                'total_amount' => $amount,
+                'calculation_method' => 'DIRECT',
+                'override_reason' => null,
+                'metadata' => ['cut_off_date' => $cutoff, 'contribution_code' => $type->code, 'contribution_name' => $type->name],
+            ];
+        }
+        $total = round(array_sum(array_column($lines, 'total_amount')), 2);
+        if ($total <= 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['direct_amounts' => 'Total saldo awal harus lebih besar dari 0.']);
+        }
+        $conflicts = $this->detectExistingMutationConflicts($member, $lines);
+
+        return [
+            'mode' => 'DIRECT',
+            'cut_off_date' => $cutoff,
+            'calculation_start_period' => $cutoff,
+            'calculation_end_period' => $cutoff,
+            'months_count' => 0,
+            'lines' => $lines,
+            'total_amount' => $total,
             'conflicts' => $conflicts,
             'has_conflicts' => $conflicts !== [],
         ];
@@ -274,6 +338,8 @@ class CooperativeOpeningBalanceWizardService
                 'notes' => $input['notes'] ?? null,
                 'metadata' => [
                     'creator_id' => $creator->id,
+                    'mode' => $preview['mode'] ?? 'CALCULATED',
+                    'cut_off_date' => $preview['cut_off_date'] ?? null,
                     'include_current_month' => (bool) ($input['include_current_month'] ?? false),
                 ],
             ]);
@@ -316,10 +382,17 @@ class CooperativeOpeningBalanceWizardService
             throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
         }
 
-        $this->assertNoPostedDuplicatePokok($batch);
-
         return DB::transaction(function () use ($batch, $poster): CooperativeMemberOpeningBalanceBatch {
+            $batch = CooperativeMemberOpeningBalanceBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            CooperativeMember::query()->whereKey($batch->cooperative_member_id)->lockForUpdate()->firstOrFail();
+            if (! $batch->isDraft()) {
+                throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
+            }
             $batch->load(['member', 'lines.contributionType']);
+            if (($batch->metadata['mode'] ?? null) === 'DIRECT') {
+                $this->assertMemberEligible($batch->member);
+            }
+            $this->assertNoPostedDuplicatePokok($batch);
 
             $postedAt = now();
             $postedLineIds = [];
@@ -345,6 +418,8 @@ class CooperativeOpeningBalanceWizardService
                     'credit' => $amount,
                     'posted_at' => $postedAt,
                     'metadata' => [
+                        'mode' => $batch->metadata['mode'] ?? 'CALCULATED',
+                        'cut_off_date' => $batch->metadata['cut_off_date'] ?? null,
                         'opening_balance_batch_id' => $batch->id,
                         'opening_balance_line_id' => $line->id,
                         'months_count' => $line->months_count,
@@ -591,6 +666,10 @@ class CooperativeOpeningBalanceWizardService
         $category = $line->category_snapshot;
         $typeName = $line->contributionType?->name ?? $category;
 
+        if ($line->calculation_method === 'DIRECT') {
+            return "Saldo awal {$typeName} per {$batch->metadata['cut_off_date']} (rekonsiliasi langsung)";
+        }
+
         if ($line->calculation_method === 'ONCE') {
             return "Saldo awal {$typeName} (pokok)";
         }
@@ -624,7 +703,8 @@ class CooperativeOpeningBalanceWizardService
     {
         $hasPokok = $batch->lines->contains(fn (CooperativeMemberOpeningBalanceLine $line) => $line->category_snapshot === 'POKOK');
 
-        if (! $hasPokok) {
+        $direct = ($batch->metadata['mode'] ?? null) === 'DIRECT';
+        if (! $hasPokok && ! $direct) {
             return;
         }
 
@@ -632,7 +712,13 @@ class CooperativeOpeningBalanceWizardService
         // sebelumnya sudah diimbangi oleh OPENING_BALANCE_REVERSAL (lewat void).
         $existingEntries = CooperativeLedgerEntry::query()
             ->where('cooperative_member_id', $batch->cooperative_member_id)
-            ->where('category_snapshot', 'POKOK')
+            ->where(function ($query) use ($direct, $batch): void {
+                if ($direct) {
+                    $query->whereIn('category_snapshot', $batch->lines->pluck('category_snapshot'))->orWhereNull('category_snapshot');
+                } else {
+                    $query->where('category_snapshot', 'POKOK');
+                }
+            })
             ->where('entry_type', 'OPENING_BALANCE')
             ->get(['id']);
 

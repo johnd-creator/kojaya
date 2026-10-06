@@ -47,7 +47,7 @@ class MemberImportExecutionTest extends TestCase
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
 
-        // Enable DEV member import execution gate for testing execution flows
+        // Enable member import execution gate for testing execution flows
         Config::set('cooperative.member_import_execution_enabled', true);
 
         $this->organization = Organization::factory()->create([
@@ -1298,6 +1298,10 @@ class MemberImportExecutionTest extends TestCase
                     'status',
                 ],
             ]);
+
+        $response->assertJsonPath('message', 'Import anggota berhasil dipersistensikan.');
+
+        $response->assertJsonPath('message', 'Import anggota berhasil dipersistensikan.');
 
         $data = $response->json('data');
         $this->assertSame(2, $data['total_rows']);

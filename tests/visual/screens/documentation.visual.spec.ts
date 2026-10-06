@@ -99,13 +99,16 @@ test.describe("documentation anggota @visual @accessibility", () => {
       "/docs/user-guide/screens/desktop/anggota-payment-flow-desktop.png",
     );
 
-    const loaded = await image.evaluate(
-      (element: HTMLImageElement) =>
-        element.complete &&
-        element.naturalWidth > 0 &&
-        element.naturalHeight > 0,
-    );
-    expect(loaded).toBe(true);
+    await expect
+      .poll(() =>
+        image.evaluate(
+          (element: HTMLImageElement) =>
+            element.complete &&
+            element.naturalWidth > 0 &&
+            element.naturalHeight > 0,
+        ),
+      )
+      .toBe(true);
 
     const overflow = await page.evaluate(() => {
       const root = document.documentElement;

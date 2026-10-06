@@ -33,7 +33,7 @@ class MemberImportExecutionService
         ?AuditContext $auditContext = null,
         array $options = [],
     ): MemberImportExecutionResult {
-        // 1. DEV Execution Gate Check
+        // 1. Execution Gate Check
         if (! config('cooperative.member_import_execution_enabled', false)) {
             throw new MemberImportExecutionException(
                 'IMPORT_EXECUTION_DISABLED',
@@ -170,7 +170,7 @@ class MemberImportExecutionService
                             'generated_member_number_count' => count($generatedMemberNumbers),
                             'supplied_member_number_count' => count($suppliedMemberNumbers),
                         ],
-                        'reason' => 'Batch member onboarding DEV import completed',
+                        'reason' => 'Batch member onboarding import completed',
                     ],
                     context: $effectiveAuditContext,
                 );

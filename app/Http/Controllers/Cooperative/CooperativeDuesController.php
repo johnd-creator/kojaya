@@ -24,7 +24,7 @@ class CooperativeDuesController extends Controller
 {
     use ResolvesApiPageSize;
 
-    public function index(Request $request, OrganizationScopedQueryService $scopeService): Response
+    public function index(Request $request, OrganizationScopedQueryService $scopeService, DuesGenerationService $duesService): Response
     {
         $period = $this->periodFromRequest($request);
         $periodScope = $request->input('period_scope') === 'all' ? 'all' : 'period';
@@ -75,7 +75,15 @@ class CooperativeDuesController extends Controller
              SUM(CASE WHEN status IN (\'PAID\', \'VOID\') THEN 1 ELSE 0 END) as paid_count'
         )->first();
 
+        $collectionWindow = $duesService->autodebitWindow($period);
+
         return Inertia::render('Cooperative/Dues/Index', [
+            'bankCollectionWindow' => [
+                'period' => $period,
+                'opens_on' => $collectionWindow['opens_at']->toDateString(),
+                'closes_on' => $collectionWindow['closes_at']->toDateString(),
+                'is_open' => $duesService->isAutodebitWindowOpen($period, CarbonImmutable::now()),
+            ],
             'invoices' => $query->orderByDesc('period')->orderByDesc('id')->paginate($perPage)->withQueryString(),
             'stats' => [
                 'total_invoices' => (int) ($aggregate->total_invoices ?? 0),

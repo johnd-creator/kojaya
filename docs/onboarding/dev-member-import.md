@@ -1,14 +1,16 @@
-# Spesifikasi & Implementasi DEV Member Import (ONB-06)
+# Spesifikasi & Implementasi Member Import (ONB-06)
 
-Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementasi resmi untuk DEV Member Import (ONB-06)** pada ekosistem **Kojaya** (`johnd-creator/kojaya`). Modul ini merupakan tahap pertama dalam peta jalan onboarding yang diizinkan untuk **mempersistensikan data anggota kanonikal** ke tabel `cooperative_members` secara transaksional (*all-or-nothing*).
+Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementasi resmi untuk Member Import (ONB-06)** pada ekosistem **Kojaya** (`johnd-creator/kojaya`). Modul ini merupakan tahap pertama dalam peta jalan onboarding yang diizinkan untuk **mempersistensikan data anggota kanonikal** ke tabel `cooperative_members` secara transaksional (*all-or-nothing*).
 
 ---
 
+> Nama berkas berasal dari checkpoint ONB-06 historis. Eksekusi kini netral lingkungan; izin mengikuti kontrol operasional lingkungan target.
+
 ## 1. Tujuan & Filosofi Desain (Purpose & Philosophy)
 
-1. **Transactional All-or-Nothing Persistence**: Mengimpor batch data anggota dari berkas CSV kanonikal 12 kolom langsung ke basis data DEV. Jika terdapat 1 baris gagal atau terjadi kendala sistem, seluruh batch dibatalkan seketika (*zero partial persistence*).
+1. **Transactional All-or-Nothing Persistence**: Mengimpor batch data anggota dari berkas CSV kanonikal 12 kolom langsung ke basis data lingkungan target. Jika terdapat 1 baris gagal atau terjadi kendala sistem, seluruh batch dibatalkan seketika (*zero partial persistence*).
 2. **Revalidasi Ganda (Double Revalidation)**: Data tidak pernah dipercaya begitu saja dari browser pratinjau ONB-05. Berkas CSV divalidasi ulang di backend sebelum transaksi (*preflight*), dan divalidasi ulang sekali lagi secara otoritatif di dalam transaksi database setelah memperoleh kunci konkurensi.
-3. **Gerbang Eksekusi DEV (DEV Execution Gate)**: Fitur eksekusi impor dilindungi konfigurasi eksplisit `cooperative.member_import_execution_enabled` dengan default `false`. Penggabungan kode ke `main` tidak akan mengaktifkan eksekusi secara tidak sengaja di production.
+3. **Gerbang Eksekusi (Execution Gate)**: Fitur eksekusi impor dilindungi konfigurasi eksplisit `cooperative.member_import_execution_enabled` dengan default `false`. Penggabungan kode ke `main` tidak akan mengaktifkan eksekusi secara tidak sengaja di production.
 4. **Bukti Pratinjau Tahan Manipulasi (Tamper-Resistant Preview Proof)**: Eksekusi wajib menyertakan token bukti pratinjau bertanda tangan/terenkripsi dari server yang mengikat hash SHA-256 berkas, organisasi target, tanggal impor, dan masa berlaku (TTL).
 5. **Pemisahan Akun & Finansial (No Users & No Finance)**: Tahap ini HANYA membuat rekaman `cooperative_members` berstatus `PENDING`. Tidak ada pembuatan akun `users`, akun media sosial, kredensial password, simpanan pokok/wajib, saldo awal, maupun mutasi buku besar.
 
@@ -27,9 +29,9 @@ Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementas
 [PreviewProofService::generate()] ─── Terbitkan token preview_proof (AES-256-CBC)
         │
         ▼
-[Tampilan Antarmuka (ImportPreview.vue)] ─── Tombol "Import ke DEV" aktif (jika DEV gate on)
+[Tampilan Antarmuka (ImportPreview.vue)] ─── Tombol "Import anggota" aktif (jika execution gate on)
         │
-        ▼ (Klik "Import ke DEV" & Konfirmasi Dialog Modal)
+        ▼ (Klik "Import anggota" & Konfirmasi Dialog Modal)
 [POST /cooperative/members/import/execute] (ExecuteMemberImportRequest)
         │
         ├── 1. Periksa Gerbang Fitur: config('cooperative.member_import_execution_enabled') === true
@@ -72,9 +74,9 @@ Dokumen ini adalah **spesifikasi teknis, arsitektur, dan dokumentasi implementas
 
 ---
 
-## 3. Gerbang Eksekusi DEV (DEV Execution Gate)
+## 3. Gerbang Eksekusi (Execution Gate)
 
-Sesuai arsitektur onboarding Kojaya, eksekusi persistensi anggota pada tahap ONB-06 dikhususkan untuk lingkungan DEV/staging. Gerbang ini dikendalikan oleh:
+Sesuai arsitektur onboarding Kojaya, eksekusi persistensi anggota pada tahap ONB-06 dikendalikan pada setiap lingkungan target yang diotorisasi. Gerbang ini dikendalikan oleh:
 
 - **File Konfigurasi**: [`config/cooperative.php`](file:///home/john-d/Pictures/kojaya/config/cooperative.php)
 - **Kunci Konfigurasi**: `cooperative.member_import_execution_enabled`
@@ -84,7 +86,7 @@ Sesuai arsitektur onboarding Kojaya, eksekusi persistensi anggota pada tahap ONB
 ### Perilaku Saat Gerbang Nonaktif (`false`):
 - Halaman pratinjau `GET /cooperative/members/import` tetap dapat dibuka normal.
 - Simulasi `POST /cooperative/members/import/preview` tetap berfungsi penuh.
-- Tombol antarmuka pada banner kesiapan menampilkan status *"Eksekusi Dinonaktifkan (DEV Gate Nonaktif)"*.
+- Tombol antarmuka pada banner kesiapan menampilkan status *"Eksekusi Dinonaktifkan (Execution Gate Nonaktif)"*.
 - Upaya tembak langsung `POST /cooperative/members/import/execute` ditolak seketika dengan **HTTP 403 Forbidden** tanpa menyentuh basis data.
 
 ---

@@ -6,6 +6,14 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** September 29, 2026
 
+## 2026-10-06 - QAR-CORRECTION-BUNDLE-01 (Development PC)
+
+- Implemented F004 environment-neutral gated member import, F006 safe Google email verification synchronization, F007 bank collection window (25 through 7) and current-period member catch-up, and F008 direct reconciled opening balances using existing batch/line storage.
+- Mandatory dependency audit required compatible patches of existing Vue/server-renderer and source-map-js packages; package constraints and the package set remain unchanged. Client/SSR build and desktop/mobile UI regression passed with the refreshed lockfile.
+- Owner clarified that the bank executes autodebit; cooperative operators approve confirmed results or collect manually. Existing payment authorization and posting remain; no bank debit provider/job was invented.
+- Targeted regressions and 364 cross-domain tests (2286 assertions) passed on isolated SQLite memory. Local frontend build, scoped checks, and synthetic desktop/mobile browser UI test passed. PostgreSQL concurrency suites remain outside the local default configuration.
+- Evidence: [Phase 6.5 Operational Rehearsal correction bundle](releases/PHASE-6-5-QA-OPERATIONAL-REHEARSAL.md). Separate commits and one PR require green mandatory CI and human review. No merge, QA deployment/runtime change, production change, migration, real payment, or fabricated monthly financial history was executed.
+
 ## 2026-09-29 - RC-11-FIX-01A through FIX-01D QA host hardening
 
 - The owner classified the shared host as DEV/QA after FIX-01A stopped on a
@@ -1852,3 +1860,10 @@ completion/revalidation of iteration 3, not another optimization experiment.
 All 50 affected helper/readiness/feature tests PASS (568 assertions); Pint,
 YAML, whitespace and no stale four-shard contract matching PASS. Real full
 revalidation is pending. The failed attempt remains visible in the evidence.
+
+### 2026-10-06 — QAR correction: visual CI reconciliation
+
+Core CI #563 passed all 18 jobs at 405843b8. Reviewed the five intended F007/F008 screenshot differences against exact-head all-viewport capture #317 (234/234 generated). Updated only their 15 existing desktop/tablet/mobile baselines; kept inventory, thresholds and workflow unchanged. Replaced a one-shot documentation image-load check with a retrying assertion after #318 recorded a successful retry. Final PR CI remains required; no merge, QA access or deployment.
+
+
+CI closure at implementation head 847117d9: CI #564 PASS all 18 jobs, 3464 tests / 28544 assertions, no errors/failures/skips and 81.48% coverage. Visual compare #319 PASS 177 desktop tests; all-viewport compare #320 PASS 448 tests, no flaky. Evidence-only follow-up preserves that implementation and still requires mandatory exact-head PR checks; no merge/deployment.

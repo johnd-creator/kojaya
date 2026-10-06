@@ -63,6 +63,9 @@ class DuesDomainSeparationTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Cooperative/Dues/Index')
+                ->where('bankCollectionWindow.opens_on', '2026-07-25')
+                ->where('bankCollectionWindow.closes_on', '2026-08-07')
+                ->where('bankCollectionWindow.is_open', false)
                 ->where('stats.total_invoices', 2)
                 ->has('invoices.data', 2)
                 ->has('contributionTypes', 2)

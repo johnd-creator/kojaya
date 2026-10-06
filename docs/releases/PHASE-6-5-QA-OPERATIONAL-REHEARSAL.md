@@ -97,8 +97,15 @@ Bundle baru READY bila mandatory CI pada exact PR head hijau. PR tetap untuk rev
 
 ### CI visual reconciliation — 2026-10-06
 
-Core CI #563 pada `405843b81efbce79e604b998e2f1261442c2b4a8` PASS seluruh 17 job, termasuk Dependency Audit dan PostgreSQL Concurrency. Compare visual #318 masih gagal pada lima layar iuran/saldo awal yang berubah sesuai F007/F008. Capture #317 pada exact head yang sama PASS: 234/234 screenshot desktop/tablet/mobile dihasilkan, tanpa layar gagal/skipped.
+Core CI #563 pada `405843b81efbce79e604b998e2f1261442c2b4a8` PASS seluruh 18 job, termasuk Dependency Audit dan PostgreSQL Concurrency. Compare visual #318 masih gagal pada lima layar iuran/saldo awal yang berubah sesuai F007/F008. Capture #317 pada exact head yang sama PASS: 234/234 screenshot desktop/tablet/mobile dihasilkan, tanpa layar gagal/skipped.
 
 Lima layar ditinjau terhadap baseline lama: tiga state halaman iuran admin (open/partial/no-results), halaman iuran system admin, dan saldo awal anggota. Perbedaan yang diterima adalah kartu jendela koleksi bank dan form Saldo Langsung; riwayat batch tetap terlihat, form tersusun pada viewport sempit. Hanya 15 PNG untuk lima layar tersebut pada tiga viewport diperbarui dari artifact #317; screenshot lain, threshold, inventory dan workflow tidak diubah.
 
 Compare #318 juga mencatat satu tes gambar dokumentasi yang lulus saat retry. Assertion lama membaca ukuran gambar sekali sebelum selesai dimuat. Tes kini memakai polling assertion terhadap complete/naturalWidth/naturalHeight, tetap gagal bila gambar tidak pernah berhasil dimuat. Hasil CI setelah commit reconciliation tetap harus PASS sebelum rekomendasi READY. Tidak ada perubahan aplikasi/deployment dalam koreksi visual ini.
+
+
+### Hasil verifikasi koreksi CI — exact implementation head
+
+Pada `847117d92d5dfca4a39039ec5267b663645cbdeb`, [CI #564](https://github.com/johnd-creator/kojaya/actions/runs/37481702422) PASS seluruh 18 job: **3464 tests / 28544 assertions**, 0 errors/failures/skips, line coverage **81.48%**. [Visual compare PR #319](https://github.com/johnd-creator/kojaya/actions/runs/37481702580) PASS **177 tes desktop**. [Visual compare seluruh viewport #320](https://github.com/johnd-creator/kojaya/actions/runs/37482138695) PASS **448 tes**, tanpa flaky pada dua run visual tersebut.
+
+Catatan hasil ini tidak mengubah implementasi yang diuji. Commit dokumentasi penutupan tetap mengikuti mandatory CI pada exact PR head; PR #112 tetap OPEN untuk review manusia, tanpa merge/deployment/akses QA/production.

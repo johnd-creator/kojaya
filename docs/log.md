@@ -1863,4 +1863,7 @@ revalidation is pending. The failed attempt remains visible in the evidence.
 
 ### 2026-10-06 — QAR correction: visual CI reconciliation
 
-Core CI #563 passed all 17 jobs at 405843b8. Reviewed the five intended F007/F008 screenshot differences against exact-head all-viewport capture #317 (234/234 generated). Updated only their 15 existing desktop/tablet/mobile baselines; kept inventory, thresholds and workflow unchanged. Replaced a one-shot documentation image-load check with a retrying assertion after #318 recorded a successful retry. Final PR CI remains required; no merge, QA access or deployment.
+Core CI #563 passed all 18 jobs at 405843b8. Reviewed the five intended F007/F008 screenshot differences against exact-head all-viewport capture #317 (234/234 generated). Updated only their 15 existing desktop/tablet/mobile baselines; kept inventory, thresholds and workflow unchanged. Replaced a one-shot documentation image-load check with a retrying assertion after #318 recorded a successful retry. Final PR CI remains required; no merge, QA access or deployment.
+
+
+CI closure at implementation head 847117d9: CI #564 PASS all 18 jobs, 3464 tests / 28544 assertions, no errors/failures/skips and 81.48% coverage. Visual compare #319 PASS 177 desktop tests; all-viewport compare #320 PASS 448 tests, no flaky. Evidence-only follow-up preserves that implementation and still requires mandatory exact-head PR checks; no merge/deployment.

@@ -53,8 +53,34 @@ test("direct opening balance defaults, preview and stale-input safety at desktop
         EXCEL_IMPORT: "Import dari Excel",
         BOARD_DECISION: "Keputusan pengurus",
       },
-      history: [],
-      capabilities: { can_post: false, can_void: false },
+      history: [
+        {
+          id: 10,
+          status: "DRAFT",
+          status_label: "Draft",
+          status_tone: "amber",
+          mode: "DIRECT",
+          cut_off_date: "2026-09-30",
+          total_amount: 100,
+          months_count: 0,
+          source_type: "MANUAL_RECONCILIATION",
+          lines: [],
+        },
+        {
+          id: 11,
+          status: "POSTED",
+          status_label: "Posted",
+          status_tone: "emerald",
+          mode: "CALCULATED",
+          total_amount: 600000,
+          months_count: 12,
+          period_start: "2024-01-01",
+          period_end: "2024-12-31",
+          source_type: "MIGRATION_LEDGER",
+          lines: [],
+        },
+      ],
+      capabilities: { can_post: true, can_void: true },
       default_period: { start: "2016-01-01", end: "2026-09-30" },
     },
   };
@@ -138,6 +164,33 @@ test("direct opening balance defaults, preview and stale-input safety at desktop
         await page.getByLabel("Periode Awal Perhitungan").count(),
         0,
       );
+      await page.getByText("Riwayat Batch", { exact: true }).waitFor();
+      assert.equal(
+        await page.getByText("12 bulan", { exact: false }).count(),
+        1,
+      );
+      await page
+        .getByRole("button", { name: "Posting ke Ledger", exact: true })
+        .click();
+      await page
+        .getByRole("heading", { name: "Konfirmasi Posting Saldo Awal" })
+        .waitFor();
+      await page.getByRole("button", { name: "Batal", exact: true }).click();
+      await page.getByRole("button", { name: "Void", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "Void Saldo Awal", exact: true })
+        .waitFor();
+      await page
+        .getByLabel("Alasan void", { exact: true })
+        .fill("Synthetic correction");
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Konfirmasi Void", exact: true })
+          .isEnabled(),
+        true,
+      );
+      await page.getByRole("button", { name: "Batal", exact: true }).click();
+
       for (const [category, amount] of Object.entries({
         POKOK: "200000",
         WAJIB: "125000.50",

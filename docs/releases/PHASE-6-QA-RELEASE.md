@@ -1,6 +1,14 @@
 # Phase 6 — QA Release
 
-## QA-OPS-QUEUE-01 — durable queue lifecycle and public traffic release
+## QA-OPS-QUEUE-01 — historical durable queue lifecycle and public traffic release
+
+This is a historical operational checkpoint recorded before completion
+of QA-08/QA-09 and Bundle C. Current Phase 6 final status is recorded in
+[PHASE-6-BUNDLE-C-ACCEPTANCE.md](PHASE-6-BUNDLE-C-ACCEPTANCE.md): Phase 6 CLOSED PASS.
+
+All operational results and configuration below describe this checkpoint's
+execution time. Earlier Bundle A/replacement-promotion sections later in this
+document are also historical; they do not supersede the final acceptance report.
 
 Verified 2026-10-05 UTC, QA only. Serving application remains
 `v1.0.0-rc.14`, exact commit
@@ -75,6 +83,7 @@ were untouched. This documentation-only evidence does not change the deployed
 application candidate; evidence is published through a separate docs-only PR.
 
 ```text
+STATUS_AT_EXECUTION_TIME
 QA_OPS_QUEUE_01=PASS
 QUEUE_RESTART=always
 QUEUE_RESTART_SEC=5s
@@ -97,8 +106,28 @@ QA_09_PHYSICAL_FCM=AFTER_QA_08
 BUNDLE_B=IN_PROGRESS
 ```
 
-Next: development PC `F:\kojayaapp`, QA-08 Android ↔ QA, then QA-09 physical
-device/FCM. No Android workspace access or QA-08/QA-09 execution occurred here.
+At this checkpoint the next planned work was QA-08/QA-09.
+Those gates and subsequent Bundle C acceptance have since completed;
+see [PHASE-6-BUNDLE-C-ACCEPTANCE.md](PHASE-6-BUNDLE-C-ACCEPTANCE.md).
+No Android workspace access or QA-08/QA-09 execution occurred at this checkpoint.
+
+### Subsequent acceptance reconciliation — 2026-10-06
+
+[PR #110](https://github.com/johnd-creator/kojaya/pull/110) merged the final
+Phase 6 acceptance into main `54847ac1549550501ed2e0bf88a07a3a4e34da29`.
+This reconciliation preserves the QA-OPS-QUEUE-01 facts, including its graceful
+restart test; the later QA-11 natural recycle evidence is in the final report.
+It introduces no new runtime, deployment or production action.
+
+```text
+SUBSEQUENT_BUNDLE_B=CLOSED_PASS
+SUBSEQUENT_QA_10=PASS
+SUBSEQUENT_QA_11=PASS
+SUBSEQUENT_QA_12=PASS
+PHASE_6_FINAL=CLOSED_PASS
+FINAL_EVIDENCE=PHASE-6-BUNDLE-C-ACCEPTANCE.md
+PRODUCTION_RELEASE=NOT_EXECUTED
+```
 
 **Assessment date:** 2026-10-03 (Asia/Jakarta)
 

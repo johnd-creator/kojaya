@@ -82,7 +82,7 @@ const submit = () => {
         <img src="/images/logo.png" alt="" class="size-12 object-contain" />
         <div>
           <p class="text-xl font-extrabold text-[#063f22] sm:text-2xl">
-            KojayaPro
+            Kojaya
           </p>
           <p class="text-sm font-medium text-slate-600">
             Sistem Koperasi KOJAYA
@@ -342,7 +342,7 @@ const submit = () => {
         <span>&middot;</span>
         <span>Profesional</span>
       </div>
-      <p>&copy; 2026 KojayaPro. All rights reserved.</p>
+      <p>&copy; 2026 Kojaya. All rights reserved.</p>
     </footer>
   </main>
 </template>

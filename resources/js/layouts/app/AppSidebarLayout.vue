@@ -53,7 +53,9 @@ watch(
     <AppSidebar />
     <AppContent variant="sidebar" :class="['overflow-x-hidden', memberOnly ? 'pb-24 md:pb-0' : '']">
       <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-      <slot />
+      <div class="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col">
+        <slot />
+      </div>
     </AppContent>
     <MemberMobileNav v-if="memberOnly" />
     <Toaster />

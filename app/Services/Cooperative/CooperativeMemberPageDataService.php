@@ -117,6 +117,7 @@ class CooperativeMemberPageDataService
             'email' => $member->email,
             'phone' => $member->phone,
             'no_telp' => $member->no_telp,
+            'autodebet' => $member->autodebet,
             'status' => $member->status,
             'status_badge' => $member->status_badge,
             'validation_status' => $member->validation_status,

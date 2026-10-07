@@ -511,11 +511,17 @@ const kategoriLabel = (value: string) =>
   props.options.kategori.find((option) => option.value === value)?.label ??
   value ??
   "-";
-const autodebetLabel = (value: string) => {
+const autodebetLabel = (value?: string | null) => {
   const match = props.options.autodebet.find(
     (option) => option.value === value,
   );
-  return match?.label ?? value ?? "MANUAL";
+  if (match?.label) {
+    return match.label;
+  }
+  if (value === "BNI" || value === "BRI") {
+    return value;
+  }
+  return "Manual";
 };
 const exportUrl = computed(() => {
   const params = new URLSearchParams();
@@ -920,7 +926,7 @@ const kpiCards = computed(() => [
 
             <template #autodebet="{ row }">
               <span
-                v-if="row.autodebet === 'AUTODEBET'"
+                v-if="row.autodebet === 'BNI' || row.autodebet === 'BRI'"
                 class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
               >
                 <Banknote class="size-3.5" />

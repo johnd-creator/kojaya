@@ -143,14 +143,14 @@ const modules = [
         <div class="mt-5 flex min-h-0 flex-1 items-center">
           <img
             src="/images/bg-login.png"
-            alt="Ilustrasi modul ERP KojayaPro"
+            alt="Ilustrasi modul ERP Kojaya"
             class="mx-auto max-h-full w-full max-w-3xl object-contain drop-shadow-[0_18px_30px_rgba(16,128,49,0.16)]"
           />
         </div>
 
         <div
           class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
-          aria-label="Modul KojayaPro"
+          aria-label="Modul Kojaya"
         >
           <div
             v-for="module in modules"
@@ -400,7 +400,7 @@ const modules = [
         <span>&middot;</span>
         <span>Profesional</span>
       </div>
-      <p>&copy; 2026 KojayaPro. All rights reserved.</p>
+      <p>&copy; 2026 Kojaya. All rights reserved.</p>
     </footer>
   </main>
 </template>

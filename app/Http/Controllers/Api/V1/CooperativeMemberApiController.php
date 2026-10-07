@@ -254,7 +254,6 @@ class CooperativeMemberApiController extends Controller
 
             return $transitions->activate($member->refresh(), $request->user());
         });
-        $duesGenerationService->ensureOneTimeInvoice($member->refresh());
         $duesGenerationService->catchUpCurrentPeriod($member->refresh());
 
         return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);

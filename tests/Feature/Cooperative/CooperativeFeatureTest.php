@@ -458,7 +458,7 @@ class CooperativeFeatureTest extends TestCase
                 ->where('filters.status', '')
                 ->where('monthlyDuesInfo.title', 'Simpanan Wajib Mei 2026')
                 ->where('monthlyDuesInfo.amount', 50000)
-                ->where('monthlyDuesInfo.due_date', '2026-05-10')
+                ->where('monthlyDuesInfo.due_date', '2026-06-10')
                 ->has('invoices.data', 1)
             );
 

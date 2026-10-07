@@ -39,6 +39,14 @@ class DuesDomainSeparationTest extends TestCase
 
         CooperativeDuesInvoice::query()->create([
             'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $pokok->id,
+            'period' => '2026-07',
+            'amount' => 100000,
+            'paid_amount' => 0,
+            'status' => 'UNPAID',
+        ]);
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $sukarela->id,
             'period' => '2026-07',
             'amount' => 75000,

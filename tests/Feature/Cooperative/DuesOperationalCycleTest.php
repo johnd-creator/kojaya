@@ -8,12 +8,14 @@ use App\Models\CooperativeMember;
 use App\Models\CooperativePeriodLock;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\Cooperative\CooperativeNotificationDispatcher;
 use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberValidationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class DuesOperationalCycleTest extends TestCase
@@ -335,5 +337,132 @@ class DuesOperationalCycleTest extends TestCase
         $monthlyDuesInfo = $response->viewData('page')['props']['monthlyDuesInfo'];
         $this->assertSame($expectedDueDate, $monthlyDuesInfo['due_date']);
         $this->assertSame($persistedInvoice->due_date->toDateString(), $monthlyDuesInfo['due_date']);
+    }
+
+    public function test_final_approval_rolls_back_atomically_if_catch_up_fails_due_to_locked_period(): void
+    {
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->travelTo(CarbonImmutable::parse('2026-10-15 14:00:00'));
+
+        CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+
+        $memberUser = User::factory()->create(['organization_id' => $organization->id]);
+        $member = CooperativeMember::factory()->pending()->create([
+            'organization_id' => $organization->id,
+            'user_id' => $memberUser->id,
+            'joined_at' => '2026-10-10',
+            'tanggal_aktif' => '2026-10-10',
+        ]);
+
+        $validationService = app(MemberValidationService::class);
+        $validationService->verifyByAdmin($member, $admin);
+
+        $member->refresh();
+        $this->assertSame('PENDING', $member->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $member->validation_status);
+
+        // Lock current period
+        CooperativePeriodLock::query()->create([
+            'period' => '2026-10',
+            'module' => 'COOPERATIVE',
+            'status' => 'LOCKED',
+            'locked_at' => now(),
+            'reason' => 'Period locked for audit',
+        ]);
+
+        $notificationSpy = $this->spy(CooperativeNotificationDispatcher::class);
+
+        $thrown = false;
+        try {
+            $validationService->approveFinal($member, $pengurus, 'Approved final');
+        } catch (ValidationException $e) {
+            $thrown = true;
+        }
+
+        $this->assertTrue($thrown, 'Expected ValidationException when approving in locked period.');
+
+        // Verify atomic rollback
+        $member->refresh();
+        $this->assertSame('PENDING', $member->status);
+        $this->assertSame(CooperativeMember::VALIDATION_PENDING_REVIEW, $member->validation_status);
+        $this->assertFalse($memberUser->refresh()->hasRole('Anggota'));
+
+        $hasApprovedTransitionAudit = \App\Models\AuditLog::query()
+            ->where('subject_type', CooperativeMember::class)
+            ->where('subject_id', $member->id)
+            ->where('action', 'member.status.transitioned')
+            ->where('new_values->status', 'ACTIVE')
+            ->exists();
+        $this->assertFalse($hasApprovedTransitionAudit, 'No approved transition audit log should be committed.');
+
+        $this->assertDatabaseCount('cooperative_dues_invoices', 0);
+        $notificationSpy->shouldNotHaveReceived('memberFinalApproved');
+    }
+
+    public function test_api_activation_creates_current_wajib_without_fabricating_pokok_and_is_idempotent(): void
+    {
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->travelTo(CarbonImmutable::parse('2026-10-20 09:00:00'));
+
+        $pokokType = CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        $wajibType = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+            'joined_at' => '2026-10-15',
+            'tanggal_aktif' => '2026-10-15',
+        ]);
+
+        Sanctum::actingAs($admin, [
+            'cooperative.member.write',
+            'cooperative:write',
+        ]);
+
+        $response = $this->postJson("/api/v1/members/{$member->id}/activate");
+        $response->assertOk();
+
+        $this->assertSame('ACTIVE', $member->refresh()->status);
+
+        // Exactly one current-period WAJIB invoice created
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
+        $invoice = CooperativeDuesInvoice::query()->firstOrFail();
+        $this->assertSame($member->id, $invoice->cooperative_member_id);
+        $this->assertSame('2026-10', $invoice->period);
+        $this->assertSame('WAJIB', $invoice->contributionType->code);
+
+        // POKOK was NOT fabricated
+        $this->assertDatabaseMissing('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $pokokType->id,
+        ]);
+
+        // Catch-up idempotency: subsequent catch-up run creates 0 invoices
+        $this->assertSame(0, app(DuesGenerationService::class)->catchUpCurrentPeriod($member));
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
     }
 }

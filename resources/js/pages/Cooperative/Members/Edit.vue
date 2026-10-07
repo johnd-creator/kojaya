@@ -39,10 +39,20 @@ const props = defineProps<{
   };
 }>();
 
+const formatInitialDate = (val?: string | null) => {
+  if (!val) return "";
+  return val.includes("T") ? val.split("T")[0] : val;
+};
+
+const initialJoinedAt = formatInitialDate(props.member.joined_at);
+const initialTanggalAktif = formatInitialDate(
+  props.member.tanggal_aktif ?? props.member.joined_at,
+);
+
 const form = useForm({
   employee_id: props.member.employee_id ?? "",
   no_anggota: props.member.no_anggota ?? props.member.member_no ?? "",
-  tanggal_aktif: props.member.tanggal_aktif ?? props.member.joined_at ?? "",
+  tanggal_aktif: initialTanggalAktif,
   nama_anggota: props.member.nama_anggota ?? props.member.name ?? "",
   name: props.member.name ?? "",
   email: props.member.email ?? "",
@@ -52,7 +62,9 @@ const form = useForm({
   phone: props.member.phone ?? "",
   identity_number: props.member.identity_number ?? "",
   address: props.member.address ?? "",
-  joined_at: props.member.joined_at ?? "",
+  joined_at: initialJoinedAt,
+  correction_reason: "",
+  reason: "",
   status: props.member.status === "RESIGNED" ? "INACTIVE" : props.member.status ?? "ACTIVE",
   jenis_anggota: props.member.jenis_anggota ?? "AB",
   jenis_kelamin: props.member.jenis_kelamin ?? "L",
@@ -61,6 +73,12 @@ const form = useForm({
   no_rekening: props.member.no_rekening ?? "",
   opening_saving_balance: props.openingSavingBalance ?? 0,
   notes: props.member.notes ?? "",
+});
+
+const areDatesChanged = computed(() => {
+  const currentJoined = form.joined_at || "";
+  const currentAktif = form.tanggal_aktif || "";
+  return currentJoined !== initialJoinedAt || currentAktif !== initialTanggalAktif;
 });
 
 const memberName = computed(
@@ -115,6 +133,10 @@ const submit = (): void => {
       kategori: data.kategori,
       autodebet: data.autodebet,
       opening_saving_balance: data.opening_saving_balance,
+      joined_at: data.joined_at,
+      tanggal_aktif: data.tanggal_aktif,
+      correction_reason: data.correction_reason,
+      reason: data.correction_reason,
     }))
     .put(update(props.member.id).url);
 };
@@ -236,7 +258,6 @@ const submit = (): void => {
                   id="edit-member-active-date"
                   v-model="form.tanggal_aktif"
                   type="date"
-                  readonly
                   required
                 />
                 <InputError :message="form.errors.tanggal_aktif" />
@@ -257,7 +278,6 @@ const submit = (): void => {
                   id="edit-member-join-date"
                   v-model="form.joined_at"
                   type="date"
-                  readonly
                 />
                 <InputError :message="form.errors.joined_at" />
               </div>
@@ -278,6 +298,35 @@ const submit = (): void => {
                   </option>
                 </select>
                 <InputError :message="form.errors.status" />
+              </div>
+              <div
+                v-if="areDatesChanged || form.errors.correction_reason || form.errors.reason"
+                class="space-y-2 rounded-xl border border-amber-200 bg-amber-50/70 p-4 md:col-span-2 dark:border-amber-900/50 dark:bg-amber-950/20"
+              >
+                <div class="flex items-center justify-between">
+                  <Label
+                    for="edit-member-correction-reason"
+                    class="text-sm font-semibold text-amber-900 dark:text-amber-200"
+                  >
+                    Alasan Koreksi Tanggal Keanggotaan <span class="text-rose-500">*</span>
+                  </Label>
+                  <span class="text-xs font-medium text-amber-700/80 dark:text-amber-300/80">Wajib diisi</span>
+                </div>
+                <textarea
+                  id="edit-member-correction-reason"
+                  v-model="form.correction_reason"
+                  rows="3"
+                  required
+                  placeholder="Contoh: Koreksi tanggal aktif karena kesalahan input data saat migrasi..."
+                  class="w-full rounded-md border border-amber-300 bg-white p-3 text-sm shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 dark:border-amber-800 dark:bg-zinc-950 dark:text-white"
+                />
+                <p class="text-xs text-amber-800 dark:text-amber-300">
+                  Perhatian: Koreksi tanggal keanggotaan merupakan perbaikan data master dan tidak membuat ulang tagihan historis atau mengubah saldo awal.
+                </p>
+                <InputError :message="form.errors.correction_reason || form.errors.reason" />
+              </div>
+              <div v-else class="text-xs text-zinc-500 md:col-span-2 dark:text-zinc-400">
+                Catatan: Koreksi tanggal keanggotaan merupakan perbaikan data master dan tidak membuat ulang tagihan historis atau mengubah saldo awal.
               </div>
             </div>
           </CardContent>

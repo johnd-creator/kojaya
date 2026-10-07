@@ -23,7 +23,7 @@ class DuesGenerationService
         $types = CooperativeContributionType::query()
             ->savingsDues()
             ->where('is_active', true)
-            ->whereIn('frequency', ['MONTHLY', 'ONCE'])
+            ->where('frequency', 'MONTHLY')
             ->get();
 
         CooperativeMember::query()
@@ -37,10 +37,6 @@ class DuesGenerationService
                     }
 
                     foreach ($types as $type) {
-                        if ($type->frequency === 'ONCE' && $this->hasPreviousInvoice($member->id, $type->id)) {
-                            continue;
-                        }
-
                         $invoice = CooperativeDuesInvoice::query()->firstOrCreate(
                             [
                                 'cooperative_member_id' => $member->id,
@@ -63,6 +59,13 @@ class DuesGenerationService
             });
 
         return $created;
+    }
+
+    public function catchUpCurrentPeriod(CooperativeMember $member): int
+    {
+        $period = CarbonImmutable::now()->format('Y-m');
+
+        return $this->generateForPeriod($period, $member->id);
     }
 
     /**

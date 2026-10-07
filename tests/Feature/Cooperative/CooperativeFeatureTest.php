@@ -1475,10 +1475,16 @@ class CooperativeFeatureTest extends TestCase
             'period' => '2026-06',
             'amount' => 125000,
         ]);
+        $this->assertDatabaseMissing('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $pokok->id,
+        ]);
+
+        app(DuesGenerationService::class)->ensureOneTimeInvoice($member);
+
         $this->assertDatabaseHas('cooperative_dues_invoices', [
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $pokok->id,
-            'period' => '2026-06',
             'amount' => 250000,
         ]);
     }

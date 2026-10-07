@@ -5,10 +5,15 @@ namespace Tests\Feature\Cooperative;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeDuesInvoice;
 use App\Models\CooperativeMember;
+use App\Models\CooperativePeriodLock;
+use App\Models\Organization;
+use App\Models\User;
 use App\Services\Cooperative\DuesGenerationService;
+use App\Services\Cooperative\MemberValidationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class DuesOperationalCycleTest extends TestCase
@@ -83,5 +88,192 @@ class DuesOperationalCycleTest extends TestCase
         $this->assertNotNull($event);
         $this->assertSame('0 3 1 * *', $event->expression);
         $this->assertDatabaseCount('cooperative_payments', 0);
+    }
+
+    public function test_monthly_generator_does_not_create_once_pokok_invoice(): void
+    {
+        CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'joined_at' => '2026-10-01',
+            'tanggal_aktif' => '2026-10-01',
+        ]);
+
+        $created = app(DuesGenerationService::class)->generateForPeriod('2026-10');
+
+        $this->assertSame(1, $created);
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-10',
+        ]);
+        $invoice = CooperativeDuesInvoice::query()->firstOrFail();
+        $this->assertSame('WAJIB', $invoice->contributionType->code);
+    }
+
+    public function test_period_lock_blocks_monthly_dues_generation_and_catch_up(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-15 10:00:00'));
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'joined_at' => '2026-10-01',
+            'tanggal_aktif' => '2026-10-01',
+        ]);
+
+        CooperativePeriodLock::query()->create([
+            'period' => '2026-10',
+            'module' => 'COOPERATIVE',
+            'status' => 'LOCKED',
+            'locked_at' => now(),
+            'locked_by' => 1,
+        ]);
+
+        $this->expectException(ValidationException::class);
+        app(DuesGenerationService::class)->catchUpCurrentPeriod($member);
+    }
+
+    public function test_existing_previous_period_invoice_does_not_block_current_period_monthly_invoice(): void
+    {
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'joined_at' => '2026-09-01',
+            'tanggal_aktif' => '2026-09-01',
+        ]);
+
+        CooperativeDuesInvoice::query()->create([
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'period' => '2026-09',
+            'amount' => 50000,
+            'paid_amount' => 50000,
+            'due_date' => '2026-10-10',
+            'status' => 'PAID',
+        ]);
+
+        $this->assertSame(1, app(DuesGenerationService::class)->generateForPeriod('2026-10'));
+        $this->assertDatabaseCount('cooperative_dues_invoices', 2);
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-10',
+            'status' => 'UNPAID',
+        ]);
+    }
+
+    public function test_opening_balance_pokok_does_not_cause_catch_up_to_fabricate_pokok_invoice(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-15 10:00:00'));
+        CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'joined_at' => '2026-10-01',
+            'tanggal_aktif' => '2026-10-01',
+        ]);
+
+        $created = app(DuesGenerationService::class)->catchUpCurrentPeriod($member);
+
+        $this->assertSame(1, $created);
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
+        $invoice = CooperativeDuesInvoice::query()->firstOrFail();
+        $this->assertSame('WAJIB', $invoice->contributionType->code);
+    }
+
+    public function test_final_approval_after_day_one_produces_exactly_one_current_wajib_without_pokok(): void
+    {
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->travelTo(CarbonImmutable::parse('2026-10-15 14:00:00'));
+        CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create(['organization_id' => $organization->id]);
+        $admin->assignRole('Admin Koperasi');
+        $pengurus = User::factory()->create(['organization_id' => $organization->id]);
+        $pengurus->assignRole('Pengurus Koperasi');
+
+        $member = CooperativeMember::factory()->pending()->create([
+            'organization_id' => $organization->id,
+            'joined_at' => '2026-10-10',
+            'tanggal_aktif' => '2026-10-10',
+        ]);
+
+        $validationService = app(MemberValidationService::class);
+        $validationService->verifyByAdmin($member, $admin);
+        $validationService->approveFinal($member->refresh(), $pengurus, 'Approved final');
+
+        $this->assertSame('ACTIVE', $member->refresh()->status);
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
+        $invoice = CooperativeDuesInvoice::query()->firstOrFail();
+        $this->assertSame($member->id, $invoice->cooperative_member_id);
+        $this->assertSame('2026-10', $invoice->period);
+        $this->assertSame('WAJIB', $invoice->contributionType->code);
+
+        // Repeated catch-up or generation is idempotent
+        $this->assertSame(0, app(DuesGenerationService::class)->catchUpCurrentPeriod($member));
+        $this->assertDatabaseCount('cooperative_dues_invoices', 1);
+    }
+
+    public function test_activation_catch_up_creates_current_wajib_and_is_idempotent(): void
+    {
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->travelTo(CarbonImmutable::parse('2026-10-20 09:00:00'));
+        CooperativeContributionType::query()->create([
+            'code' => 'POKOK', 'name' => 'Pokok', 'category' => 'POKOK',
+            'default_amount' => 100000, 'frequency' => 'ONCE', 'is_active' => true,
+        ]);
+        CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $organization->id,
+            'status' => 'INACTIVE',
+            'validation_status' => 'INACTIVE',
+            'joined_at' => '2026-10-15',
+            'tanggal_aktif' => '2026-10-15',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('cooperative.members.activate', $member))
+            ->assertRedirect();
+
+        $this->assertSame('ACTIVE', $member->refresh()->status);
+        $this->assertDatabaseHas('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'period' => '2026-10',
+            'status' => 'UNPAID',
+        ]);
+
+        $initialCount = CooperativeDuesInvoice::query()->count();
+        $this->assertSame(0, app(DuesGenerationService::class)->catchUpCurrentPeriod($member));
+        $this->assertSame($initialCount, CooperativeDuesInvoice::query()->count());
     }
 }

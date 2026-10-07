@@ -399,6 +399,7 @@ class CooperativeMemberController extends Controller
             return $transitions->activate($member->refresh(), request()->user());
         });
         $duesGenerationService->ensureOneTimeInvoice($member->refresh());
+        $duesGenerationService->catchUpCurrentPeriod($member->refresh());
 
         return back()->with('success', 'Cooperative member activated successfully.');
     }

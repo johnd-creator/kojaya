@@ -23,6 +23,7 @@ class MemberValidationService
         private readonly AuditLogService $audit,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
         private readonly MemberStatusTransitionService $transitions,
+        private readonly DuesGenerationService $duesGenerationService,
     ) {}
 
     public function verifyByAdmin(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
@@ -56,6 +57,7 @@ class MemberValidationService
                 'validation_notes' => $notes,
             ],
         );
+        $this->duesGenerationService->catchUpCurrentPeriod($member);
         DB::afterCommit(fn () => $this->notificationDispatcher->memberFinalApproved($member, $validator));
 
         return $member;

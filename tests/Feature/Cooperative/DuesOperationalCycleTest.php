@@ -33,7 +33,7 @@ class DuesOperationalCycleTest extends TestCase
         $this->artisan('cooperative:generate-monthly-dues')->assertSuccessful();
         $this->assertDatabaseCount('cooperative_dues_invoices', 1);
         $original = CooperativeDuesInvoice::query()->firstOrFail();
-        $this->assertSame('2026-10-10', $original->due_date->toDateString());
+        $this->assertSame('2026-11-10', $original->due_date->toDateString());
         $this->artisan('cooperative:generate-monthly-dues')->assertSuccessful();
         $this->assertDatabaseCount('cooperative_dues_invoices', 1);
         $this->travelTo(CarbonImmutable::parse('2026-10-28 10:00:00'));
@@ -77,7 +77,7 @@ class DuesOperationalCycleTest extends TestCase
         ]);
         CooperativeMember::factory()->active()->create(['joined_at' => '2026-01-01', 'tanggal_aktif' => '2026-01-01']);
         $this->assertSame(1, app(DuesGenerationService::class)->generateForPeriod('2026-02'));
-        $this->assertSame('2026-02-10', CooperativeDuesInvoice::query()->firstOrFail()->due_date->toDateString());
+        $this->assertSame('2026-03-10', CooperativeDuesInvoice::query()->firstOrFail()->due_date->toDateString());
         $this->assertSame(0, app(DuesGenerationService::class)->generateForPeriod('2026-02'));
     }
 
@@ -275,5 +275,65 @@ class DuesOperationalCycleTest extends TestCase
         $initialCount = CooperativeDuesInvoice::query()->count();
         $this->assertSame(0, app(DuesGenerationService::class)->catchUpCurrentPeriod($member));
         $this->assertSame($initialCount, CooperativeDuesInvoice::query()->count());
+    }
+
+    public function test_monthly_dues_due_date_and_collection_window_align_with_operational_cycle(): void
+    {
+        $service = app(DuesGenerationService::class);
+
+        // Required due date mappings
+        $this->assertSame('2026-10-10', $service->dueDateForPeriod('2026-09')->toDateString());
+        $this->assertSame('2026-11-10', $service->dueDateForPeriod('2026-10')->toDateString());
+        $this->assertSame('2027-01-10', $service->dueDateForPeriod('2026-12')->toDateString());
+        $this->assertSame('2028-03-10', $service->dueDateForPeriod('2028-02')->toDateString());
+
+        // Month-end execution date must not change the result
+        foreach (['2026-01-31', '2026-03-31', '2026-10-31', '2026-12-31'] as $mockDate) {
+            $this->travelTo(CarbonImmutable::parse($mockDate));
+            $this->assertSame('2026-11-10', $service->dueDateForPeriod('2026-10')->toDateString());
+            $this->assertSame('2027-01-10', $service->dueDateForPeriod('2026-12')->toDateString());
+            $this->assertSame('2028-03-10', $service->dueDateForPeriod('2028-02')->toDateString());
+        }
+
+        // Collection windows remain intact
+        $octWindow = $service->autodebitWindow('2026-10');
+        $this->assertSame('2026-10-25 00:00:00', $octWindow['opens_at']->toDateTimeString());
+        $this->assertSame('2026-11-07 23:59:59', $octWindow['closes_at']->toDateTimeString());
+
+        $decWindow = $service->autodebitWindow('2026-12');
+        $this->assertSame('2026-12-25 00:00:00', $decWindow['opens_at']->toDateTimeString());
+        $this->assertSame('2027-01-07 23:59:59', $decWindow['closes_at']->toDateTimeString());
+
+        // Controller monthlyDuesInfo and persisted invoice use the SAME domain result
+        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $organization = app(\App\Services\Cooperative\CooperativeHeadOfficeResolver::class)->resolve();
+        $user = User::factory()->create(['organization_id' => $organization->id]);
+        $user->assignRole('Admin Koperasi');
+
+        $type = CooperativeContributionType::query()->create([
+            'code' => 'WAJIB', 'name' => 'Simpanan Wajib', 'category' => 'WAJIB',
+            'default_amount' => 50000, 'frequency' => 'MONTHLY', 'is_active' => true,
+        ]);
+        $member = CooperativeMember::factory()->active()->create([
+            'organization_id' => $organization->id,
+            'joined_at' => '2026-10-01',
+            'tanggal_aktif' => '2026-10-01',
+        ]);
+
+        $service->generateForPeriod('2026-10');
+        $persistedInvoice = CooperativeDuesInvoice::query()
+            ->where('cooperative_member_id', $member->id)
+            ->where('period', '2026-10')
+            ->firstOrFail();
+
+        $expectedDueDate = $service->dueDateForPeriod('2026-10')->toDateString();
+        $this->assertSame($expectedDueDate, $persistedInvoice->due_date->toDateString());
+        $this->assertSame('2026-11-10', $persistedInvoice->due_date->toDateString());
+
+        $response = $this->actingAs($user)->get(route('cooperative.dues.index', ['period' => '2026-10']));
+        $response->assertOk();
+        $monthlyDuesInfo = $response->viewData('page')['props']['monthlyDuesInfo'];
+        $this->assertSame($expectedDueDate, $monthlyDuesInfo['due_date']);
+        $this->assertSame($persistedInvoice->due_date->toDateString(), $monthlyDuesInfo['due_date']);
     }
 }

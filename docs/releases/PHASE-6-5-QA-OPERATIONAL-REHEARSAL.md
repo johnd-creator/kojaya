@@ -109,3 +109,67 @@ Compare #318 juga mencatat satu tes gambar dokumentasi yang lulus saat retry. As
 Pada `847117d92d5dfca4a39039ec5267b663645cbdeb`, [CI #564](https://github.com/johnd-creator/kojaya/actions/runs/37481702422) PASS seluruh 18 job: **3464 tests / 28544 assertions**, 0 errors/failures/skips, line coverage **81.48%**. [Visual compare PR #319](https://github.com/johnd-creator/kojaya/actions/runs/37481702580) PASS **177 tes desktop**. [Visual compare seluruh viewport #320](https://github.com/johnd-creator/kojaya/actions/runs/37482138695) PASS **448 tes**, tanpa flaky pada dua run visual tersebut.
 
 Catatan hasil ini tidak mengubah implementasi yang diuji. Commit dokumentasi penutupan tetap mengikuti mandatory CI pada exact PR head; PR #112 tetap OPEN untuk review manusia, tanpa merge/deployment/akses QA/production.
+
+---
+
+# Phase 6.5 — QAR Correction Bundle 02
+
+## Identitas dan batas eksekusi
+
+- Repository: `johnd-creator/kojaya`.
+- Baseline pengembangan: `8605dfade4db5da152e923bdd9e5672018e13bc1` (origin/main).
+- Branch: `antigravity/qar-correction-bundle-02`.
+- Lingkungan: Development PC, worktree terisolasi.
+- Empat koreksi dicatat sebagai commit logis terpisah (Commit 1–4) ditambah bukti dokumentasi (Commit 5).
+- QA server tidak disentuh; database QA/production tidak disentuh; tidak ada migration database baru; tidak ada penambahan dependensi baru.
+- Tidak ada fabrikasi integrasi eksekusi bank / direct autodebit debit gateway yang belum tersedia.
+- PR disiapkan sebagai Draft PR terhadap `main` untuk review manusia; tidak di-auto-merge dan tidak di-deploy langsung.
+
+## Scope dan Temuan Koreksi
+
+### QAR-F007-R1-A — Catch-up Tagihan Iuran Periode Berjalan untuk Anggota Terlambat Aktif
+
+- **Temuan**: Anggota yang diaktifkan atau disetujui setelah tanggal 1 (eksekusi generator bulanan) tidak memiliki tagihan WAJIB bulan berjalan. Halaman iuran Oktober menunjukkan 0 tagihan dibuat untuk anggota aktif baru tersebut.
+- **Koreksi**:
+  - `DuesGenerationService::generateForPeriod()` dibatasi secara ketat hanya memproses iuran berfrekuensi `MONTHLY` (WAJIB). Penanganan `ONCE` (POKOK) dikeluarkan dari generator bulanan agar tidak menimbulkan kewajiban Simpanan Pokok ganda bagi anggota historis yang pokoknya sudah tercatat dalam Saldo Awal.
+  - Menambahkan metode kanonikal `catchUpCurrentPeriod(CooperativeMember $member)` yang idempoten, menghormati period lock via `CooperativePeriodLockService`, dan secara aman menerbitkan tagihan WAJIB periode berjalan jika belum ada tagihan untuk periode tersebut.
+  - Mengintegrasikan rekonsiliasi otomatis saat persetujuan akhir pengurus (`MemberValidationService::approveFinal()`) dan saat aktivasi anggota (`CooperativeMemberController::activate()` & `CooperativeMemberApiController::activate()`).
+  - Command CLI `cooperative:generate-monthly-dues --period=<period>` tetap aman dijalankan pasca-deploy untuk rekonsiliasi anggota aktif yang ada tanpa menghasilkan duplikasi.
+
+### QAR-F007-R1-B — Penyesuaian Tanggal Jatuh Tempo Tagihan Iuran Bulanan
+
+- **Temuan**: Tagihan periode `YYYY-MM` sebelumnya menetapkan `due_date` pada tanggal 10 bulan berjalan (misal: periode 2026-10 jatuh tempo 2026-10-10), yang terjadi sebelum jendela operasional koleksi bank (25 Oktober – 7 November) ditutup.
+- **Koreksi**:
+  - Menyediakan perhitungan tanggal jatuh tempo kanonikal tunggal `DuesGenerationService::dueDateForPeriod(string $period): CarbonImmutable`.
+  - Aturan kanonikal: jatuh tempo ditetapkan pada tanggal 10 bulan berikutnya (contoh: periode 2026-09 jatuh tempo 2026-10-10, 2026-10 jatuh tempo 2026-11-10, 2026-12 jatuh tempo 2027-01-10).
+  - Implementasi aman dari overflow bulan (`CarbonImmutable::createFromFormat('!Y-m', $period)->addMonth()->day(10)`).
+  - Digunakan seragam saat penerbitan invoice maupun saat rendering info iuran bulanan (`CooperativeDuesController::monthlyDuesInfo()`). Jendela koleksi bank (tanggal 25 s.d. 7) tetap dipertahankan.
+
+### QAR-F007-R1-C — Tampilan Metode Autodebet pada Daftar Anggota
+
+- **Temuan**: Detail anggota menampilkan metode autodebet (misal BNI), namun tabel daftar anggota `/cooperative/members` menampilkan "MANUAL" karena payload daftar tidak memuat atribut `autodebet` dan template UI memeriksa nilai yang tidak pernah ada (`row.autodebet === 'AUTODEBET'`).
+- **Koreksi**:
+  - Payload kanonikal `CooperativeMemberPageDataService::base()` kini menyertakan `'autodebet' => $member->autodebet`.
+  - Di frontend `Index.vue`, visual badge disesuaikan: nilai `'BNI'` dan `'BRI'` menampilkan status autodebet (hijau dengan ikon `Banknote`), sedangkan nilai `'MANUAL'` atau kosong menampilkan status manual (zinc dengan ikon `Settings2`).
+  - Privasi anggota terjaga: tidak ada pembukaan PII atau nomor rekening tak bertopeng baru pada endpoint daftar anggota.
+  - Konsistensi edit: pergantian metode pembayaran dari MANUAL ke BNI/BRI dan sebaliknya langsung tercermin pada reload daftar anggota.
+
+### QAR-F009 — Koreksi Teraudit Tanggal Keanggotaan Master
+
+- **Temuan**: Tanggal Bergabung (`joined_at`) dan Tanggal Aktif (`tanggal_aktif`) pada form edit anggota berstatus readonly, dan backend `UpdateCooperativeMemberRequest` melarang modifikasi field tersebut bahkan oleh operator berwenang.
+- **Koreksi**:
+  - Membuka hak koreksi Tanggal Bergabung dan Tanggal Aktif melalui alur edit standar bagi operator yang memiliki izin `manage_cooperative_member` dalam batas organisasi yang sama (isolasi organisasi tetap fail-closed).
+  - Validasi: `joined_at` dan `tanggal_aktif` tidak boleh di masa depan; `tanggal_aktif` tidak boleh lebih awal dari `joined_at`.
+  - Jika salah satu tanggal berubah dari nilai yang tersimpan, alasan koreksi (`correction_reason` / `reason`) wajib diisi minimal 5 karakter dan maksimal 1000 karakter. Jika tanggal tidak berubah, alasan koreksi bersifat opsional.
+  - Audit trail lengkap: perubahan tanggal mencatat audit log khusus `member.membership_dates.corrected` pada modul `cooperative.member` dengan payload canonical `old` (old `joined_at` & `tanggal_aktif`), `new` (new `joined_at` & `tanggal_aktif`), `reason`, dan `user_id` aktor.
+  - **Invarian Finansial Terpenuhi**: Koreksi data master ini diverifikasi secara mutlak TIDAK membuat tagihan iuran baru, TIDAK mengubah saldo awal atau entri ledger, TIDAK mengubah pembayaran atau kwitansi yang ada, dan TIDAK mengubah status keanggotaan.
+
+## Bukti Verifikasi Development PC
+
+- `DuesOperationalCycleTest`: **11 tes, 96 assertions PASS** (mencakup eksklusi frekuensi ONCE, period lock, idempotency catch-up pada approval dan aktivasi, penyesuaian jatuh tempo, boundary kabisat).
+- `MemberAutodebetDisplayTest`: **3 tes, 69 assertions PASS** (mencakup payload listing autodebet BNI/BRI/MANUAL, pencegahan bocornya PII rekening, konsistensi round-trip update).
+- `MembershipDateCorrectionTest`: **7 tes, 49 assertions PASS** (mencakup koreksi tanggal berizin dengan alasan, tanpa koreksi tanpa alasan, penolakan tanggal masa depan, penolakan tanggal aktif mendahului bergabung, penolakan unauthorized & foreign tenant, dan invarian keamanan finansial 4 tabel).
+- Suite gabungan 3 test file baru: **21 tes, 214 assertions PASS**.
+- Regresi domain anggota (`AnggotaMemberStructureTest`): **6 tes, 93 assertions PASS**.
+- Frontend Vite build (`npm run build`): **PASS** (27.59 detik).
+- Linter formatting (`vendor/bin/pint --dirty --format agent`): **PASS** (clean).

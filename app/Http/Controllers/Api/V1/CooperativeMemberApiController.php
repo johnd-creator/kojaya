@@ -21,6 +21,7 @@ use App\Services\AuditLogService;
 use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\CooperativeHeadOfficeResolver;
 use App\Services\Cooperative\CooperativeMemberService;
+use App\Services\Cooperative\DuesGenerationService;
 use App\Services\Cooperative\MemberAccountLinkService;
 use App\Services\Cooperative\MemberNumberGenerator;
 use App\Services\Cooperative\MemberResignationRequestService;
@@ -232,6 +233,7 @@ class CooperativeMemberApiController extends Controller
         CooperativeMember $member,
         MemberNumberGenerator $memberNumberGenerator,
         MemberStatusTransitionService $transitions,
+        DuesGenerationService $duesGenerationService,
     ): JsonResponse {
         $this->authorize('activate', $member);
 
@@ -252,6 +254,7 @@ class CooperativeMemberApiController extends Controller
 
             return $transitions->activate($member->refresh(), $request->user());
         });
+        $duesGenerationService->catchUpCurrentPeriod($member->refresh());
 
         return response()->json(['data' => new CooperativeMemberResource($member->refresh()->load('organization'))]);
     }

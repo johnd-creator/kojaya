@@ -23,6 +23,7 @@ class MemberValidationService
         private readonly AuditLogService $audit,
         private readonly CooperativeNotificationDispatcher $notificationDispatcher,
         private readonly MemberStatusTransitionService $transitions,
+        private readonly DuesGenerationService $duesGenerationService,
     ) {}
 
     public function verifyByAdmin(CooperativeMember $member, User $validator, ?string $notes = null): CooperativeMember
@@ -46,19 +47,22 @@ class MemberValidationService
     {
         $this->assertApproverIsNotVerifier($member, $validator);
 
-        $member = $this->transitions->approveFinal(
-            $member,
-            $validator,
-            $notes,
-            [
-                'validated_at' => Carbon::now(),
-                'validated_by' => $validator->id,
-                'validation_notes' => $notes,
-            ],
-        );
-        DB::afterCommit(fn () => $this->notificationDispatcher->memberFinalApproved($member, $validator));
+        return DB::transaction(function () use ($member, $validator, $notes): CooperativeMember {
+            $member = $this->transitions->approveFinal(
+                $member,
+                $validator,
+                $notes,
+                [
+                    'validated_at' => Carbon::now(),
+                    'validated_by' => $validator->id,
+                    'validation_notes' => $notes,
+                ],
+            );
+            $this->duesGenerationService->catchUpCurrentPeriod($member);
+            DB::afterCommit(fn () => $this->notificationDispatcher->memberFinalApproved($member, $validator));
 
-        return $member;
+            return $member;
+        });
     }
 
     public function requestRevision(CooperativeMember $member, User $validator, string $notes): CooperativeMember

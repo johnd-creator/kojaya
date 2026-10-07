@@ -111,7 +111,7 @@ class CooperativeDuesController extends Controller
                 'period_scope' => $periodScope,
                 'status' => $status,
             ],
-            'monthlyDuesInfo' => $this->monthlyDuesInfo($period, $scopeService, $request),
+            'monthlyDuesInfo' => $this->monthlyDuesInfo($period, $scopeService, $request, $duesService),
             'canResetPaidDues' => $this->canResetPaidDues($request),
         ]);
     }
@@ -225,6 +225,7 @@ class CooperativeDuesController extends Controller
         string $period,
         OrganizationScopedQueryService $scopeService,
         Request $request,
+        DuesGenerationService $duesService,
     ): ?array {
         $type = CooperativeContributionType::query()
             ->where('is_active', true)
@@ -240,7 +241,7 @@ class CooperativeDuesController extends Controller
             return null;
         }
 
-        $periodDate = CarbonImmutable::createFromFormat('Y-m', $period)->startOfMonth();
+        $periodDate = CarbonImmutable::createFromFormat('!Y-m', $period)->startOfMonth();
         $aggregateQuery = CooperativeDuesInvoice::query()
             ->forActiveMembers()
             ->where('period', $period)
@@ -262,7 +263,7 @@ class CooperativeDuesController extends Controller
             'next_period_label' => $this->periodLabel($periodDate->addMonth()),
             'type_name' => $type->name,
             'amount' => (float) $type->default_amount,
-            'due_date' => $periodDate->day(10)->toDateString(),
+            'due_date' => $duesService->dueDateForPeriod($period)->toDateString(),
             'total_invoices' => (int) ($aggregate->total_invoices ?? 0),
             'total_nominal' => (float) ($aggregate->total_nominal ?? 0),
             'total_paid' => (float) ($aggregate->total_paid ?? 0),

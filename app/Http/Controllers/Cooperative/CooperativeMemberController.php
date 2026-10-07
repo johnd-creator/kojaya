@@ -261,6 +261,8 @@ class CooperativeMemberController extends Controller
     ): RedirectResponse {
         $this->authorize('update', $member);
         $before = $member->only(['name', 'email', 'phone', 'status', 'validation_status']);
+        $oldJoinedAt = $member->joined_at?->toDateString();
+        $oldTanggalAktif = $member->tanggal_aktif?->toDateString();
 
         $member = DB::transaction(function () use ($request, $member): CooperativeMember {
             $member = CooperativeMember::query()->lockForUpdate()->findOrFail($member->id);
@@ -270,6 +272,29 @@ class CooperativeMemberController extends Controller
 
             return $member->refresh();
         });
+
+        $newJoinedAt = $member->joined_at?->toDateString();
+        $newTanggalAktif = $member->tanggal_aktif?->toDateString();
+
+        if (($oldJoinedAt !== $newJoinedAt) || ($oldTanggalAktif !== $newTanggalAktif)) {
+            $reason = (string) ($request->input('correction_reason') ?? $request->input('reason') ?? 'Koreksi tanggal keanggotaan.');
+            $audit->log(
+                'member.membership_dates.corrected',
+                'cooperative.member',
+                $member,
+                [
+                    'old' => [
+                        'joined_at' => $oldJoinedAt,
+                        'tanggal_aktif' => $oldTanggalAktif,
+                    ],
+                    'new' => [
+                        'joined_at' => $newJoinedAt,
+                        'tanggal_aktif' => $newTanggalAktif,
+                    ],
+                    'reason' => $reason,
+                ]
+            );
+        }
 
         $audit->log('member.profile.updated', 'cooperative.member', $member, [
             'old' => $before,
@@ -399,6 +424,7 @@ class CooperativeMemberController extends Controller
             return $transitions->activate($member->refresh(), request()->user());
         });
         $duesGenerationService->ensureOneTimeInvoice($member->refresh());
+        $duesGenerationService->catchUpCurrentPeriod($member->refresh());
 
         return back()->with('success', 'Cooperative member activated successfully.');
     }
@@ -637,7 +663,7 @@ class CooperativeMemberController extends Controller
     /** @return array<string, mixed> */
     private function profilePayload(UpdateCooperativeMemberRequest $request): array
     {
-        return $request->safe()->only([
+        $payload = $request->safe()->only([
             'employee_id',
             'no_anggota',
             'nama_anggota',
@@ -650,6 +676,16 @@ class CooperativeMemberController extends Controller
             'kategori',
             'autodebet',
         ]);
+
+        if ($request->has('joined_at') && $request->validated('joined_at') !== null) {
+            $payload['joined_at'] = $request->validated('joined_at');
+        }
+
+        if ($request->has('tanggal_aktif') && $request->validated('tanggal_aktif') !== null) {
+            $payload['tanggal_aktif'] = $request->validated('tanggal_aktif');
+        }
+
+        return $payload;
     }
 
     private function options(): array

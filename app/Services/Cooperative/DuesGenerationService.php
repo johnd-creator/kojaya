@@ -23,7 +23,7 @@ class DuesGenerationService
         $types = CooperativeContributionType::query()
             ->savingsDues()
             ->where('is_active', true)
-            ->whereIn('frequency', ['MONTHLY', 'ONCE'])
+            ->where('frequency', 'MONTHLY')
             ->get();
 
         CooperativeMember::query()
@@ -37,10 +37,6 @@ class DuesGenerationService
                     }
 
                     foreach ($types as $type) {
-                        if ($type->frequency === 'ONCE' && $this->hasPreviousInvoice($member->id, $type->id)) {
-                            continue;
-                        }
-
                         $invoice = CooperativeDuesInvoice::query()->firstOrCreate(
                             [
                                 'cooperative_member_id' => $member->id,
@@ -50,7 +46,7 @@ class DuesGenerationService
                             [
                                 'amount' => $type->default_amount,
                                 'paid_amount' => 0,
-                                'due_date' => $periodDate->day(10)->toDateString(),
+                                'due_date' => $this->dueDateForPeriod($period)->toDateString(),
                                 'status' => 'UNPAID',
                             ],
                         );
@@ -63,6 +59,23 @@ class DuesGenerationService
             });
 
         return $created;
+    }
+
+    public function dueDateForPeriod(string $period): CarbonImmutable
+    {
+        $month = CarbonImmutable::createFromFormat('!Y-m', $period);
+        if (! $month || $month->format('Y-m') !== $period) {
+            throw new \InvalidArgumentException('Periode iuran tidak valid.');
+        }
+
+        return $month->addMonth()->day(10)->startOfDay();
+    }
+
+    public function catchUpCurrentPeriod(CooperativeMember $member): int
+    {
+        $period = CarbonImmutable::now()->format('Y-m');
+
+        return $this->generateForPeriod($period, $member->id);
     }
 
     /**

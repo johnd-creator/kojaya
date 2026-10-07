@@ -458,7 +458,7 @@ class CooperativeFeatureTest extends TestCase
                 ->where('filters.status', '')
                 ->where('monthlyDuesInfo.title', 'Simpanan Wajib Mei 2026')
                 ->where('monthlyDuesInfo.amount', 50000)
-                ->where('monthlyDuesInfo.due_date', '2026-05-10')
+                ->where('monthlyDuesInfo.due_date', '2026-06-10')
                 ->has('invoices.data', 1)
             );
 
@@ -1475,10 +1475,16 @@ class CooperativeFeatureTest extends TestCase
             'period' => '2026-06',
             'amount' => 125000,
         ]);
+        $this->assertDatabaseMissing('cooperative_dues_invoices', [
+            'cooperative_member_id' => $member->id,
+            'cooperative_contribution_type_id' => $pokok->id,
+        ]);
+
+        app(DuesGenerationService::class)->ensureOneTimeInvoice($member);
+
         $this->assertDatabaseHas('cooperative_dues_invoices', [
             'cooperative_member_id' => $member->id,
             'cooperative_contribution_type_id' => $pokok->id,
-            'period' => '2026-06',
             'amount' => 250000,
         ]);
     }

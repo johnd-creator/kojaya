@@ -25,6 +25,8 @@ class MemberImportExecutionResult implements ArrayAccess, JsonSerializable
         public readonly array $generatedMemberNumbers,
         public readonly array $suppliedMemberNumbers,
         public readonly string $status = 'COMPLETED',
+        public readonly int $openingBalanceDraftsCount = 0,
+        public readonly float $openingBalanceTotalAmount = 0.0,
     ) {}
 
     /**
@@ -43,6 +45,8 @@ class MemberImportExecutionResult implements ArrayAccess, JsonSerializable
             'supplied_member_numbers' => $this->suppliedMemberNumbers,
             'supplied_member_number_count' => count($this->suppliedMemberNumbers),
             'status' => $this->status,
+            'opening_balance_drafts_count' => $this->openingBalanceDraftsCount,
+            'opening_balance_total_amount' => $this->openingBalanceTotalAmount,
         ];
     }
 

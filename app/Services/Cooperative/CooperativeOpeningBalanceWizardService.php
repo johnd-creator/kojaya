@@ -341,6 +341,7 @@ class CooperativeOpeningBalanceWizardService
                     'mode' => $preview['mode'] ?? 'CALCULATED',
                     'cut_off_date' => $preview['cut_off_date'] ?? null,
                     'include_current_month' => (bool) ($input['include_current_month'] ?? false),
+                    'import_id' => $input['import_id'] ?? null,
                 ],
             ]);
 
@@ -382,12 +383,29 @@ class CooperativeOpeningBalanceWizardService
             throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
         }
 
+        $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
+        if ($isImported) {
+            $creatorId = $batch->metadata['creator_id'] ?? null;
+            if ($creatorId !== null && (string) $creatorId === (string) $poster->id) {
+                throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
+            }
+        }
+
         return DB::transaction(function () use ($batch, $poster): CooperativeMemberOpeningBalanceBatch {
             $batch = CooperativeMemberOpeningBalanceBatch::query()->lockForUpdate()->findOrFail($batch->id);
             CooperativeMember::query()->whereKey($batch->cooperative_member_id)->lockForUpdate()->firstOrFail();
             if (! $batch->isDraft()) {
                 throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
             }
+
+            $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
+            if ($isImported) {
+                $creatorId = $batch->metadata['creator_id'] ?? null;
+                if ($creatorId !== null && (string) $creatorId === (string) $poster->id) {
+                    throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
+                }
+            }
+
             $batch->load(['member', 'lines.contributionType']);
             if (($batch->metadata['mode'] ?? null) === 'DIRECT') {
                 $this->assertMemberEligible($batch->member);

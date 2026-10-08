@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 29, 2026
+**Last Updated:** October 8, 2026
+
+## 2026-10-08 - QAR-CORRECTION-BUNDLE-04 (Development PC)
+
+- Implemented QAR-F013: Added back navigation link (`← Kembali ke Detail Anggota`) from `/cooperative/members/{member}/opening-balance` to `/cooperative/members/{member}` preserving member ID and responsive styling.
+- Implemented QAR-F014: Simplified Opening Balance new entry UI to Direct Mode only; removed calculated mode options from new entry flow while preserving historical CALCULATED batches (readable, VOID, postable). Simplified direct mode history display to `Saldo langsung per <date>` without redundant period range.
+- Implemented QAR-F015: Extended Member Import CSV contract supporting both V1 (canonical 12 columns) and V2 (canonical 16 columns appending `opening_balance_pokok,opening_balance_wajib,opening_balance_sukarela,opening_balance_khusus`). Enforced strict header validation, fail-closed active contribution type mapping, and decimal financial validation.
+- Implemented QAR-F016: Added financial cut-off date (`opening_balance_cutoff_date`), financial preview summary card (`Ringkasan Saldo Awal`), and extended `PreviewProofService` to bind CSV version and financial cut-off date against tampering.
+- Implemented QAR-F017: Integrated atomic member import with Direct Opening Balance draft creation for rows with positive balances. Zero ledger entries created at import time (strictly DRAFT).
+- Implemented QAR-F018: Enforced maker-checker restriction preventing the user who imported the CSV from self-posting or self-approving their imported opening balance drafts.
+- Implemented QAR-F019: Updated downloadable template to V2 (`kojaya-member-import-v2.csv`) with 16 canonical headers and valid dummy rows in `docs/onboarding/member-import-template.csv`.
+- Verification: 155 unit & feature tests passing (889 assertions), Node UI tests passing, Pint code formatting applied, Vite frontend build clean in 25s. Zero live or QA database modifications.
 
 ## 2026-10-06 - QAR-CORRECTION-BUNDLE-01 (Development PC)
 

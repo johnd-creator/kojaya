@@ -14,6 +14,7 @@ final class ImportValidationResult implements ArrayAccess, JsonSerializable
     /**
      * @param  list<ImportValidationError>  $errors
      * @param  list<ImportRowResult>  $rows
+     * @param  array<string, mixed>|null  $openingBalanceSummary
      */
     public function __construct(
         public readonly bool $valid,
@@ -23,6 +24,8 @@ final class ImportValidationResult implements ArrayAccess, JsonSerializable
         public readonly int $invalidRows,
         public readonly array $errors,
         public readonly array $rows,
+        public readonly string $csvVersion = 'v1',
+        public readonly ?array $openingBalanceSummary = null,
     ) {}
 
     /**
@@ -38,6 +41,8 @@ final class ImportValidationResult implements ArrayAccess, JsonSerializable
             'invalid_rows' => $this->invalidRows,
             'errors' => array_map(fn (ImportValidationError $error): array => $error->toArray(), $this->errors),
             'rows' => array_map(fn (ImportRowResult $row): array => $row->toArray(), $this->rows),
+            'csv_version' => $this->csvVersion,
+            'opening_balance_summary' => $this->openingBalanceSummary,
         ];
     }
 

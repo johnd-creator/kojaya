@@ -44,6 +44,11 @@ class ExecuteMemberImportRequest extends FormRequest
                 'required',
                 'date_format:Y-m-d',
             ],
+            'opening_balance_cutoff_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'before_or_equal:today',
+            ],
             'preview_proof' => [
                 'required',
                 'string',
@@ -67,6 +72,8 @@ class ExecuteMemberImportRequest extends FormRequest
             'file.mimes' => 'Format berkas harus berupa CSV (.csv). Berkas XLSX atau format lain tidak didukung.',
             'import_date.required' => 'Tanggal impor efektif wajib diisi.',
             'import_date.date_format' => 'Format tanggal impor harus berupa tanggal kalender yang valid dengan format YYYY-MM-DD.',
+            'opening_balance_cutoff_date.date_format' => 'Format tanggal cut-off saldo awal harus berupa tanggal kalender yang valid dengan format YYYY-MM-DD.',
+            'opening_balance_cutoff_date.before_or_equal' => 'Tanggal cut-off saldo awal tidak boleh melebihi hari ini.',
             'preview_proof.required' => 'Bukti pratinjau (preview proof) wajib disertakan.',
             'confirm_import.required' => 'Konfirmasi eksekusi impor wajib disetujui.',
             'confirm_import.accepted' => 'Konfirmasi eksekusi impor harus disetujui.',

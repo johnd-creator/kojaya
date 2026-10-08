@@ -4,6 +4,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
+  Banknote,
   Building2,
   Calendar,
   CheckCircle2,
@@ -58,6 +59,11 @@ interface ImportRowResultPayload {
     membership_type: string;
     join_date: string | null;
     notes: string | null;
+    opening_balance_pokok?: number;
+    opening_balance_wajib?: number;
+    opening_balance_sukarela?: number;
+    opening_balance_khusus?: number;
+    opening_balance_total?: number;
   };
   resolved_employee_id: number | null;
   employee_resolution_status:
@@ -72,6 +78,18 @@ interface ImportRowResultPayload {
   errors: ImportValidationErrorPayload[];
 }
 
+interface OpeningBalanceSummaryPayload {
+  version: string;
+  total_members: number;
+  members_with_positive_balance_count: number;
+  total_pokok: number;
+  total_wajib: number;
+  total_sukarela: number;
+  total_khusus: number;
+  grand_total: number;
+  cutoff_date: string | null;
+}
+
 interface ImportValidationResultPayload {
   valid: boolean;
   header_valid: boolean;
@@ -80,6 +98,8 @@ interface ImportValidationResultPayload {
   invalid_rows: number;
   errors: ImportValidationErrorPayload[];
   rows: ImportRowResultPayload[];
+  csv_version?: string;
+  opening_balance_summary?: OpeningBalanceSummaryPayload | null;
 }
 
 interface OrganizationOption {
@@ -95,6 +115,8 @@ const props = withDefaults(
     organizations: OrganizationOption[];
     default_import_date: string;
     canonical_headers: string[];
+    canonical_headers_v1?: string[];
+    canonical_headers_v2?: string[];
     preview: ImportValidationResultPayload | null;
     preview_proof?: string | null;
     file_sha256?: string | null;
@@ -119,6 +141,7 @@ const form = useForm({
   organization_id:
     props.current_organization_id ?? props.organizations[0]?.id ?? "",
   import_date: props.default_import_date,
+  opening_balance_cutoff_date: "",
 });
 
 const executeForm = useForm({
@@ -126,6 +149,7 @@ const executeForm = useForm({
   organization_id:
     props.current_organization_id ?? props.organizations[0]?.id ?? "",
   import_date: props.default_import_date,
+  opening_balance_cutoff_date: "",
   preview_proof: props.preview_proof ?? "",
   confirm_import: true,
 });
@@ -147,6 +171,7 @@ const submitExecute = (): void => {
   executeForm.file = fileToSubmit;
   executeForm.organization_id = form.organization_id;
   executeForm.import_date = form.import_date;
+  executeForm.opening_balance_cutoff_date = form.opening_balance_cutoff_date;
   executeForm.preview_proof = props.preview_proof ?? "";
   executeForm.confirm_import = true;
 

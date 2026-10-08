@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cooperative;
 
 use App\Models\AuditLog;
+use App\Models\CooperativeContributionType;
 use App\Models\CooperativeMember;
 use App\Models\Employee;
 use App\Models\Organization;
@@ -684,9 +685,27 @@ class MemberImportValidatorTest extends TestCase
             'employee_code' => 'IP-305819',
         ]);
 
+        CooperativeContributionType::factory()->create([
+            'category' => 'POKOK',
+            'is_active' => true,
+        ]);
+        CooperativeContributionType::factory()->create([
+            'category' => 'WAJIB',
+            'is_active' => true,
+        ]);
+        CooperativeContributionType::factory()->create([
+            'category' => 'SUKARELA',
+            'is_active' => true,
+        ]);
+        CooperativeContributionType::factory()->create([
+            'category' => 'KHUSUS',
+            'is_active' => true,
+        ]);
+
         $result = $this->validator->validateFile($templatePath, [
             'organization_id' => $this->organization->id,
             'import_date' => '2026-06-01',
+            'opening_balance_cutoff_date' => '2026-06-01',
         ]);
 
         $this->assertTrue($result->headerValid);

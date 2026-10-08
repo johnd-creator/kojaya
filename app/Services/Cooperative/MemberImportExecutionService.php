@@ -153,23 +153,44 @@ class MemberImportExecutionService
 
             // 6.5. Opening Balance Draft Creation (atomic with member creation)
             $openingBalanceDraftsCount = 0;
-            $openingBalanceTotalAmount = 0.0;
+            $openingBalanceTotalAmount = '0.00';
             $wizardService = $this->openingBalanceWizardService ?? app(CooperativeOpeningBalanceWizardService::class);
             $organization = \App\Models\Organization::query()->findOrFail($organizationId);
+
+            // Mandatory maker identity: explicit actor from AuditContext or authenticated user.
             $creator = ($auditContext?->actorId ? \App\Models\User::find($auditContext->actorId) : null)
-                ?? auth()->user()
-                ?? \App\Models\User::query()->where('organization_id', $organizationId)->first()
-                ?? \App\Models\User::first();
+                ?? auth()->user();
+
+            $hasPositiveBalance = false;
+            foreach ($finalValidation->rows as $row) {
+                $norm = $row->normalizedData;
+                $p = number_format((float) ($norm['opening_balance_pokok'] ?? 0), 2, '.', '');
+                $w = number_format((float) ($norm['opening_balance_wajib'] ?? 0), 2, '.', '');
+                $s = number_format((float) ($norm['opening_balance_sukarela'] ?? 0), 2, '.', '');
+                $k = number_format((float) ($norm['opening_balance_khusus'] ?? 0), 2, '.', '');
+                $rTotal = bcadd(bcadd($p, $w, 2), bcadd($s, $k, 2), 2);
+                if (bccomp($rTotal, '0.00', 2) > 0) {
+                    $hasPositiveBalance = true;
+                    break;
+                }
+            }
+
+            if ($hasPositiveBalance && ! $creator) {
+                throw new MemberImportExecutionException(
+                    'MISSING_MAKER_IDENTITY',
+                    'Identitas pembuat (maker) yang terautentikasi wajib ada untuk membuat draft saldo awal dari impor anggota.',
+                );
+            }
 
             foreach ($finalValidation->rows as $row) {
                 $norm = $row->normalizedData;
-                $pokok = (float) ($norm['opening_balance_pokok'] ?? 0);
-                $wajib = (float) ($norm['opening_balance_wajib'] ?? 0);
-                $sukarela = (float) ($norm['opening_balance_sukarela'] ?? 0);
-                $khusus = (float) ($norm['opening_balance_khusus'] ?? 0);
-                $rowTotal = round($pokok + $wajib + $sukarela + $khusus, 2);
+                $pokok = number_format((float) ($norm['opening_balance_pokok'] ?? 0), 2, '.', '');
+                $wajib = number_format((float) ($norm['opening_balance_wajib'] ?? 0), 2, '.', '');
+                $sukarela = number_format((float) ($norm['opening_balance_sukarela'] ?? 0), 2, '.', '');
+                $khusus = number_format((float) ($norm['opening_balance_khusus'] ?? 0), 2, '.', '');
+                $rowTotal = bcadd(bcadd($pokok, $wajib, 2), bcadd($sukarela, $khusus, 2), 2);
 
-                if ($rowTotal > 0) {
+                if (bccomp($rowTotal, '0.00', 2) > 0) {
                     $member = $createdMembersByRow[$row->rowNumber];
 
                     $wizardService->createDraft(
@@ -178,10 +199,10 @@ class MemberImportExecutionService
                             'mode' => 'DIRECT',
                             'cut_off_date' => $effectiveCutoffDate,
                             'direct_amounts' => [
-                                'POKOK' => $pokok,
-                                'WAJIB' => $wajib,
-                                'SUKARELA' => $sukarela,
-                                'KHUSUS' => $khusus,
+                                'POKOK' => (float) $pokok,
+                                'WAJIB' => (float) $wajib,
+                                'SUKARELA' => (float) $sukarela,
+                                'KHUSUS' => (float) $khusus,
                             ],
                             'source_type' => 'EXCEL_IMPORT',
                             'source_reference' => "IMPORT-{$importId}",
@@ -194,7 +215,7 @@ class MemberImportExecutionService
                     );
 
                     $openingBalanceDraftsCount++;
-                    $openingBalanceTotalAmount = round($openingBalanceTotalAmount + $rowTotal, 2);
+                    $openingBalanceTotalAmount = bcadd($openingBalanceTotalAmount, $rowTotal, 2);
                 }
             }
 
@@ -225,7 +246,7 @@ class MemberImportExecutionService
                             'generated_member_number_count' => count($generatedMemberNumbers),
                             'supplied_member_number_count' => count($suppliedMemberNumbers),
                             'opening_balance_drafts_count' => $openingBalanceDraftsCount,
-                            'opening_balance_total_amount' => $openingBalanceTotalAmount,
+                            'opening_balance_total_amount' => (float) $openingBalanceTotalAmount,
                         ],
                         'reason' => 'Batch member onboarding import completed',
                     ],
@@ -249,7 +270,7 @@ class MemberImportExecutionService
                 suppliedMemberNumbers: $suppliedMemberNumbers,
                 status: 'COMPLETED',
                 openingBalanceDraftsCount: $openingBalanceDraftsCount,
-                openingBalanceTotalAmount: $openingBalanceTotalAmount,
+                openingBalanceTotalAmount: (float) $openingBalanceTotalAmount,
             );
         });
     }

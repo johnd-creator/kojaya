@@ -826,8 +826,8 @@ class MemberImportValidator
                         continue;
                     }
 
-                    $floatVal = (float) $trimmedVal;
-                    if ($floatVal > 999999999999.99) {
+                    $canonicalVal = bcadd($trimmedVal, '0', 2);
+                    if (bccomp($canonicalVal, '999999999999.99', 2) > 0) {
                         $rowErrors[] = new ImportValidationError(
                             row: $rowNumber,
                             field: $finField,
@@ -838,14 +838,28 @@ class MemberImportValidator
                         continue;
                     }
 
-                    $roundedVal = round($floatVal, 2);
                     match ($categoryLabel) {
-                        'POKOK' => $pokok = $roundedVal,
-                        'WAJIB' => $wajib = $roundedVal,
-                        'SUKARELA' => $sukarela = $roundedVal,
-                        'KHUSUS' => $khusus = $roundedVal,
+                        'POKOK' => $pokok = (float) $canonicalVal,
+                        'WAJIB' => $wajib = (float) $canonicalVal,
+                        'SUKARELA' => $sukarela = (float) $canonicalVal,
+                        'KHUSUS' => $khusus = (float) $canonicalVal,
                     };
                 }
+            }
+
+            $rowTotalStr = bcadd(
+                bcadd(number_format($pokok, 2, '.', ''), number_format($wajib, 2, '.', ''), 2),
+                bcadd(number_format($sukarela, 2, '.', ''), number_format($khusus, 2, '.', ''), 2),
+                2
+            );
+
+            if (bccomp($rowTotalStr, '99999999999999.99', 2) > 0) {
+                $rowErrors[] = new ImportValidationError(
+                    row: $rowNumber,
+                    field: 'opening_balance_total',
+                    code: self::CODE_INVALID_FINANCIAL_VALUE,
+                    message: "Total akumulasi saldo awal baris {$rowNumber} melebihi batas maksimum 99.999.999.999.999,99.",
+                );
             }
 
             $normalizedRowsMap[$rowNumber] = [
@@ -865,7 +879,7 @@ class MemberImportValidator
                 'opening_balance_wajib' => $wajib,
                 'opening_balance_sukarela' => $sukarela,
                 'opening_balance_khusus' => $khusus,
-                'opening_balance_total' => round($pokok + $wajib + $sukarela + $khusus, 2),
+                'opening_balance_total' => (float) $rowTotalStr,
             ];
 
             $rowErrorsMap[$rowNumber] = $rowErrors;
@@ -890,21 +904,38 @@ class MemberImportValidator
         $batchErrors = [];
         $hasPositiveOpeningBalance = false;
         $positiveBalanceCount = 0;
-        $sumPokok = 0.0;
-        $sumWajib = 0.0;
-        $sumSukarela = 0.0;
-        $sumKhusus = 0.0;
+        $sumPokok = '0.00';
+        $sumWajib = '0.00';
+        $sumSukarela = '0.00';
+        $sumKhusus = '0.00';
 
         foreach ($normalizedRowsMap as $rowNumber => $rowNorm) {
-            $rowTotal = $rowNorm['opening_balance_total'] ?? 0.0;
-            if ($rowTotal > 0) {
+            $rowP = number_format((float) ($rowNorm['opening_balance_pokok'] ?? 0), 2, '.', '');
+            $rowW = number_format((float) ($rowNorm['opening_balance_wajib'] ?? 0), 2, '.', '');
+            $rowS = number_format((float) ($rowNorm['opening_balance_sukarela'] ?? 0), 2, '.', '');
+            $rowK = number_format((float) ($rowNorm['opening_balance_khusus'] ?? 0), 2, '.', '');
+            $rowTotal = bcadd(bcadd($rowP, $rowW, 2), bcadd($rowS, $rowK, 2), 2);
+
+            if (bccomp($rowTotal, '0.00', 2) > 0) {
                 $hasPositiveOpeningBalance = true;
                 $positiveBalanceCount++;
-                $sumPokok += $rowNorm['opening_balance_pokok'];
-                $sumWajib += $rowNorm['opening_balance_wajib'];
-                $sumSukarela += $rowNorm['opening_balance_sukarela'];
-                $sumKhusus += $rowNorm['opening_balance_khusus'];
+                $sumPokok = bcadd($sumPokok, $rowP, 2);
+                $sumWajib = bcadd($sumWajib, $rowW, 2);
+                $sumSukarela = bcadd($sumSukarela, $rowS, 2);
+                $sumKhusus = bcadd($sumKhusus, $rowK, 2);
             }
+        }
+
+        $grandTotal = bcadd(bcadd($sumPokok, $sumWajib, 2), bcadd($sumSukarela, $sumKhusus, 2), 2);
+
+        if (bccomp($grandTotal, '99999999999999.99', 2) > 0) {
+            $batchErrors[] = new ImportValidationError(
+                row: null,
+                field: 'opening_balance_total',
+                code: self::CODE_INVALID_FINANCIAL_VALUE,
+                message: 'Total akumulasi saldo awal seluruh batch melebihi batas maksimum 99.999.999.999.999,99.',
+                severity: ImportValidationError::SEVERITY_FATAL,
+            );
         }
 
         $cutoffDateInput = $context['opening_balance_cutoff_date'] ?? null;
@@ -1061,11 +1092,11 @@ class MemberImportValidator
             'total_members' => $totalRows,
             'members_with_positive_balance_count' => $positiveBalanceCount,
             'positive_members_count' => $positiveBalanceCount,
-            'total_pokok' => round($sumPokok, 2),
-            'total_wajib' => round($sumWajib, 2),
-            'total_sukarela' => round($sumSukarela, 2),
-            'total_khusus' => round($sumKhusus, 2),
-            'grand_total' => round($sumPokok + $sumWajib + $sumSukarela + $sumKhusus, 2),
+            'total_pokok' => (float) $sumPokok,
+            'total_wajib' => (float) $sumWajib,
+            'total_sukarela' => (float) $sumSukarela,
+            'total_khusus' => (float) $sumKhusus,
+            'grand_total' => (float) $grandTotal,
             'cutoff_date' => ($trimmedCutoff !== '') ? $trimmedCutoff : null,
         ];
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cooperative;
 
 use App\Enums\PermissionEnum;
+use App\Exceptions\MemberImportExecutionException;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeLedgerEntry;
 use App\Models\CooperativeMember;
@@ -13,6 +14,7 @@ use App\Models\Employee;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\Cooperative\CooperativeOpeningBalanceWizardService;
+use App\Services\Cooperative\MemberImportExecutionService;
 use App\Services\Cooperative\MemberImportValidator;
 use App\Services\Cooperative\PreviewProofService;
 use App\Services\Security\PiiCryptoService;
@@ -604,5 +606,255 @@ class MemberImportBundle04Test extends TestCase
         $this->assertTrue($result->valid);
         $this->assertSame(4, $result->totalRows);
         $this->assertSame(0, $result->invalidRows);
+    }
+
+    public function test_batch_level_error_blocks_preview_valid_when_rows_are_valid(): void
+    {
+        // V2 CSV with valid row and positive opening balance
+        $row = $this->validV2Row(['opening_balance_pokok' => '100000.00']);
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS_V2, [$row]);
+        $file = UploadedFile::fake()->createWithContent('missing_cutoff.csv', $csv);
+
+        // Omit cutoff date in preview request
+        $response = $this->actingAs($this->importer)->post(route('cooperative.members.import.preview'), [
+            'file' => $file,
+            'organization_id' => $this->organization->id,
+            'import_date' => '2026-06-01',
+            // opening_balance_cutoff_date omitted
+        ]);
+
+        $response->assertOk();
+        $preview = $response->viewData('page')['props']['preview'];
+        $proof = $response->viewData('page')['props']['preview_proof'];
+
+        // Rows are individually valid, but batch is invalid (fail-closed)
+        $this->assertTrue($preview['header_valid']);
+        $this->assertSame(1, $preview['total_rows']);
+        $this->assertSame(0, $preview['invalid_rows']);
+        $this->assertFalse($preview['valid'], 'Batch must fail-closed when cutoff is missing for positive balances');
+        $this->assertNull($proof, 'Proof must not be issued for invalid batch');
+
+        $batchErrors = collect($preview['errors'])->where('row', null)->values()->all();
+        $this->assertNotEmpty($batchErrors);
+        $this->assertSame('opening_balance_cutoff_date', $batchErrors[0]['field']);
+    }
+
+    public function test_missing_maker_identity_throws_when_executing_import_with_positive_balance(): void
+    {
+        $row = $this->validV2Row(['opening_balance_pokok' => '100000.00']);
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS_V2, [$row]);
+        $file = UploadedFile::fake()->createWithContent('maker_test.csv', $csv);
+
+        $executionService = app(MemberImportExecutionService::class);
+
+        // Ensure no authenticated user
+        auth()->logout();
+
+        $this->expectException(MemberImportExecutionException::class);
+        $this->expectExceptionMessage('Identitas pembuat (maker) yang terautentikasi wajib ada');
+
+        // Execute without authenticated user and without AuditContext actor
+        $executionService->execute(
+            filePath: $file->getPathname(),
+            organizationId: (string) $this->organization->id,
+            importDate: '2026-06-01',
+            fileSha256: hash_file('sha256', $file->getPathname()),
+            auditContext: null,
+            options: [
+                'organization_id' => $this->organization->id,
+                'import_date' => '2026-06-01',
+                'opening_balance_cutoff_date' => '2026-06-01',
+            ],
+            openingBalanceCutoffDate: '2026-06-01',
+        );
+    }
+
+    public function test_imported_draft_missing_or_invalid_creator_id_cannot_be_posted(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $wizardService = app(CooperativeOpeningBalanceWizardService::class);
+
+        // Batch with null creator_id
+        $batchNullCreator = CooperativeMemberOpeningBalanceBatch::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $this->organization->id,
+            'status' => \App\Enums\Cooperative\OpeningBalanceBatchStatus::Draft,
+            'calculation_start_period' => '2026-06-01',
+            'calculation_end_period' => '2026-06-01',
+            'months_count' => 0,
+            'total_amount' => 100000,
+            'source_type' => 'EXCEL_IMPORT',
+            'metadata' => [
+                'import_id' => 'dummy-import-id',
+                'creator_id' => null,
+            ],
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Identitas pembuat (maker) pada draft impor saldo awal tidak valid');
+        $wizardService->post($batchNullCreator, $this->checker);
+    }
+
+    public function test_imported_draft_with_non_existent_creator_cannot_be_posted(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $wizardService = app(CooperativeOpeningBalanceWizardService::class);
+
+        $batchGhostCreator = CooperativeMemberOpeningBalanceBatch::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $this->organization->id,
+            'status' => \App\Enums\Cooperative\OpeningBalanceBatchStatus::Draft,
+            'calculation_start_period' => '2026-06-01',
+            'calculation_end_period' => '2026-06-01',
+            'months_count' => 0,
+            'total_amount' => 100000,
+            'source_type' => 'EXCEL_IMPORT',
+            'metadata' => [
+                'import_id' => 'dummy-import-id',
+                'creator_id' => 999999,
+            ],
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Pengguna pembuat (maker) tidak ditemukan di sistem');
+        $wizardService->post($batchGhostCreator, $this->checker);
+    }
+
+    public function test_same_actor_cannot_post_imported_draft_and_distinct_checker_can(): void
+    {
+        $member = CooperativeMember::factory()->create([
+            'organization_id' => $this->organization->id,
+            'status' => CooperativeMember::VALIDATION_PENDING,
+            'validation_status' => CooperativeMember::VALIDATION_PENDING,
+        ]);
+
+        $wizardService = app(CooperativeOpeningBalanceWizardService::class);
+
+        $type = CooperativeContributionType::query()->where('category', 'POKOK')->firstOrFail();
+
+        $batch = CooperativeMemberOpeningBalanceBatch::query()->create([
+            'cooperative_member_id' => $member->id,
+            'organization_id' => $this->organization->id,
+            'status' => \App\Enums\Cooperative\OpeningBalanceBatchStatus::Draft,
+            'calculation_start_period' => '2026-06-01',
+            'calculation_end_period' => '2026-06-01',
+            'months_count' => 0,
+            'total_amount' => 100000,
+            'source_type' => 'EXCEL_IMPORT',
+            'metadata' => [
+                'import_id' => 'dummy-import-id',
+                'creator_id' => $this->importer->id,
+                'cut_off_date' => '2026-06-01',
+            ],
+        ]);
+
+        \App\Models\CooperativeMemberOpeningBalanceLine::query()->create([
+            'opening_balance_batch_id' => $batch->id,
+            'cooperative_contribution_type_id' => $type->id,
+            'category_snapshot' => 'POKOK',
+            'period_start' => '2026-06-01',
+            'period_end' => '2026-06-01',
+            'months_count' => 0,
+            'unit_amount' => 100000,
+            'total_amount' => 100000,
+            'calculation_method' => 'DIRECT',
+        ]);
+
+        // Same user (maker) attempts to post -> blocked!
+        try {
+            $wizardService->post($batch, $this->importer);
+            $this->fail('Maker must not be allowed to post imported draft');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui', $e->getMessage());
+        }
+
+        // Distinct authorized checker posts -> succeeds!
+        $posted = $wizardService->post($batch->fresh(), $this->checker);
+        $this->assertTrue($posted->isPosted());
+        $this->assertSame($this->checker->id, $posted->posted_by);
+    }
+
+    public function test_monetary_precision_and_exact_cents_summation_with_bcmath(): void
+    {
+        // 3 rows with fractional cents that could drift under floating point math:
+        // .33 + .33 + .34 = 1.00
+        $rows = [
+            $this->validV2Row([
+                'member_number' => 'KOP-901',
+                'identity_number' => '3171012301900011',
+                'email' => 'cents1@example.com',
+                'phone_number' => '081234560011',
+                'opening_balance_pokok' => '100000.33',
+                'opening_balance_wajib' => '0',
+                'opening_balance_sukarela' => '0',
+                'opening_balance_khusus' => '0',
+            ]),
+            $this->validV2Row([
+                'member_number' => 'KOP-902',
+                'identity_number' => '3171012301900012',
+                'email' => 'cents2@example.com',
+                'phone_number' => '081234560012',
+                'opening_balance_pokok' => '100000.33',
+                'opening_balance_wajib' => '0',
+                'opening_balance_sukarela' => '0',
+                'opening_balance_khusus' => '0',
+            ]),
+            $this->validV2Row([
+                'member_number' => 'KOP-903',
+                'identity_number' => '3171012301900013',
+                'email' => 'cents3@example.com',
+                'phone_number' => '081234560013',
+                'opening_balance_pokok' => '100000.34',
+                'opening_balance_wajib' => '0',
+                'opening_balance_sukarela' => '0',
+                'opening_balance_khusus' => '0',
+            ]),
+        ];
+
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS_V2, $rows);
+        $file = UploadedFile::fake()->createWithContent('cents.csv', $csv);
+
+        $result = $this->validator->validateFile($file->getPathname(), [
+            'organization_id' => $this->organization->id,
+            'import_date' => '2026-06-01',
+            'opening_balance_cutoff_date' => '2026-06-01',
+        ]);
+
+        $this->assertTrue($result->valid);
+        $summary = $result->openingBalanceSummary;
+        $this->assertNotNull($summary);
+        $this->assertSame(300001.0, (float) $summary['total_pokok']);
+        $this->assertSame(300001.0, (float) $summary['grand_total']);
+    }
+
+    public function test_controller_passes_default_cutoff_date_in_index_and_preview(): void
+    {
+        $indexResponse = $this->actingAs($this->importer)->get(route('cooperative.members.import'));
+        $indexResponse->assertOk();
+        $this->assertNull($indexResponse->viewData('page')['props']['default_cutoff_date']);
+
+        $row = $this->validV2Row(['opening_balance_pokok' => '50000.00']);
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS_V2, [$row]);
+        $file = UploadedFile::fake()->createWithContent('cutoff_prop.csv', $csv);
+
+        $previewResponse = $this->actingAs($this->importer)->post(route('cooperative.members.import.preview'), [
+            'file' => $file,
+            'organization_id' => $this->organization->id,
+            'import_date' => '2026-06-01',
+            'opening_balance_cutoff_date' => '2026-05-31',
+        ]);
+
+        $previewResponse->assertOk();
+        $this->assertSame('2026-05-31', $previewResponse->viewData('page')['props']['default_cutoff_date']);
     }
 }

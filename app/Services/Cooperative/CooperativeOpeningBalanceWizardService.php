@@ -385,10 +385,7 @@ class CooperativeOpeningBalanceWizardService
 
         $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
         if ($isImported) {
-            $creatorId = $batch->metadata['creator_id'] ?? null;
-            if ($creatorId !== null && (string) $creatorId === (string) $poster->id) {
-                throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
-            }
+            $this->assertImportedMakerCheckerPolicy($batch, $poster);
         }
 
         return DB::transaction(function () use ($batch, $poster): CooperativeMemberOpeningBalanceBatch {
@@ -400,10 +397,7 @@ class CooperativeOpeningBalanceWizardService
 
             $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
             if ($isImported) {
-                $creatorId = $batch->metadata['creator_id'] ?? null;
-                if ($creatorId !== null && (string) $creatorId === (string) $poster->id) {
-                    throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
-                }
+                $this->assertImportedMakerCheckerPolicy($batch, $poster);
             }
 
             $batch->load(['member', 'lines.contributionType']);
@@ -464,6 +458,26 @@ class CooperativeOpeningBalanceWizardService
 
             return $batch->refresh()->load('lines');
         });
+    }
+
+    /**
+     * Enforce fail-closed maker-checker segregation for imported opening balance batches.
+     */
+    private function assertImportedMakerCheckerPolicy(CooperativeMemberOpeningBalanceBatch $batch, User $poster): void
+    {
+        $creatorId = $batch->metadata['creator_id'] ?? null;
+
+        if ($creatorId === null || $creatorId === '' || ! is_numeric($creatorId)) {
+            throw new RuntimeException('Maker-checker violation: Identitas pembuat (maker) pada draft impor saldo awal tidak valid atau tidak tercatat.');
+        }
+
+        if ((string) $creatorId === (string) $poster->id) {
+            throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
+        }
+
+        if (! User::query()->whereKey((int) $creatorId)->exists()) {
+            throw new RuntimeException('Maker-checker violation: Pengguna pembuat (maker) tidak ditemukan di sistem.');
+        }
     }
 
     /**
@@ -685,7 +699,9 @@ class CooperativeOpeningBalanceWizardService
         $typeName = $line->contributionType?->name ?? $category;
 
         if ($line->calculation_method === 'DIRECT') {
-            return "Saldo awal {$typeName} per {$batch->metadata['cut_off_date']} (rekonsiliasi langsung)";
+            $cutoff = $batch->metadata['cut_off_date'] ?? ($batch->calculation_end_period ? \Carbon\CarbonImmutable::parse($batch->calculation_end_period)->toDateString() : '-');
+
+            return "Saldo awal {$typeName} per {$cutoff} (rekonsiliasi langsung)";
         }
 
         if ($line->calculation_method === 'ONCE') {

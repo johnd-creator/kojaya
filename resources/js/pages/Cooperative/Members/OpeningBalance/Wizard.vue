@@ -332,23 +332,16 @@ watch(
         <div
           class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div class="flex items-center gap-3">
-            <Button variant="ghost" size="icon" as-child>
-              <Link :href="showMemberRoute.url(member.id)">
-                <ArrowLeft class="size-4" />
-              </Link>
-            </Button>
-            <div>
-              <h1 class="text-2xl font-semibold tracking-tight">
-                Wizard Saldo Awal
-              </h1>
-              <p class="text-muted-foreground text-sm">
-                {{ member.no_anggota }} &middot; {{ member.nama_anggota }}
-                <span v-if="member.organization_name">
-                  &middot; {{ member.organization_name }}
-                </span>
-              </p>
-            </div>
+          <div>
+            <h1 class="text-2xl font-semibold tracking-tight">
+              Wizard Saldo Awal
+            </h1>
+            <p class="text-muted-foreground text-sm">
+              {{ member.no_anggota }} &middot; {{ member.nama_anggota }}
+              <span v-if="member.organization_name">
+                &middot; {{ member.organization_name }}
+              </span>
+            </p>
           </div>
           <Button variant="outline" as-child>
             <Link :href="showMemberRoute.url(member.id)">

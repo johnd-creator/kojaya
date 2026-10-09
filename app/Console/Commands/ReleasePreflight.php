@@ -42,6 +42,9 @@ class ReleasePreflight extends Command
         $this->check('api.contract_version', function (): bool {
             return filled(config('app.api_contract_version'));
         });
+        $this->check('runtime.extension.bcmath', function (): bool {
+            return extension_loaded('bcmath');
+        });
 
         if ($strictProduction) {
             $this->check('application.environment', function (): bool {

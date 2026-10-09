@@ -24,7 +24,8 @@
         "docs:validate:test": "node --test scripts/validate-user-guide.test.mjs",
         "docs:screenshots": "node scripts/export-user-guide-screenshots.mjs",
         "docs:screenshots:test": "node --test scripts/export-user-guide-screenshots.test.mjs",
-        "docs:renderer:test": "node --experimental-strip-types --test tests/node/markdown-renderer.test.mts"
+        "docs:renderer:test": "node --experimental-strip-types --test tests/node/markdown-renderer.test.mts",
+        "test:formatters": "node --experimental-strip-types --test tests/node/formatters.test.mts"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.12.1",

@@ -63,6 +63,25 @@ class FrontendFormatterHygieneTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function test_frontend_formatters_precision_boundary_suite(): void
+    {
+        $node = (new \Symfony\Component\Process\ExecutableFinder)->find('node') ?: 'node';
+        $process = new \Symfony\Component\Process\Process([
+            $node,
+            '--experimental-strip-types',
+            '--test',
+            'tests/node/formatters.test.mts',
+        ], dirname(__DIR__, 2));
+
+        $process->setTimeout(30);
+        $process->run();
+
+        $this->assertTrue(
+            $process->isSuccessful(),
+            "Frontend formatter precision test suite failed: {$process->getErrorOutput()} {$process->getOutput()}"
+        );
+    }
+
     /**
      * @return iterable<string, string>
      */

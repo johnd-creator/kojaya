@@ -83,7 +83,11 @@ export async function auditAccessibility(
     readyLocator?: Locator,
 ): Promise<void> {
     await waitForStableScreen(page, { screenId: screen, readyLocator });
-    const result = await new AxeBuilder({ page }).analyze();
+    const nprogress = page.locator("#nprogress");
+    if ((await nprogress.count()) > 0) {
+        await nprogress.waitFor({ state: "detached", timeout: 2000 }).catch(() => {});
+    }
+    const result = await new AxeBuilder({ page }).exclude("#nprogress").analyze();
     const knownFindings = await readKnownFindings();
     const expiredFindings = expiredAccessibilityFindings(knownFindings);
     const blockingViolations = result.violations.filter((violation) =>

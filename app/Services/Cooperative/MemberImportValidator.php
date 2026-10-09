@@ -13,11 +13,11 @@ use InvalidArgumentException;
 class MemberImportValidator
 {
     /**
-     * Exact 12 canonical headers in exact order.
+     * Exact 12 canonical headers in exact order (V1).
      *
      * @var list<string>
      */
-    public const CANONICAL_HEADERS = [
+    public const CANONICAL_HEADERS_V1 = [
         'member_number',
         'full_name',
         'email',
@@ -31,6 +31,35 @@ class MemberImportValidator
         'join_date',
         'notes',
     ];
+
+    /**
+     * Exact 4 financial headers appended in V2 contract.
+     *
+     * @var list<string>
+     */
+    public const FINANCIAL_HEADERS = [
+        'opening_balance_pokok',
+        'opening_balance_wajib',
+        'opening_balance_sukarela',
+        'opening_balance_khusus',
+    ];
+
+    /**
+     * Exact 16 canonical headers in exact order (V2).
+     *
+     * @var list<string>
+     */
+    public const CANONICAL_HEADERS_V2 = [
+        ...self::CANONICAL_HEADERS_V1,
+        ...self::FINANCIAL_HEADERS,
+    ];
+
+    /**
+     * Backwards-compatible canonical headers default (12 columns).
+     *
+     * @var list<string>
+     */
+    public const CANONICAL_HEADERS = self::CANONICAL_HEADERS_V1;
 
     public const CODE_MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD';
 
@@ -55,6 +84,18 @@ class MemberImportValidator
     public const CODE_REFERENCE_CONTEXT_UNRESOLVED = 'REFERENCE_CONTEXT_UNRESOLVED';
 
     public const CODE_INVALID_HEADER = 'INVALID_HEADER';
+
+    public const CODE_INVALID_FINANCIAL_VALUE = 'INVALID_FINANCIAL_VALUE';
+
+    public const CODE_MISSING_CUTOFF_DATE = 'MISSING_CUTOFF_DATE';
+
+    public const CODE_INVALID_CUTOFF_DATE = 'INVALID_CUTOFF_DATE';
+
+    public const CODE_CUTOFF_DATE_IN_FUTURE = 'CUTOFF_DATE_IN_FUTURE';
+
+    public const CODE_JOIN_DATE_AFTER_CUTOFF = 'JOIN_DATE_AFTER_CUTOFF';
+
+    public const CODE_AMBIGUOUS_CONTRIBUTION_TYPE = 'AMBIGUOUS_CONTRIBUTION_TYPE';
 
     public const EMPLOYEE_RESOLUTION_NOT_PROVIDED = 'NOT_PROVIDED';
 
@@ -209,8 +250,8 @@ class MemberImportValidator
         }
 
         // Validate header
-        $headerError = $this->validateHeaderRow($headerRow);
-        if ($headerError !== null) {
+        $headerCheck = $this->validateHeaderRow($headerRow);
+        if ($headerCheck['error'] !== null) {
             fclose($stream);
 
             return new ImportValidationResult(
@@ -219,8 +260,9 @@ class MemberImportValidator
                 totalRows: 0,
                 validRows: 0,
                 invalidRows: 0,
-                errors: [$headerError],
+                errors: [$headerCheck['error']],
                 rows: [],
+                csvVersion: $headerCheck['version'],
             );
         }
 
@@ -236,7 +278,7 @@ class MemberImportValidator
 
         fclose($stream);
 
-        return $this->processRows(self::CANONICAL_HEADERS, $rawRows, $context);
+        return $this->processRows($headerCheck['version'], $headerCheck['headers'], $rawRows, $context);
     }
 
     /**
@@ -294,16 +336,17 @@ class MemberImportValidator
             }
         }
 
-        $headerError = $this->validateHeaderRow($headers);
-        if ($headerError !== null) {
+        $headerCheck = $this->validateHeaderRow($headers);
+        if ($headerCheck['error'] !== null) {
             return new ImportValidationResult(
                 valid: false,
                 headerValid: false,
                 totalRows: 0,
                 validRows: 0,
                 invalidRows: 0,
-                errors: [$headerError],
+                errors: [$headerCheck['error']],
                 rows: [],
+                csvVersion: $headerCheck['version'],
             );
         }
 
@@ -318,52 +361,72 @@ class MemberImportValidator
                 $rawRows[] = $row;
             } else {
                 $aligned = [];
-                foreach (self::CANONICAL_HEADERS as $col) {
+                foreach ($headerCheck['headers'] as $col) {
                     $aligned[] = $row[$col] ?? null;
                 }
                 $rawRows[] = $aligned;
             }
         }
 
-        return $this->processRows(self::CANONICAL_HEADERS, $rawRows, $context);
+        return $this->processRows($headerCheck['version'], $headerCheck['headers'], $rawRows, $context);
     }
 
     /**
-     * Strict canonical header check: exact count, exact order, exact casing.
+     * Strict canonical header check: supports V1 (exact 12 cols) or V2 (exact 16 cols).
+     * Exact count, exact order, exact casing.
      *
      * @param  array<int, mixed>  $headerRow
+     * @return array{error: ?ImportValidationError, version: string, headers: list<string>}
      */
-    private function validateHeaderRow(array $headerRow): ?ImportValidationError
+    private function validateHeaderRow(array $headerRow): array
     {
-        $expectedCount = count(self::CANONICAL_HEADERS);
         $actualCount = count($headerRow);
 
-        if ($actualCount !== $expectedCount) {
-            return new ImportValidationError(
-                row: null,
-                field: 'header',
-                code: self::CODE_INVALID_HEADER,
-                message: "Jumlah kolom header tidak sesuai kontrak. Diharapkan tepat {$expectedCount} kolom, ditemukan {$actualCount} kolom.",
-                severity: ImportValidationError::SEVERITY_FATAL,
-            );
-        }
-
-        for ($i = 0; $i < $expectedCount; $i++) {
-            $actual = $headerRow[$i];
-            $expected = self::CANONICAL_HEADERS[$i];
-
-            if ($actual !== $expected) {
-                return new ImportValidationError(
+        if ($actualCount === count(self::CANONICAL_HEADERS_V1)) {
+            $expected = self::CANONICAL_HEADERS_V1;
+            $version = 'v1';
+        } elseif ($actualCount === count(self::CANONICAL_HEADERS_V2)) {
+            $expected = self::CANONICAL_HEADERS_V2;
+            $version = 'v2';
+        } else {
+            return [
+                'error' => new ImportValidationError(
                     row: null,
                     field: 'header',
                     code: self::CODE_INVALID_HEADER,
-                    message: 'Header kolom ke-'.($i + 1)." tidak sesuai kontrak. Diharapkan '{$expected}', tetapi ditemukan '{$actual}'.",
+                    message: "Jumlah kolom header tidak sesuai kontrak. Diharapkan tepat 12 kolom (V1) atau 16 kolom (V2), ditemukan {$actualCount} kolom.",
                     severity: ImportValidationError::SEVERITY_FATAL,
-                );
+                ),
+                'version' => 'unknown',
+                'headers' => [],
+            ];
+        }
+
+        $expectedCount = count($expected);
+        for ($i = 0; $i < $expectedCount; $i++) {
+            $actual = $headerRow[$i];
+            $expectedCol = $expected[$i];
+
+            if ($actual !== $expectedCol) {
+                return [
+                    'error' => new ImportValidationError(
+                        row: null,
+                        field: 'header',
+                        code: self::CODE_INVALID_HEADER,
+                        message: 'Header kolom ke-'.($i + 1)." tidak sesuai kontrak {$version}. Diharapkan '{$expectedCol}', tetapi ditemukan '{$actual}'.",
+                        severity: ImportValidationError::SEVERITY_FATAL,
+                    ),
+                    'version' => $version,
+                    'headers' => $expected,
+                ];
             }
         }
 
-        return null;
+        return [
+            'error' => null,
+            'version' => $version,
+            'headers' => $expected,
+        ];
     }
 
     /**
@@ -374,7 +437,7 @@ class MemberImportValidator
      * @param  list<array<int, mixed>>  $rawRows
      * @param  array<string, mixed>  $context
      */
-    private function processRows(array $headers, array $rawRows, array $context): ImportValidationResult
+    private function processRows(string $version, array $headers, array $rawRows, array $context): ImportValidationResult
     {
         $totalRows = count($rawRows);
         if ($totalRows === 0) {
@@ -386,6 +449,7 @@ class MemberImportValidator
                 invalidRows: 0,
                 errors: [],
                 rows: [],
+                csvVersion: $version,
             );
         }
 
@@ -408,24 +472,24 @@ class MemberImportValidator
             $rowErrors = [];
 
             // Check column count for this row
-            if (count($rowValues) !== count(self::CANONICAL_HEADERS)) {
+            if (count($rowValues) !== count($headers)) {
                 $rowErrors[] = new ImportValidationError(
                     row: $rowNumber,
                     field: 'row',
                     code: self::CODE_INVALID_CONTROLLED_VALUE,
-                    message: "Jumlah kolom baris ({$rowNumber}) tidak sesuai kontrak 12 kolom.",
+                    message: "Jumlah kolom baris ({$rowNumber}) tidak sesuai kontrak ".count($headers).' kolom.',
                 );
             }
 
-            // Combine into associative array with canonical headers
+            // Combine into associative array with headers
             $rawAssoc = [];
-            foreach (self::CANONICAL_HEADERS as $colIndex => $colName) {
+            foreach ($headers as $colIndex => $colName) {
                 $rawAssoc[$colName] = $rowValues[$colIndex] ?? null;
             }
             $rawRowsMap[$rowNumber] = $rawAssoc;
 
             // 1. member_number
-            $rawMemberNo = $rawAssoc['member_number'];
+            $rawMemberNo = $rawAssoc['member_number'] ?? null;
             $trimmedMemberNo = $rawMemberNo === null ? null : trim((string) $rawMemberNo);
             if ($trimmedMemberNo === '' || $trimmedMemberNo === null) {
                 $normalizedMemberNo = null;
@@ -448,7 +512,7 @@ class MemberImportValidator
             $genRequiredMap[$rowNumber] = $genRequired;
 
             // 2. full_name
-            $rawFullName = $rawAssoc['full_name'];
+            $rawFullName = $rawAssoc['full_name'] ?? null;
             $normalizedFullName = $rawFullName === null ? '' : trim((string) $rawFullName);
             if ($normalizedFullName === '') {
                 $rowErrors[] = new ImportValidationError(
@@ -474,7 +538,7 @@ class MemberImportValidator
             }
 
             // 3. email
-            $rawEmail = $rawAssoc['email'];
+            $rawEmail = $rawAssoc['email'] ?? null;
             $trimmedEmail = $rawEmail === null ? '' : strtolower(trim((string) $rawEmail));
             $normalizedEmail = $trimmedEmail;
             if ($normalizedEmail === '') {
@@ -494,7 +558,7 @@ class MemberImportValidator
             }
 
             // 4. phone_number
-            $rawPhone = $rawAssoc['phone_number'];
+            $rawPhone = $rawAssoc['phone_number'] ?? null;
             $cleanedPhone = $rawPhone === null ? '' : preg_replace('/[\s\-\.\(\)]+/', '', (string) $rawPhone);
             if (str_starts_with($cleanedPhone, '+628')) {
                 $cleanedPhone = '08'.substr($cleanedPhone, 4);
@@ -519,7 +583,7 @@ class MemberImportValidator
             }
 
             // 5. identity_number (NIK)
-            $rawNik = $rawAssoc['identity_number'];
+            $rawNik = $rawAssoc['identity_number'] ?? null;
             $trimmedNik = $rawNik === null ? '' : trim((string) $rawNik);
             $normalizedNik = $trimmedNik;
             if ($normalizedNik === '') {
@@ -539,7 +603,7 @@ class MemberImportValidator
             }
 
             // 6. gender
-            $rawGender = $rawAssoc['gender'];
+            $rawGender = $rawAssoc['gender'] ?? null;
             $normalizedGender = $rawGender === null ? '' : strtoupper(trim((string) $rawGender));
             if ($normalizedGender === '') {
                 $rowErrors[] = new ImportValidationError(
@@ -558,7 +622,7 @@ class MemberImportValidator
             }
 
             // 7. company_code
-            $rawCompany = $rawAssoc['company_code'];
+            $rawCompany = $rawAssoc['company_code'] ?? null;
             $normalizedCompany = $rawCompany === null ? '' : strtoupper(trim((string) $rawCompany));
             if ($normalizedCompany === '') {
                 $rowErrors[] = new ImportValidationError(
@@ -577,7 +641,7 @@ class MemberImportValidator
             }
 
             // 8. employee_number
-            $rawEmp = $rawAssoc['employee_number'];
+            $rawEmp = $rawAssoc['employee_number'] ?? null;
             $trimmedEmp = $rawEmp === null ? null : trim((string) $rawEmp);
             if ($trimmedEmp === '' || $trimmedEmp === null) {
                 $normalizedEmp = null;
@@ -595,14 +659,13 @@ class MemberImportValidator
                     $employeeStatusMap[$rowNumber] = self::EMPLOYEE_RESOLUTION_UNRESOLVED;
                     $resolvedEmployeeIdMap[$rowNumber] = null;
                 } else {
-                    // Marker for resolution phase
                     $employeeStatusMap[$rowNumber] = self::EMPLOYEE_RESOLUTION_UNRESOLVED;
                     $resolvedEmployeeIdMap[$rowNumber] = null;
                 }
             }
 
             // 9. address
-            $rawAddress = $rawAssoc['address'];
+            $rawAddress = $rawAssoc['address'] ?? null;
             $normalizedAddress = $rawAddress === null ? '' : trim((string) $rawAddress);
             if ($normalizedAddress === '') {
                 $rowErrors[] = new ImportValidationError(
@@ -621,7 +684,7 @@ class MemberImportValidator
             }
 
             // 10. membership_type
-            $rawMembership = $rawAssoc['membership_type'];
+            $rawMembership = $rawAssoc['membership_type'] ?? null;
             $trimmedMembership = $rawMembership === null ? '' : strtoupper(trim((string) $rawMembership));
             if ($trimmedMembership === '') {
                 $normalizedMembership = 'AB'; // deterministic default
@@ -638,7 +701,7 @@ class MemberImportValidator
             }
 
             // 11. join_date
-            $rawJoinDate = $rawAssoc['join_date'];
+            $rawJoinDate = $rawAssoc['join_date'] ?? null;
             $trimmedJoinDate = $rawJoinDate === null ? '' : trim((string) $rawJoinDate);
             if ($trimmedJoinDate === '') {
                 $contextImportDate = $context['import_date'] ?? null;
@@ -679,9 +742,125 @@ class MemberImportValidator
             }
 
             // 12. notes
-            $rawNotes = $rawAssoc['notes'];
+            $rawNotes = $rawAssoc['notes'] ?? null;
             $trimmedNotes = $rawNotes === null ? null : trim((string) $rawNotes);
             $normalizedNotes = ($trimmedNotes === '' || $trimmedNotes === null) ? null : $trimmedNotes;
+
+            // 13-16. Financial Fields (Opening Balances)
+            $pokok = '0.00';
+            $wajib = '0.00';
+            $sukarela = '0.00';
+            $khusus = '0.00';
+
+            if ($version === 'v2') {
+                $financialMap = [
+                    'opening_balance_pokok' => 'POKOK',
+                    'opening_balance_wajib' => 'WAJIB',
+                    'opening_balance_sukarela' => 'SUKARELA',
+                    'opening_balance_khusus' => 'KHUSUS',
+                ];
+
+                foreach ($financialMap as $finField => $categoryLabel) {
+                    $rawVal = $rawAssoc[$finField] ?? null;
+                    $trimmedVal = $rawVal === null ? '' : trim((string) $rawVal);
+
+                    if ($trimmedVal === '') {
+                        match ($categoryLabel) {
+                            'POKOK' => $pokok = '0.00',
+                            'WAJIB' => $wajib = '0.00',
+                            'SUKARELA' => $sukarela = '0.00',
+                            'KHUSUS' => $khusus = '0.00',
+                        };
+
+                        continue;
+                    }
+
+                    // Formula injection
+                    if (str_starts_with($trimmedVal, '=') || str_starts_with($trimmedVal, '@')) {
+                        $rowErrors[] = new ImportValidationError(
+                            row: $rowNumber,
+                            field: $finField,
+                            code: self::CODE_INVALID_FINANCIAL_VALUE,
+                            message: "Formula atau formula injection tidak diizinkan pada {$finField}.",
+                        );
+
+                        continue;
+                    }
+
+                    if (str_starts_with($trimmedVal, '+')) {
+                        $rowErrors[] = new ImportValidationError(
+                            row: $rowNumber,
+                            field: $finField,
+                            code: self::CODE_INVALID_FINANCIAL_VALUE,
+                            message: "Karakter awalan '+' tidak diizinkan pada {$finField}.",
+                        );
+
+                        continue;
+                    }
+
+                    if (str_starts_with($trimmedVal, '-') || (is_numeric($trimmedVal) && bccomp($trimmedVal, '0', 2) < 0)) {
+                        $rowErrors[] = new ImportValidationError(
+                            row: $rowNumber,
+                            field: $finField,
+                            code: self::CODE_INVALID_FINANCIAL_VALUE,
+                            message: "Nilai saldo awal {$finField} tidak boleh negatif.",
+                        );
+
+                        continue;
+                    }
+
+                    if (! preg_match('/^\d+(\.\d{1,2})?$/', $trimmedVal)) {
+                        if (preg_match('/^\d+\.\d{3,}$/', $trimmedVal)) {
+                            $msg = "Nilai {$finField} ('{$trimmedVal}') memiliki lebih dari 2 angka desimal.";
+                        } else {
+                            $msg = "Format nilai {$finField} ('{$trimmedVal}') tidak valid. Gunakan format angka desimal murni tanpa pemisah ribuan (contoh: 150000 atau 150000.50).";
+                        }
+
+                        $rowErrors[] = new ImportValidationError(
+                            row: $rowNumber,
+                            field: $finField,
+                            code: self::CODE_INVALID_FINANCIAL_VALUE,
+                            message: $msg,
+                        );
+
+                        continue;
+                    }
+
+                    $canonicalVal = bcadd($trimmedVal, '0', 2);
+                    if (bccomp($canonicalVal, '999999999999.99', 2) > 0) {
+                        $rowErrors[] = new ImportValidationError(
+                            row: $rowNumber,
+                            field: $finField,
+                            code: self::CODE_INVALID_FINANCIAL_VALUE,
+                            message: "Nilai {$finField} melebihi batas maksimum 999.999.999.999,99.",
+                        );
+
+                        continue;
+                    }
+
+                    match ($categoryLabel) {
+                        'POKOK' => $pokok = $canonicalVal,
+                        'WAJIB' => $wajib = $canonicalVal,
+                        'SUKARELA' => $sukarela = $canonicalVal,
+                        'KHUSUS' => $khusus = $canonicalVal,
+                    };
+                }
+            }
+
+            $rowTotalStr = bcadd(
+                bcadd($pokok, $wajib, 2),
+                bcadd($sukarela, $khusus, 2),
+                2
+            );
+
+            if (bccomp($rowTotalStr, '99999999999999.99', 2) > 0) {
+                $rowErrors[] = new ImportValidationError(
+                    row: $rowNumber,
+                    field: 'opening_balance_total',
+                    code: self::CODE_INVALID_FINANCIAL_VALUE,
+                    message: "Total akumulasi saldo awal baris {$rowNumber} melebihi batas maksimum 99.999.999.999.999,99.",
+                );
+            }
 
             $normalizedRowsMap[$rowNumber] = [
                 'member_number' => $normalizedMemberNo,
@@ -696,6 +875,11 @@ class MemberImportValidator
                 'membership_type' => $normalizedMembership,
                 'join_date' => $normalizedJoinDate,
                 'notes' => $normalizedNotes,
+                'opening_balance_pokok' => $pokok,
+                'opening_balance_wajib' => $wajib,
+                'opening_balance_sukarela' => $sukarela,
+                'opening_balance_khusus' => $khusus,
+                'opening_balance_total' => $rowTotalStr,
             ];
 
             $rowErrorsMap[$rowNumber] = $rowErrors;
@@ -715,6 +899,143 @@ class MemberImportValidator
             $resolvedEmployeeIdMap,
             $context
         );
+
+        // Phase 4.5: Cut-off date & Active Contribution Type Mapping Validation
+        $batchErrors = [];
+        $hasPositiveOpeningBalance = false;
+        $positiveBalanceCount = 0;
+        $sumPokok = '0.00';
+        $sumWajib = '0.00';
+        $sumSukarela = '0.00';
+        $sumKhusus = '0.00';
+
+        foreach ($normalizedRowsMap as $rowNumber => $rowNorm) {
+            $rowP = (string) ($rowNorm['opening_balance_pokok'] ?? '0.00');
+            $rowW = (string) ($rowNorm['opening_balance_wajib'] ?? '0.00');
+            $rowS = (string) ($rowNorm['opening_balance_sukarela'] ?? '0.00');
+            $rowK = (string) ($rowNorm['opening_balance_khusus'] ?? '0.00');
+            $rowTotal = bcadd(bcadd($rowP, $rowW, 2), bcadd($rowS, $rowK, 2), 2);
+
+            if (bccomp($rowTotal, '0.00', 2) > 0) {
+                $hasPositiveOpeningBalance = true;
+                $positiveBalanceCount++;
+                $sumPokok = bcadd($sumPokok, $rowP, 2);
+                $sumWajib = bcadd($sumWajib, $rowW, 2);
+                $sumSukarela = bcadd($sumSukarela, $rowS, 2);
+                $sumKhusus = bcadd($sumKhusus, $rowK, 2);
+            }
+        }
+
+        $grandTotal = bcadd(bcadd($sumPokok, $sumWajib, 2), bcadd($sumSukarela, $sumKhusus, 2), 2);
+
+        if (bccomp($grandTotal, '99999999999999.99', 2) > 0) {
+            $batchErrors[] = new ImportValidationError(
+                row: null,
+                field: 'opening_balance_total',
+                code: self::CODE_INVALID_FINANCIAL_VALUE,
+                message: 'Total akumulasi saldo awal seluruh batch melebihi batas maksimum 99.999.999.999.999,99.',
+                severity: ImportValidationError::SEVERITY_FATAL,
+            );
+        }
+
+        $cutoffDateInput = $context['opening_balance_cutoff_date'] ?? null;
+        $trimmedCutoff = $cutoffDateInput === null ? '' : trim((string) $cutoffDateInput);
+
+        if ($hasPositiveOpeningBalance) {
+            if ($trimmedCutoff === '') {
+                $batchErrors[] = new ImportValidationError(
+                    row: null,
+                    field: 'opening_balance_cutoff_date',
+                    code: self::CODE_MISSING_CUTOFF_DATE,
+                    message: 'Tanggal cut-off saldo awal wajib diisi jika berkas CSV memiliki saldo awal.',
+                    severity: ImportValidationError::SEVERITY_FATAL,
+                );
+            } elseif (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $trimmedCutoff) || ! $this->isValidCalendarDate($trimmedCutoff)) {
+                $batchErrors[] = new ImportValidationError(
+                    row: null,
+                    field: 'opening_balance_cutoff_date',
+                    code: self::CODE_INVALID_CUTOFF_DATE,
+                    message: "Format tanggal cut-off saldo awal '{$trimmedCutoff}' tidak valid. Harus berupa tanggal kalender YYYY-MM-DD.",
+                    severity: ImportValidationError::SEVERITY_FATAL,
+                );
+            } elseif ($trimmedCutoff > now()->toDateString()) {
+                $batchErrors[] = new ImportValidationError(
+                    row: null,
+                    field: 'opening_balance_cutoff_date',
+                    code: self::CODE_CUTOFF_DATE_IN_FUTURE,
+                    message: 'Tanggal cut-off saldo awal tidak boleh lebih dari hari ini.',
+                    severity: ImportValidationError::SEVERITY_FATAL,
+                );
+            } else {
+                foreach ($normalizedRowsMap as $rowNumber => $rowNorm) {
+                    if (($rowNorm['opening_balance_total'] ?? 0.0) > 0) {
+                        $joinDate = $rowNorm['join_date'] ?? null;
+                        if ($joinDate !== null && $joinDate > $trimmedCutoff) {
+                            $rowErrorsMap[$rowNumber][] = new ImportValidationError(
+                                row: $rowNumber,
+                                field: 'join_date',
+                                code: self::CODE_JOIN_DATE_AFTER_CUTOFF,
+                                message: "Tanggal bergabung anggota ({$joinDate}) tidak boleh lebih baru dari tanggal cut-off saldo awal ({$trimmedCutoff}).",
+                            );
+                        }
+                    }
+                }
+            }
+        } elseif ($trimmedCutoff !== '') {
+            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $trimmedCutoff) || ! $this->isValidCalendarDate($trimmedCutoff)) {
+                $batchErrors[] = new ImportValidationError(
+                    row: null,
+                    field: 'opening_balance_cutoff_date',
+                    code: self::CODE_INVALID_CUTOFF_DATE,
+                    message: "Format tanggal cut-off saldo awal '{$trimmedCutoff}' tidak valid. Harus berupa tanggal kalender YYYY-MM-DD.",
+                    severity: ImportValidationError::SEVERITY_FATAL,
+                );
+            } elseif ($trimmedCutoff > now()->toDateString()) {
+                $batchErrors[] = new ImportValidationError(
+                    row: null,
+                    field: 'opening_balance_cutoff_date',
+                    code: self::CODE_CUTOFF_DATE_IN_FUTURE,
+                    message: 'Tanggal cut-off saldo awal tidak boleh lebih dari hari ini.',
+                    severity: ImportValidationError::SEVERITY_FATAL,
+                );
+            }
+        }
+
+        if ($hasPositiveOpeningBalance) {
+            $categoryTotals = [
+                'POKOK' => $sumPokok,
+                'WAJIB' => $sumWajib,
+                'SUKARELA' => $sumSukarela,
+                'KHUSUS' => $sumKhusus,
+            ];
+
+            foreach ($categoryTotals as $cat => $total) {
+                if ($total > 0) {
+                    $matchingTypes = \App\Models\CooperativeContributionType::query()
+                        ->where('category', $cat)
+                        ->where('is_active', true)
+                        ->get();
+
+                    if ($matchingTypes->isEmpty()) {
+                        $batchErrors[] = new ImportValidationError(
+                            row: null,
+                            field: 'contribution_type',
+                            code: self::CODE_AMBIGUOUS_CONTRIBUTION_TYPE,
+                            message: "Tidak ditemukan jenis simpanan aktif untuk kategori {$cat}.",
+                            severity: ImportValidationError::SEVERITY_FATAL,
+                        );
+                    } elseif ($matchingTypes->count() > 1) {
+                        $batchErrors[] = new ImportValidationError(
+                            row: null,
+                            field: 'contribution_type',
+                            code: self::CODE_AMBIGUOUS_CONTRIBUTION_TYPE,
+                            message: "Ditemukan {$matchingTypes->count()} jenis simpanan aktif untuk kategori {$cat}. Konfigurasi jenis simpanan ambigu.",
+                            severity: ImportValidationError::SEVERITY_FATAL,
+                        );
+                    }
+                }
+            }
+        }
 
         // Phase 5: Assemble structured results
         $resultRows = [];
@@ -762,6 +1083,23 @@ class MemberImportValidator
             );
         }
 
+        foreach ($batchErrors as $bErr) {
+            $allErrors[] = $bErr;
+        }
+
+        $openingBalanceSummary = [
+            'version' => $version,
+            'total_members' => $totalRows,
+            'members_with_positive_balance_count' => $positiveBalanceCount,
+            'positive_members_count' => $positiveBalanceCount,
+            'total_pokok' => $sumPokok,
+            'total_wajib' => $sumWajib,
+            'total_sukarela' => $sumSukarela,
+            'total_khusus' => $sumKhusus,
+            'grand_total' => $grandTotal,
+            'cutoff_date' => ($trimmedCutoff !== '') ? $trimmedCutoff : null,
+        ];
+
         $isBatchValid = count($allErrors) === 0 && $invalidRowsCount === 0;
 
         return new ImportValidationResult(
@@ -772,15 +1110,11 @@ class MemberImportValidator
             invalidRows: $invalidRowsCount,
             errors: $allErrors,
             rows: $resultRows,
+            csvVersion: $version,
+            openingBalanceSummary: $openingBalanceSummary,
         );
     }
 
-    /**
-     * Detect duplicate values within the current batch.
-     *
-     * @param  array<int, array<string, mixed>>  $normalizedRowsMap
-     * @param  array<int, list<ImportValidationError>>  $rowErrorsMap
-     */
     private function detectBatchDuplicates(array $normalizedRowsMap, array &$rowErrorsMap): void
     {
         // 1. Email duplicates in batch

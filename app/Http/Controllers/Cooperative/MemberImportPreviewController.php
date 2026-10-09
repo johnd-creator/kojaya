@@ -63,7 +63,10 @@ class MemberImportPreviewController extends Controller
             'current_organization_id' => $currentOrganizationId,
             'organizations' => $organizations,
             'default_import_date' => $defaultImportDate,
+            'default_cutoff_date' => null,
             'canonical_headers' => MemberImportValidator::CANONICAL_HEADERS,
+            'canonical_headers_v1' => MemberImportValidator::CANONICAL_HEADERS_V1,
+            'canonical_headers_v2' => MemberImportValidator::CANONICAL_HEADERS_V2,
             'preview' => null,
             'preview_proof' => null,
             'file_sha256' => null,
@@ -92,6 +95,7 @@ class MemberImportPreviewController extends Controller
         );
 
         $importDate = $request->validated('import_date');
+        $cutoffDate = $request->input('opening_balance_cutoff_date');
         $uploadedFile = $request->file('file');
         $fileSha256 = hash_file('sha256', $uploadedFile->getRealPath());
 
@@ -101,6 +105,7 @@ class MemberImportPreviewController extends Controller
             [
                 'organization_id' => $authorizedOrganizationId,
                 'import_date' => $importDate,
+                'opening_balance_cutoff_date' => $cutoffDate,
             ],
         );
 
@@ -116,7 +121,14 @@ class MemberImportPreviewController extends Controller
             && ! $result->requiresManualReview();
 
         $previewProof = $isReady
-            ? $proofService->generate($fileSha256, (string) $authorizedOrganizationId, $importDate)
+            ? $proofService->generate(
+                $fileSha256,
+                (string) $authorizedOrganizationId,
+                $importDate,
+                PreviewProofService::DEFAULT_TTL_SECONDS,
+                $result->csvVersion,
+                $cutoffDate,
+            )
             : null;
 
         $visibility = $scopeService->visibilityFor($user, PermissionEnum::COOPERATIVE_VIEW_ALL->value);
@@ -148,7 +160,10 @@ class MemberImportPreviewController extends Controller
             'current_organization_id' => $authorizedOrganizationId,
             'organizations' => $organizations,
             'default_import_date' => $importDate,
+            'default_cutoff_date' => $cutoffDate,
             'canonical_headers' => MemberImportValidator::CANONICAL_HEADERS,
+            'canonical_headers_v1' => MemberImportValidator::CANONICAL_HEADERS_V1,
+            'canonical_headers_v2' => MemberImportValidator::CANONICAL_HEADERS_V2,
             'preview' => $previewData,
             'preview_proof' => $previewProof,
             'file_sha256' => $fileSha256,
@@ -165,6 +180,7 @@ class MemberImportPreviewController extends Controller
         OrganizationScopeService $scopeService,
         PreviewProofService $proofService,
         MemberImportExecutionService $executionService,
+        MemberImportValidator $validator,
     ): JsonResponse|RedirectResponse {
         $user = $request->user();
         abort_unless($user && $user->can(PermissionEnum::COOPERATIVE_MEMBER_IMPORT->value), 403);
@@ -182,8 +198,19 @@ class MemberImportPreviewController extends Controller
         );
 
         $importDate = $request->validated('import_date');
+        $cutoffDate = $request->input('opening_balance_cutoff_date');
         $uploadedFile = $request->file('file');
         $fileSha256 = hash_file('sha256', $uploadedFile->getRealPath());
+
+        // Preflight validation to detect CSV version
+        $preflight = $validator->validateFile(
+            $uploadedFile->getRealPath(),
+            [
+                'organization_id' => $authorizedOrganizationId,
+                'import_date' => $importDate,
+                'opening_balance_cutoff_date' => $cutoffDate,
+            ],
+        );
 
         // Verify preview proof against uploaded file hash and parameters
         $proofResult = $proofService->verify(
@@ -191,6 +218,8 @@ class MemberImportPreviewController extends Controller
             $fileSha256,
             (string) $authorizedOrganizationId,
             $importDate,
+            $preflight->csvVersion,
+            $cutoffDate,
         );
 
         if (! $proofResult['valid']) {
@@ -206,6 +235,7 @@ class MemberImportPreviewController extends Controller
                 importDate: $importDate,
                 fileSha256: $fileSha256,
                 auditContext: AuditContext::fromCurrentRequest(),
+                openingBalanceCutoffDate: $cutoffDate,
             );
         } catch (MemberImportExecutionException $e) {
             throw ValidationException::withMessages([
@@ -227,7 +257,7 @@ class MemberImportPreviewController extends Controller
     }
 
     /**
-     * Download the canonical 12-column template CSV.
+     * Download the canonical template CSV.
      */
     public function downloadTemplate(Request $request): BinaryFileResponse
     {
@@ -237,7 +267,7 @@ class MemberImportPreviewController extends Controller
         $templatePath = base_path('docs/onboarding/member-import-template.csv');
         abort_unless(file_exists($templatePath), 404, 'Template berkas impor tidak ditemukan.');
 
-        return response()->download($templatePath, 'member-import-template.csv', [
+        return response()->download($templatePath, 'kojaya-member-import-v2.csv', [
             'Content-Type' => 'text/csv',
         ]);
     }

@@ -128,9 +128,11 @@ class CooperativeOpeningBalanceWizardService
         ])->validate();
         $cutoff = $validated['cut_off_date'];
         $lines = [];
+        $total = '0.00';
         foreach (self::CATEGORIES as $category) {
-            $amount = round((float) $validated['direct_amounts'][$category], 2);
-            if ($amount <= 0) {
+            $rawAmount = (string) ($validated['direct_amounts'][$category] ?? '0.00');
+            $amount = bcadd($rawAmount, '0', 2);
+            if (bccomp($amount, '0.00', 2) <= 0) {
                 continue;
             }
             $types = CooperativeContributionType::query()->where('category', $category)->where('is_active', true)->get();
@@ -152,9 +154,9 @@ class CooperativeOpeningBalanceWizardService
                 'override_reason' => null,
                 'metadata' => ['cut_off_date' => $cutoff, 'contribution_code' => $type->code, 'contribution_name' => $type->name],
             ];
+            $total = bcadd($total, $amount, 2);
         }
-        $total = round(array_sum(array_column($lines, 'total_amount')), 2);
-        if ($total <= 0) {
+        if (bccomp($total, '0.00', 2) <= 0) {
             throw \Illuminate\Validation\ValidationException::withMessages(['direct_amounts' => 'Total saldo awal harus lebih besar dari 0.']);
         }
         $conflicts = $this->detectExistingMutationConflicts($member, $lines);
@@ -286,7 +288,7 @@ class CooperativeOpeningBalanceWizardService
                 'entry_type' => $entry->entry_type,
                 'period' => $entry->period,
                 'posted_at' => optional($entry->posted_at)->toDateString(),
-                'amount' => (float) $entry->credit - (float) $entry->debit,
+                'amount' => bcsub((string) $entry->credit, (string) $entry->debit, 2),
                 'description' => $entry->description,
                 'overlaps_calculation_period' => $matchedRange,
                 'overlap_month_label' => $overlapMonths !== null
@@ -315,7 +317,7 @@ class CooperativeOpeningBalanceWizardService
 
         $preview = $this->preview($member, $input);
 
-        if ($preview['total_amount'] <= 0) {
+        if (bccomp((string) $preview['total_amount'], '0.00', 2) <= 0) {
             throw new RuntimeException('Total saldo awal harus lebih besar dari 0.');
         }
 
@@ -331,7 +333,7 @@ class CooperativeOpeningBalanceWizardService
                 'calculation_start_period' => $preview['calculation_start_period'],
                 'calculation_end_period' => $preview['calculation_end_period'],
                 'months_count' => $preview['months_count'],
-                'total_amount' => $preview['total_amount'],
+                'total_amount' => (string) $preview['total_amount'],
                 'source_type' => $input['source_type'] ?? null,
                 'source_reference' => $input['source_reference'] ?? null,
                 'source_document_date' => $input['source_document_date'] ?? null,
@@ -341,6 +343,7 @@ class CooperativeOpeningBalanceWizardService
                     'mode' => $preview['mode'] ?? 'CALCULATED',
                     'cut_off_date' => $preview['cut_off_date'] ?? null,
                     'include_current_month' => (bool) ($input['include_current_month'] ?? false),
+                    'import_id' => $input['import_id'] ?? null,
                 ],
             ]);
 
@@ -352,8 +355,8 @@ class CooperativeOpeningBalanceWizardService
                     'period_start' => $line['period_start'],
                     'period_end' => $line['period_end'],
                     'months_count' => $line['months_count'],
-                    'unit_amount' => $line['unit_amount'],
-                    'total_amount' => $line['total_amount'],
+                    'unit_amount' => (string) $line['unit_amount'],
+                    'total_amount' => (string) $line['total_amount'],
                     'calculation_method' => $line['calculation_method'],
                     'override_reason' => $line['override_reason'],
                     'metadata' => $line['metadata'] ?? null,
@@ -363,7 +366,7 @@ class CooperativeOpeningBalanceWizardService
             $batch->refresh()->load('lines');
 
             $this->writeAuditLog($creator, $batch, 'opening_balance.draft_created', [
-                'total_amount' => (float) $batch->total_amount,
+                'total_amount' => (string) $batch->total_amount,
                 'months_count' => $batch->months_count,
                 'source_type' => $batch->source_type,
                 'has_conflicts' => $preview['has_conflicts'] ?? false,
@@ -382,12 +385,23 @@ class CooperativeOpeningBalanceWizardService
             throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
         }
 
+        $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
+        if ($isImported) {
+            $this->assertImportedMakerCheckerPolicy($batch, $poster);
+        }
+
         return DB::transaction(function () use ($batch, $poster): CooperativeMemberOpeningBalanceBatch {
             $batch = CooperativeMemberOpeningBalanceBatch::query()->lockForUpdate()->findOrFail($batch->id);
             CooperativeMember::query()->whereKey($batch->cooperative_member_id)->lockForUpdate()->firstOrFail();
             if (! $batch->isDraft()) {
                 throw new RuntimeException('Hanya batch DRAFT yang dapat difinalisasi.');
             }
+
+            $isImported = ($batch->source_type === 'EXCEL_IMPORT') || ! empty($batch->metadata['import_id']);
+            if ($isImported) {
+                $this->assertImportedMakerCheckerPolicy($batch, $poster);
+            }
+
             $batch->load(['member', 'lines.contributionType']);
             if (($batch->metadata['mode'] ?? null) === 'DIRECT') {
                 $this->assertMemberEligible($batch->member);
@@ -398,8 +412,8 @@ class CooperativeOpeningBalanceWizardService
             $postedLineIds = [];
 
             foreach ($batch->lines as $line) {
-                $amount = (float) $line->total_amount;
-                if ($amount <= 0) {
+                $amount = (string) $line->total_amount;
+                if (bccomp($amount, '0.00', 2) <= 0) {
                     continue;
                 }
 
@@ -414,7 +428,7 @@ class CooperativeOpeningBalanceWizardService
                     'source_id' => $line->id,
                     'period' => $line->period_start?->format('Y-m'),
                     'description' => $this->buildDescription($batch, $line),
-                    'debit' => 0,
+                    'debit' => '0.00',
                     'credit' => $amount,
                     'posted_at' => $postedAt,
                     'metadata' => [
@@ -440,12 +454,32 @@ class CooperativeOpeningBalanceWizardService
             $this->markOnboardingFirstSavingsPaid($batch);
             $this->writeAuditLog($poster, $batch->refresh(), 'opening_balance.posted', [
                 'line_ids' => $postedLineIds,
-                'total_amount' => (float) $batch->total_amount,
+                'total_amount' => (string) $batch->total_amount,
                 'months_count' => $batch->months_count,
             ]);
 
             return $batch->refresh()->load('lines');
         });
+    }
+
+    /**
+     * Enforce fail-closed maker-checker segregation for imported opening balance batches.
+     */
+    private function assertImportedMakerCheckerPolicy(CooperativeMemberOpeningBalanceBatch $batch, User $poster): void
+    {
+        $creatorId = $batch->metadata['creator_id'] ?? null;
+
+        if ($creatorId === null || $creatorId === '' || ! is_numeric($creatorId)) {
+            throw new RuntimeException('Maker-checker violation: Identitas pembuat (maker) pada draft impor saldo awal tidak valid atau tidak tercatat.');
+        }
+
+        if ((string) $creatorId === (string) $poster->id) {
+            throw new RuntimeException('Maker-checker violation: Pengguna yang mengimpor saldo awal tidak dapat menyetujui atau memposting draft tersebut.');
+        }
+
+        if (! User::query()->whereKey((int) $creatorId)->exists()) {
+            throw new RuntimeException('Maker-checker violation: Pengguna pembuat (maker) tidak ditemukan di sistem.');
+        }
     }
 
     /**
@@ -455,7 +489,7 @@ class CooperativeOpeningBalanceWizardService
      */
     private function markOnboardingFirstSavingsPaid(CooperativeMemberOpeningBalanceBatch $batch): void
     {
-        if ((float) $batch->total_amount <= 0) {
+        if (bccomp((string) $batch->total_amount, '0.00', 2) <= 0) {
             return;
         }
 
@@ -493,8 +527,8 @@ class CooperativeOpeningBalanceWizardService
             $now = now();
 
             foreach ($existingEntries as $entry) {
-                $credit = (float) $entry->credit;
-                if ($credit <= 0) {
+                $credit = (string) $entry->credit;
+                if (bccomp($credit, '0.00', 2) <= 0) {
                     continue;
                 }
 
@@ -510,7 +544,7 @@ class CooperativeOpeningBalanceWizardService
                     'period' => $entry->period,
                     'description' => "Reversal saldo awal: {$reason}",
                     'debit' => $credit,
-                    'credit' => 0,
+                    'credit' => '0.00',
                     'posted_at' => $now,
                     'metadata' => array_merge($entry->metadata ?? [], [
                         'reversal_of_entry_id' => $entry->id,
@@ -667,7 +701,9 @@ class CooperativeOpeningBalanceWizardService
         $typeName = $line->contributionType?->name ?? $category;
 
         if ($line->calculation_method === 'DIRECT') {
-            return "Saldo awal {$typeName} per {$batch->metadata['cut_off_date']} (rekonsiliasi langsung)";
+            $cutoff = $batch->metadata['cut_off_date'] ?? ($batch->calculation_end_period ? \Carbon\CarbonImmutable::parse($batch->calculation_end_period)->toDateString() : '-');
+
+            return "Saldo awal {$typeName} per {$cutoff} (rekonsiliasi langsung)";
         }
 
         if ($line->calculation_method === 'ONCE') {

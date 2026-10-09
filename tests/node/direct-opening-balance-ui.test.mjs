@@ -211,14 +211,21 @@ test("direct opening balance defaults, preview and stale-input safety at desktop
       assert.equal(await save.isEnabled(), true);
       await page.getByLabel("Simpanan WAJIB", { exact: true }).fill("1");
       assert.equal(await save.isDisabled(), true);
-      await page
-        .getByRole("button", { name: "Perhitungan Periode", exact: true })
-        .click();
-      await page.getByLabel("Periode Awal Perhitungan").waitFor();
-      await page
-        .getByRole("button", { name: "Saldo Langsung", exact: true })
-        .click();
-      await page.getByLabel("Per tanggal", { exact: true }).waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Perhitungan Periode" }).count(),
+        0,
+      );
+      assert.equal(
+        await page.getByRole("button", { name: "Saldo Langsung" }).count(),
+        0,
+      );
+      const backLink = page.getByRole("link", { name: "Kembali ke Detail Anggota" });
+      assert.equal(await backLink.count(), 1);
+      assert.equal(await backLink.getAttribute("href"), "/cooperative/members/1");
+      assert.equal(
+        await page.getByText("Saldo langsung per 30 Sep 2026", { exact: false }).count(),
+        1,
+      );
       assert.equal(
         await page.evaluate(
           () => document.documentElement.scrollWidth > window.innerWidth,

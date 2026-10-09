@@ -4,7 +4,32 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** September 29, 2026
+**Last Updated:** October 9, 2026
+
+## 2026-10-09 - QAR-BUNDLE-04-SENIOR-REVIEW-FIX-02 (Development PC)
+
+- **FIX-02A (BCMath Dependency & Runtime Safety):**
+  - Declared `"ext-bcmath": "*"` in `composer.json` under `require` and updated `composer.lock` cleanly without upgrading other packages.
+  - Added explicit preflight check `runtime.extension.bcmath` in `App\Console\Commands\ReleasePreflight`, ensuring deployment pipelines (`bin/deploy-qa.sh`, `bin/deploy.sh`) fail closed before any destructive actions or serving cutover if BCMath is missing.
+  - Added feature regression test in `tests/Feature/ReleasePreflightTest.php`.
+  - Documented runtime requirement for QA PHP CLI, QA PHP-FPM, Production PHP CLI, and Production PHP-FPM. (No QA or production servers modified).
+- **FIX-02B (Exact Monetary Precision):**
+  - Eliminated lossy float conversions in `MemberImportValidator`, `MemberImportExecutionService`, and `CooperativeOpeningBalanceWizardService`.
+  - Preserved canonical 2-decimal strings (`'100000.00'`, `'0.00'`, `'0.30'`) end-to-end for CSV normalization, batch totals, opening balance draft creation, audit log payloads, and validation results.
+  - Updated `MemberImportExecutionResult` DTO to accept `string|float` for backward compatibility, returning canonical decimal string in `toArray()`.
+  - Enhanced frontend formatters (`formatCurrency` and `formatNumber` in `resources/js/lib/formatters.ts`) to preserve fractional decimal precision without floating-point distortion.
+  - Updated TypeScript interfaces in `ImportPreview.vue` to accept `string | number` for opening balance totals.
+  - Added end-to-end fractional cents regression test (`0.10 + 0.20 = 0.30`, `0.33 + 0.33 + 0.34 = 1.00`) verifying exact string preservation in draft batches, line records, posted ledger credit/debit, reversal debit/credit, and audit logs.
+- **Verification:** All 92 unit and feature tests passing (543 assertions), frontend Vite build passing (25s), targeted ESLint clean, Pint formatting applied.
+
+- Implemented QAR-F013: Added back navigation link (`← Kembali ke Detail Anggota`) from `/cooperative/members/{member}/opening-balance` to `/cooperative/members/{member}` preserving member ID and responsive styling.
+- Implemented QAR-F014: Simplified Opening Balance new entry UI to Direct Mode only; removed calculated mode options from new entry flow while preserving historical CALCULATED batches (readable, VOID, postable). Simplified direct mode history display to `Saldo langsung per <date>` without redundant period range.
+- Implemented QAR-F015: Extended Member Import CSV contract supporting both V1 (canonical 12 columns) and V2 (canonical 16 columns appending `opening_balance_pokok,opening_balance_wajib,opening_balance_sukarela,opening_balance_khusus`). Enforced strict header validation, fail-closed active contribution type mapping, and decimal financial validation.
+- Implemented QAR-F016: Added financial cut-off date (`opening_balance_cutoff_date`), financial preview summary card (`Ringkasan Saldo Awal`), and extended `PreviewProofService` to bind CSV version and financial cut-off date against tampering.
+- Implemented QAR-F017: Integrated atomic member import with Direct Opening Balance draft creation for rows with positive balances. Zero ledger entries created at import time (strictly DRAFT).
+- Implemented QAR-F018: Enforced maker-checker restriction preventing the user who imported the CSV from self-posting or self-approving their imported opening balance drafts.
+- Implemented QAR-F019: Updated downloadable template to V2 (`kojaya-member-import-v2.csv`) with 16 canonical headers and valid dummy rows in `docs/onboarding/member-import-template.csv`.
+- Verification: 155 unit & feature tests passing (889 assertions), Node UI tests passing, Pint code formatting applied, Vite frontend build clean in 25s. Zero live or QA database modifications.
 
 ## 2026-10-06 - QAR-CORRECTION-BUNDLE-01 (Development PC)
 

@@ -18,6 +18,7 @@ class MemberImportExecutionService
         private readonly MemberImportValidator $validator,
         private readonly MemberNumberGenerator $numberGenerator,
         private readonly AuditLogService $auditLogService,
+        private readonly ?CooperativeOpeningBalanceWizardService $openingBalanceWizardService = null,
     ) {}
 
     /**
@@ -32,7 +33,10 @@ class MemberImportExecutionService
         string $fileSha256,
         ?AuditContext $auditContext = null,
         array $options = [],
+        ?string $openingBalanceCutoffDate = null,
     ): MemberImportExecutionResult {
+        $effectiveCutoffDate = $options['opening_balance_cutoff_date'] ?? $openingBalanceCutoffDate;
+
         // 1. Execution Gate Check
         if (! config('cooperative.member_import_execution_enabled', false)) {
             throw new MemberImportExecutionException(
@@ -45,6 +49,7 @@ class MemberImportExecutionService
         $preflight = $this->validator->validateFile($filePath, [
             'organization_id' => $organizationId,
             'import_date' => $importDate,
+            'opening_balance_cutoff_date' => $effectiveCutoffDate,
         ]);
 
         if (! $this->isBatchFullyPersistable($preflight)) {
@@ -56,7 +61,7 @@ class MemberImportExecutionService
         }
 
         // 3. Atomic Database Transaction Boundary
-        return DB::transaction(function () use ($filePath, $organizationId, $importDate, $fileSha256, $auditContext): MemberImportExecutionResult {
+        return DB::transaction(function () use ($filePath, $organizationId, $importDate, $fileSha256, $auditContext, $effectiveCutoffDate): MemberImportExecutionResult {
             // Concurrency protection: Acquire PostgreSQL transaction-level advisory lock.
             // Member numbers follow a global KOP-### sequence with unique database constraints.
             // A transaction-level advisory lock prevents race conditions during member number reservation.
@@ -69,6 +74,7 @@ class MemberImportExecutionService
             $finalValidation = $this->validator->validateFile($filePath, [
                 'organization_id' => $organizationId,
                 'import_date' => $importDate,
+                'opening_balance_cutoff_date' => $effectiveCutoffDate,
             ]);
 
             if (! $this->isBatchFullyPersistable($finalValidation)) {
@@ -113,11 +119,12 @@ class MemberImportExecutionService
             // 6. Persistence: Insert all members as PENDING/PENDING
             $importId = (string) Str::uuid();
             $importedCount = 0;
+            $createdMembersByRow = [];
 
             foreach ($finalValidation->rows as $row) {
                 $memberNumber = $allocatedNumbersByRow[$row->rowNumber];
 
-                CooperativeMember::query()->create([
+                $member = CooperativeMember::query()->create([
                     'organization_id' => $organizationId,
                     'employee_id' => $row->resolvedEmployeeId,
                     'user_id' => null,
@@ -140,7 +147,76 @@ class MemberImportExecutionService
                     'validation_status' => CooperativeMember::VALIDATION_PENDING,
                 ]);
 
+                $createdMembersByRow[$row->rowNumber] = $member;
                 $importedCount++;
+            }
+
+            // 6.5. Opening Balance Draft Creation (atomic with member creation)
+            $openingBalanceDraftsCount = 0;
+            $openingBalanceTotalAmount = '0.00';
+            $wizardService = $this->openingBalanceWizardService ?? app(CooperativeOpeningBalanceWizardService::class);
+            $organization = \App\Models\Organization::query()->findOrFail($organizationId);
+
+            // Mandatory maker identity: explicit actor from AuditContext or authenticated user.
+            $creator = ($auditContext?->actorId ? \App\Models\User::find($auditContext->actorId) : null)
+                ?? auth()->user();
+
+            $hasPositiveBalance = false;
+            foreach ($finalValidation->rows as $row) {
+                $norm = $row->normalizedData;
+                $p = (string) ($norm['opening_balance_pokok'] ?? '0.00');
+                $w = (string) ($norm['opening_balance_wajib'] ?? '0.00');
+                $s = (string) ($norm['opening_balance_sukarela'] ?? '0.00');
+                $k = (string) ($norm['opening_balance_khusus'] ?? '0.00');
+                $rTotal = bcadd(bcadd($p, $w, 2), bcadd($s, $k, 2), 2);
+                if (bccomp($rTotal, '0.00', 2) > 0) {
+                    $hasPositiveBalance = true;
+                    break;
+                }
+            }
+
+            if ($hasPositiveBalance && ! $creator) {
+                throw new MemberImportExecutionException(
+                    'MISSING_MAKER_IDENTITY',
+                    'Identitas pembuat (maker) yang terautentikasi wajib ada untuk membuat draft saldo awal dari impor anggota.',
+                );
+            }
+
+            foreach ($finalValidation->rows as $row) {
+                $norm = $row->normalizedData;
+                $pokok = (string) ($norm['opening_balance_pokok'] ?? '0.00');
+                $wajib = (string) ($norm['opening_balance_wajib'] ?? '0.00');
+                $sukarela = (string) ($norm['opening_balance_sukarela'] ?? '0.00');
+                $khusus = (string) ($norm['opening_balance_khusus'] ?? '0.00');
+                $rowTotal = bcadd(bcadd($pokok, $wajib, 2), bcadd($sukarela, $khusus, 2), 2);
+
+                if (bccomp($rowTotal, '0.00', 2) > 0) {
+                    $member = $createdMembersByRow[$row->rowNumber];
+
+                    $wizardService->createDraft(
+                        member: $member,
+                        input: [
+                            'mode' => 'DIRECT',
+                            'cut_off_date' => $effectiveCutoffDate,
+                            'direct_amounts' => [
+                                'POKOK' => $pokok,
+                                'WAJIB' => $wajib,
+                                'SUKARELA' => $sukarela,
+                                'KHUSUS' => $khusus,
+                            ],
+                            'source_type' => 'EXCEL_IMPORT',
+                            'source_reference' => "IMPORT-{$importId}",
+                            'source_document_date' => $effectiveCutoffDate,
+                            'notes' => 'Import saldo awal dari berkas CSV',
+                            'import_id' => $importId,
+                        ],
+                        creator: $creator,
+                        organization: $organization,
+                    );
+
+                    $openingBalanceDraftsCount++;
+                    $openingBalanceTotalAmount = bcadd($openingBalanceTotalAmount, $rowTotal, 2);
+                }
             }
 
             // 7. Mandatory Batch Audit Log (inside transaction)
@@ -169,6 +245,8 @@ class MemberImportExecutionService
                             'imported_count' => $importedCount,
                             'generated_member_number_count' => count($generatedMemberNumbers),
                             'supplied_member_number_count' => count($suppliedMemberNumbers),
+                            'opening_balance_drafts_count' => $openingBalanceDraftsCount,
+                            'opening_balance_total_amount' => $openingBalanceTotalAmount,
                         ],
                         'reason' => 'Batch member onboarding import completed',
                     ],
@@ -191,6 +269,8 @@ class MemberImportExecutionService
                 generatedMemberNumbers: $generatedMemberNumbers,
                 suppliedMemberNumbers: $suppliedMemberNumbers,
                 status: 'COMPLETED',
+                openingBalanceDraftsCount: $openingBalanceDraftsCount,
+                openingBalanceTotalAmount: $openingBalanceTotalAmount,
             );
         });
     }

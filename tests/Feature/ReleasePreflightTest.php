@@ -294,6 +294,15 @@ class ReleasePreflightTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_release_preflight_verifies_bcmath_extension(): void
+    {
+        $this->configureBaseline();
+
+        $this->artisan('app:release-preflight')
+            ->expectsOutput('runtime.extension.bcmath: PASS')
+            ->assertExitCode(0);
+    }
+
     private function configureBaseline(): void
     {
         Config::set([

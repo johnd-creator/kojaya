@@ -28,6 +28,8 @@ class PreviewProofService
         string $organizationId,
         string $importDate,
         int $ttlSeconds = self::DEFAULT_TTL_SECONDS,
+        string $csvVersion = 'v1',
+        ?string $openingBalanceCutoffDate = null,
     ): string {
         if ($fileSha256 === '' || $organizationId === '' || $importDate === '') {
             throw new InvalidArgumentException('Semua parameter metadata preview proof wajib diisi.');
@@ -38,6 +40,8 @@ class PreviewProofService
             'file_sha256' => $fileSha256,
             'organization_id' => $organizationId,
             'import_date' => $importDate,
+            'csv_version' => $csvVersion,
+            'opening_balance_cutoff_date' => $openingBalanceCutoffDate,
             'issued_at' => $now,
             'expires_at' => $now + $ttlSeconds,
         ];
@@ -55,10 +59,12 @@ class PreviewProofService
         string $fileSha256,
         string $organizationId,
         string $importDate,
+        string $csvVersion = 'v1',
+        ?string $openingBalanceCutoffDate = null,
     ): array {
         try {
             $decrypted = Crypt::decryptString($proof);
-            /** @var array{file_sha256?: string, organization_id?: string, import_date?: string, issued_at?: int, expires_at?: int} $payload */
+            /** @var array{file_sha256?: string, organization_id?: string, import_date?: string, csv_version?: string, opening_balance_cutoff_date?: ?string, issued_at?: int, expires_at?: int} $payload */
             $payload = json_decode($decrypted, true, 512, JSON_THROW_ON_ERROR);
         } catch (DecryptException|JsonException) {
             return [
@@ -120,6 +126,28 @@ class PreviewProofService
                 'valid' => false,
                 'code' => self::CODE_FILE_CHANGED,
                 'message' => 'Berkas CSV yang diunggah berbeda dari berkas pada saat pratinjau.',
+                'payload' => $payload,
+            ];
+        }
+
+        // Check CSV version binding
+        $payloadVersion = $payload['csv_version'] ?? 'v1';
+        if ($csvVersion !== 'unknown' && ! hash_equals($payloadVersion, $csvVersion)) {
+            return [
+                'valid' => false,
+                'code' => self::CODE_INVALID,
+                'message' => 'Versi template CSV pada eksekusi tidak cocok dengan bukti pratinjau.',
+                'payload' => $payload,
+            ];
+        }
+
+        // Check opening balance cutoff date binding
+        $payloadCutoff = $payload['opening_balance_cutoff_date'] ?? null;
+        if ((string) $payloadCutoff !== (string) $openingBalanceCutoffDate) {
+            return [
+                'valid' => false,
+                'code' => self::CODE_INVALID,
+                'message' => 'Tanggal cut-off saldo awal pada eksekusi tidak cocok dengan bukti pratinjau.',
                 'payload' => $payload,
             ];
         }

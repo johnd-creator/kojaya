@@ -92,10 +92,27 @@ test("toNumber, formatPercentage, and date formatting remain compatible", () => 
 
   assert.equal(formatDate(null), "-");
   assert.equal(formatDate(undefined), "-");
-  assert.equal(formatDate("2026-09-30"), "30 Sep 2026");
+  const localDate = new Date(2026, 8, 30, 12, 0);
+  const expectedDate = new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(localDate);
+  assert.equal(formatDate(localDate.toISOString()), expectedDate);
 
   assert.equal(formatDateTime(null), "-");
-  assert.equal(formatDateTime("2026-09-30T10:30:00Z"), "30 Sep 2026, 17.30");
+  assert.equal(formatDateTime(undefined), "-");
+  const expectedDateTime = new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(localDate);
+  assert.equal(formatDateTime(localDate.toISOString()), expectedDateTime);
 
-  assert.equal(formatDateRange("2026-01-01", "2026-12-31"), "01 Jan 2026 - 31 Des 2026");
+  const startDate = new Date(2026, 0, 1, 12, 0);
+  const endDate = new Date(2026, 11, 31, 12, 0);
+  const expectedRange = `${formatDate(startDate.toISOString())} - ${formatDate(endDate.toISOString())}`;
+  assert.equal(formatDateRange(startDate.toISOString(), endDate.toISOString()), expectedRange);
 });

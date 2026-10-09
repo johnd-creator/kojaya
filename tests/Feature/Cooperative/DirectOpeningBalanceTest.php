@@ -56,7 +56,7 @@ class DirectOpeningBalanceTest extends TestCase
     public function test_direct_preview_draft_post_and_void_do_not_fabricate_monthly_history(): void
     {
         $this->actingAs($this->operator)->postJson($this->url().'/preview', $this->input())
-            ->assertOk()->assertJsonPath('preview.total_amount', 395000.5)
+            ->assertOk()->assertJsonPath('preview.total_amount', '395000.50')
             ->assertJsonPath('preview.months_count', 0)->assertJsonPath('preview.cut_off_date', '2026-09-30')
             ->assertJsonPath('preview.lines.1.calculation_method', 'DIRECT');
         $this->actingAs($this->operator)->post(route('cooperative.members.opening-balance.store', $this->member), $this->input())->assertRedirect();

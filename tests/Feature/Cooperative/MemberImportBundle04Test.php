@@ -151,7 +151,7 @@ class MemberImportBundle04Test extends TestCase
         $this->assertSame('v1', $result->csvVersion);
         $this->assertSame(1, $result->totalRows);
         $this->assertSame(0, $result->openingBalanceSummary['positive_members_count']);
-        $this->assertSame(0.0, $result->openingBalanceSummary['grand_total']);
+        $this->assertSame('0.00', $result->openingBalanceSummary['grand_total']);
     }
 
     public function test_v2_csv_16_columns_accepted_with_correct_summary(): void
@@ -190,11 +190,11 @@ class MemberImportBundle04Test extends TestCase
         $this->assertSame('v2', $result->csvVersion);
         $this->assertSame(2, $result->totalRows);
         $this->assertSame(1, $result->openingBalanceSummary['positive_members_count']);
-        $this->assertSame(200000.0, $result->openingBalanceSummary['total_pokok']);
-        $this->assertSame(100000.0, $result->openingBalanceSummary['total_wajib']);
-        $this->assertSame(50000.0, $result->openingBalanceSummary['total_sukarela']);
-        $this->assertSame(25000.0, $result->openingBalanceSummary['total_khusus']);
-        $this->assertSame(375000.0, $result->openingBalanceSummary['grand_total']);
+        $this->assertSame('200000.00', $result->openingBalanceSummary['total_pokok']);
+        $this->assertSame('100000.00', $result->openingBalanceSummary['total_wajib']);
+        $this->assertSame('50000.00', $result->openingBalanceSummary['total_sukarela']);
+        $this->assertSame('25000.00', $result->openingBalanceSummary['total_khusus']);
+        $this->assertSame('375000.00', $result->openingBalanceSummary['grand_total']);
         $this->assertSame('2026-09-30', $result->openingBalanceSummary['cutoff_date']);
     }
 
@@ -253,10 +253,10 @@ class MemberImportBundle04Test extends TestCase
             'import_date' => '2026-06-01',
         ]);
         $this->assertTrue($resEmpty->valid);
-        $this->assertSame(0.0, $resEmpty->rows[0]->normalizedData['opening_balance_pokok']);
-        $this->assertSame(0.0, $resEmpty->rows[0]->normalizedData['opening_balance_wajib']);
-        $this->assertSame(0.0, $resEmpty->rows[0]->normalizedData['opening_balance_sukarela']);
-        $this->assertSame(0.0, $resEmpty->rows[0]->normalizedData['opening_balance_khusus']);
+        $this->assertSame('0.00', $resEmpty->rows[0]->normalizedData['opening_balance_pokok']);
+        $this->assertSame('0.00', $resEmpty->rows[0]->normalizedData['opening_balance_wajib']);
+        $this->assertSame('0.00', $resEmpty->rows[0]->normalizedData['opening_balance_sukarela']);
+        $this->assertSame('0.00', $resEmpty->rows[0]->normalizedData['opening_balance_khusus']);
 
         // 2. Negative values rejected
         $negRow = $this->validV2Row(['opening_balance_pokok' => '-50000']);
@@ -833,8 +833,8 @@ class MemberImportBundle04Test extends TestCase
         $this->assertTrue($result->valid);
         $summary = $result->openingBalanceSummary;
         $this->assertNotNull($summary);
-        $this->assertSame(300001.0, (float) $summary['total_pokok']);
-        $this->assertSame(300001.0, (float) $summary['grand_total']);
+        $this->assertSame('300001.00', $summary['total_pokok']);
+        $this->assertSame('300001.00', $summary['grand_total']);
     }
 
     public function test_controller_passes_default_cutoff_date_in_index_and_preview(): void
@@ -856,5 +856,108 @@ class MemberImportBundle04Test extends TestCase
 
         $previewResponse->assertOk();
         $this->assertSame('2026-05-31', $previewResponse->viewData('page')['props']['default_cutoff_date']);
+    }
+
+    public function test_exact_monetary_precision_and_fractional_cents_end_to_end(): void
+    {
+        $rows = [
+            $this->validV2Row([
+                'member_number' => 'KOP-801',
+                'identity_number' => '3171012301900101',
+                'email' => 'cents01@example.com',
+                'phone_number' => '081234560101',
+                'opening_balance_pokok' => '0.10',
+                'opening_balance_wajib' => '0.20',
+                'opening_balance_sukarela' => '0.00',
+                'opening_balance_khusus' => '0.00',
+            ]),
+            $this->validV2Row([
+                'member_number' => 'KOP-802',
+                'identity_number' => '3171012301900102',
+                'email' => 'cents02@example.com',
+                'phone_number' => '081234560102',
+                'opening_balance_pokok' => '0.33',
+                'opening_balance_wajib' => '0.33',
+                'opening_balance_sukarela' => '0.34',
+                'opening_balance_khusus' => '0.00',
+            ]),
+        ];
+
+        $csv = $this->generateCsv(MemberImportValidator::CANONICAL_HEADERS_V2, $rows);
+        $file = UploadedFile::fake()->createWithContent('fractional_cents.csv', $csv);
+
+        // 1. Validator produces exact strings
+        $valResult = $this->validator->validateFile($file->getPathname(), [
+            'organization_id' => $this->organization->id,
+            'import_date' => '2026-06-01',
+            'opening_balance_cutoff_date' => '2026-06-01',
+        ]);
+
+        $this->assertTrue($valResult->valid);
+        $summary = $valResult->openingBalanceSummary;
+        $this->assertSame('0.43', $summary['total_pokok']); // 0.10 + 0.33 = 0.43
+        $this->assertSame('0.53', $summary['total_wajib']); // 0.20 + 0.33 = 0.53
+        $this->assertSame('0.34', $summary['total_sukarela']); // 0.00 + 0.34 = 0.34
+        $this->assertSame('0.00', $summary['total_khusus']);
+        $this->assertSame('1.30', $summary['grand_total']); // 0.30 + 1.00 = 1.30
+
+        // 2. Execution creates draft batches with exact strings
+        $execService = app(MemberImportExecutionService::class);
+        $execResult = $execService->execute(
+            filePath: $file->getPathname(),
+            organizationId: $this->organization->id,
+            importDate: '2026-06-01',
+            fileSha256: hash_file('sha256', $file->getPathname()),
+            auditContext: \App\Support\AuditContext::forCli($this->importer),
+            openingBalanceCutoffDate: '2026-06-01',
+        );
+
+        $this->assertSame('COMPLETED', $execResult->status);
+        $this->assertSame(2, $execResult->openingBalanceDraftsCount);
+        $this->assertSame('1.30', (string) $execResult->openingBalanceTotalAmount);
+
+        // Check exact string amounts on batch and lines for member 1 (0.10 + 0.20 = 0.30)
+        $m1 = CooperativeMember::query()->where('member_no', 'KOP-801')->firstOrFail();
+        $batch1 = CooperativeMemberOpeningBalanceBatch::query()->where('cooperative_member_id', $m1->id)->firstOrFail();
+        $this->assertSame('0.30', (string) $batch1->total_amount);
+        $lines1 = $batch1->lines()->get()->keyBy('category_snapshot');
+        $this->assertSame('0.10', (string) $lines1['POKOK']->total_amount);
+        $this->assertSame('0.20', (string) $lines1['WAJIB']->total_amount);
+
+        // Check exact string amounts on batch and lines for member 2 (0.33 + 0.33 + 0.34 = 1.00)
+        $m2 = CooperativeMember::query()->where('member_no', 'KOP-802')->firstOrFail();
+        $batch2 = CooperativeMemberOpeningBalanceBatch::query()->where('cooperative_member_id', $m2->id)->firstOrFail();
+        $this->assertSame('1.00', (string) $batch2->total_amount);
+        $lines2 = $batch2->lines()->get()->keyBy('category_snapshot');
+        $this->assertSame('0.33', (string) $lines2['POKOK']->total_amount);
+        $this->assertSame('0.33', (string) $lines2['WAJIB']->total_amount);
+        $this->assertSame('0.34', (string) $lines2['SUKARELA']->total_amount);
+
+        // 3. Post batch1 and verify ledger entry credit strings
+        $wizardService = app(CooperativeOpeningBalanceWizardService::class);
+        $wizardService->post($batch1, $this->checker);
+        $ledgerEntries1 = CooperativeLedgerEntry::query()
+            ->where('cooperative_member_id', $m1->id)
+            ->where('entry_type', 'OPENING_BALANCE')
+            ->get()
+            ->keyBy('category_snapshot');
+
+        $this->assertSame('0.10', (string) $ledgerEntries1['POKOK']->credit);
+        $this->assertSame('0.00', (string) $ledgerEntries1['POKOK']->debit);
+        $this->assertSame('0.20', (string) $ledgerEntries1['WAJIB']->credit);
+        $this->assertSame('0.00', (string) $ledgerEntries1['WAJIB']->debit);
+
+        // 4. Void batch1 and verify reversal entries
+        $wizardService->void($batch1->refresh(), $this->checker, 'Reversal test fractional cents');
+        $reversalEntries1 = CooperativeLedgerEntry::query()
+            ->where('cooperative_member_id', $m1->id)
+            ->where('entry_type', 'OPENING_BALANCE_REVERSAL')
+            ->get()
+            ->keyBy('category_snapshot');
+
+        $this->assertSame('0.10', (string) $reversalEntries1['POKOK']->debit);
+        $this->assertSame('0.00', (string) $reversalEntries1['POKOK']->credit);
+        $this->assertSame('0.20', (string) $reversalEntries1['WAJIB']->debit);
+        $this->assertSame('0.00', (string) $reversalEntries1['WAJIB']->credit);
     }
 }

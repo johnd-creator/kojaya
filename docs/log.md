@@ -4,9 +4,23 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** October 8, 2026
+**Last Updated:** October 9, 2026
 
-## 2026-10-08 - QAR-CORRECTION-BUNDLE-04 (Development PC)
+## 2026-10-09 - QAR-BUNDLE-04-SENIOR-REVIEW-FIX-02 (Development PC)
+
+- **FIX-02A (BCMath Dependency & Runtime Safety):**
+  - Declared `"ext-bcmath": "*"` in `composer.json` under `require` and updated `composer.lock` cleanly without upgrading other packages.
+  - Added explicit preflight check `runtime.extension.bcmath` in `App\Console\Commands\ReleasePreflight`, ensuring deployment pipelines (`bin/deploy-qa.sh`, `bin/deploy.sh`) fail closed before any destructive actions or serving cutover if BCMath is missing.
+  - Added feature regression test in `tests/Feature/ReleasePreflightTest.php`.
+  - Documented runtime requirement for QA PHP CLI, QA PHP-FPM, Production PHP CLI, and Production PHP-FPM. (No QA or production servers modified).
+- **FIX-02B (Exact Monetary Precision):**
+  - Eliminated lossy float conversions in `MemberImportValidator`, `MemberImportExecutionService`, and `CooperativeOpeningBalanceWizardService`.
+  - Preserved canonical 2-decimal strings (`'100000.00'`, `'0.00'`, `'0.30'`) end-to-end for CSV normalization, batch totals, opening balance draft creation, audit log payloads, and validation results.
+  - Updated `MemberImportExecutionResult` DTO to accept `string|float` for backward compatibility, returning canonical decimal string in `toArray()`.
+  - Enhanced frontend formatters (`formatCurrency` and `formatNumber` in `resources/js/lib/formatters.ts`) to preserve fractional decimal precision without floating-point distortion.
+  - Updated TypeScript interfaces in `ImportPreview.vue` to accept `string | number` for opening balance totals.
+  - Added end-to-end fractional cents regression test (`0.10 + 0.20 = 0.30`, `0.33 + 0.33 + 0.34 = 1.00`) verifying exact string preservation in draft batches, line records, posted ledger credit/debit, reversal debit/credit, and audit logs.
+- **Verification:** All 92 unit and feature tests passing (543 assertions), frontend Vite build passing (25s), targeted ESLint clean, Pint formatting applied.
 
 - Implemented QAR-F013: Added back navigation link (`← Kembali ke Detail Anggota`) from `/cooperative/members/{member}/opening-balance` to `/cooperative/members/{member}` preserving member ID and responsive styling.
 - Implemented QAR-F014: Simplified Opening Balance new entry UI to Direct Mode only; removed calculated mode options from new entry flow while preserving historical CALCULATED batches (readable, VOID, postable). Simplified direct mode history display to `Saldo langsung per <date>` without redundant period range.

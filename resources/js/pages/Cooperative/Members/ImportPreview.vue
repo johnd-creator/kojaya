@@ -59,11 +59,11 @@ interface ImportRowResultPayload {
     membership_type: string;
     join_date: string | null;
     notes: string | null;
-    opening_balance_pokok?: number;
-    opening_balance_wajib?: number;
-    opening_balance_sukarela?: number;
-    opening_balance_khusus?: number;
-    opening_balance_total?: number;
+    opening_balance_pokok?: string | number;
+    opening_balance_wajib?: string | number;
+    opening_balance_sukarela?: string | number;
+    opening_balance_khusus?: string | number;
+    opening_balance_total?: string | number;
   };
   resolved_employee_id: number | null;
   employee_resolution_status:
@@ -82,11 +82,11 @@ interface OpeningBalanceSummaryPayload {
   version: string;
   total_members: number;
   members_with_positive_balance_count: number;
-  total_pokok: number;
-  total_wajib: number;
-  total_sukarela: number;
-  total_khusus: number;
-  grand_total: number;
+  total_pokok: string | number;
+  total_wajib: string | number;
+  total_sukarela: string | number;
+  total_khusus: string | number;
+  grand_total: string | number;
   cutoff_date: string | null;
 }
 

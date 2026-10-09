@@ -747,10 +747,10 @@ class MemberImportValidator
             $normalizedNotes = ($trimmedNotes === '' || $trimmedNotes === null) ? null : $trimmedNotes;
 
             // 13-16. Financial Fields (Opening Balances)
-            $pokok = 0.0;
-            $wajib = 0.0;
-            $sukarela = 0.0;
-            $khusus = 0.0;
+            $pokok = '0.00';
+            $wajib = '0.00';
+            $sukarela = '0.00';
+            $khusus = '0.00';
 
             if ($version === 'v2') {
                 $financialMap = [
@@ -766,10 +766,10 @@ class MemberImportValidator
 
                     if ($trimmedVal === '') {
                         match ($categoryLabel) {
-                            'POKOK' => $pokok = 0.0,
-                            'WAJIB' => $wajib = 0.0,
-                            'SUKARELA' => $sukarela = 0.0,
-                            'KHUSUS' => $khusus = 0.0,
+                            'POKOK' => $pokok = '0.00',
+                            'WAJIB' => $wajib = '0.00',
+                            'SUKARELA' => $sukarela = '0.00',
+                            'KHUSUS' => $khusus = '0.00',
                         };
 
                         continue;
@@ -798,7 +798,7 @@ class MemberImportValidator
                         continue;
                     }
 
-                    if (str_starts_with($trimmedVal, '-') || (is_numeric($trimmedVal) && (float) $trimmedVal < 0)) {
+                    if (str_starts_with($trimmedVal, '-') || (is_numeric($trimmedVal) && bccomp($trimmedVal, '0', 2) < 0)) {
                         $rowErrors[] = new ImportValidationError(
                             row: $rowNumber,
                             field: $finField,
@@ -839,17 +839,17 @@ class MemberImportValidator
                     }
 
                     match ($categoryLabel) {
-                        'POKOK' => $pokok = (float) $canonicalVal,
-                        'WAJIB' => $wajib = (float) $canonicalVal,
-                        'SUKARELA' => $sukarela = (float) $canonicalVal,
-                        'KHUSUS' => $khusus = (float) $canonicalVal,
+                        'POKOK' => $pokok = $canonicalVal,
+                        'WAJIB' => $wajib = $canonicalVal,
+                        'SUKARELA' => $sukarela = $canonicalVal,
+                        'KHUSUS' => $khusus = $canonicalVal,
                     };
                 }
             }
 
             $rowTotalStr = bcadd(
-                bcadd(number_format($pokok, 2, '.', ''), number_format($wajib, 2, '.', ''), 2),
-                bcadd(number_format($sukarela, 2, '.', ''), number_format($khusus, 2, '.', ''), 2),
+                bcadd($pokok, $wajib, 2),
+                bcadd($sukarela, $khusus, 2),
                 2
             );
 
@@ -879,7 +879,7 @@ class MemberImportValidator
                 'opening_balance_wajib' => $wajib,
                 'opening_balance_sukarela' => $sukarela,
                 'opening_balance_khusus' => $khusus,
-                'opening_balance_total' => (float) $rowTotalStr,
+                'opening_balance_total' => $rowTotalStr,
             ];
 
             $rowErrorsMap[$rowNumber] = $rowErrors;
@@ -910,10 +910,10 @@ class MemberImportValidator
         $sumKhusus = '0.00';
 
         foreach ($normalizedRowsMap as $rowNumber => $rowNorm) {
-            $rowP = number_format((float) ($rowNorm['opening_balance_pokok'] ?? 0), 2, '.', '');
-            $rowW = number_format((float) ($rowNorm['opening_balance_wajib'] ?? 0), 2, '.', '');
-            $rowS = number_format((float) ($rowNorm['opening_balance_sukarela'] ?? 0), 2, '.', '');
-            $rowK = number_format((float) ($rowNorm['opening_balance_khusus'] ?? 0), 2, '.', '');
+            $rowP = (string) ($rowNorm['opening_balance_pokok'] ?? '0.00');
+            $rowW = (string) ($rowNorm['opening_balance_wajib'] ?? '0.00');
+            $rowS = (string) ($rowNorm['opening_balance_sukarela'] ?? '0.00');
+            $rowK = (string) ($rowNorm['opening_balance_khusus'] ?? '0.00');
             $rowTotal = bcadd(bcadd($rowP, $rowW, 2), bcadd($rowS, $rowK, 2), 2);
 
             if (bccomp($rowTotal, '0.00', 2) > 0) {
@@ -1092,11 +1092,11 @@ class MemberImportValidator
             'total_members' => $totalRows,
             'members_with_positive_balance_count' => $positiveBalanceCount,
             'positive_members_count' => $positiveBalanceCount,
-            'total_pokok' => (float) $sumPokok,
-            'total_wajib' => (float) $sumWajib,
-            'total_sukarela' => (float) $sumSukarela,
-            'total_khusus' => (float) $sumKhusus,
-            'grand_total' => (float) $grandTotal,
+            'total_pokok' => $sumPokok,
+            'total_wajib' => $sumWajib,
+            'total_sukarela' => $sumSukarela,
+            'total_khusus' => $sumKhusus,
+            'grand_total' => $grandTotal,
             'cutoff_date' => ($trimmedCutoff !== '') ? $trimmedCutoff : null,
         ];
 

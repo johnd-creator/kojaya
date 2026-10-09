@@ -164,10 +164,10 @@ class MemberImportExecutionService
             $hasPositiveBalance = false;
             foreach ($finalValidation->rows as $row) {
                 $norm = $row->normalizedData;
-                $p = number_format((float) ($norm['opening_balance_pokok'] ?? 0), 2, '.', '');
-                $w = number_format((float) ($norm['opening_balance_wajib'] ?? 0), 2, '.', '');
-                $s = number_format((float) ($norm['opening_balance_sukarela'] ?? 0), 2, '.', '');
-                $k = number_format((float) ($norm['opening_balance_khusus'] ?? 0), 2, '.', '');
+                $p = (string) ($norm['opening_balance_pokok'] ?? '0.00');
+                $w = (string) ($norm['opening_balance_wajib'] ?? '0.00');
+                $s = (string) ($norm['opening_balance_sukarela'] ?? '0.00');
+                $k = (string) ($norm['opening_balance_khusus'] ?? '0.00');
                 $rTotal = bcadd(bcadd($p, $w, 2), bcadd($s, $k, 2), 2);
                 if (bccomp($rTotal, '0.00', 2) > 0) {
                     $hasPositiveBalance = true;
@@ -184,10 +184,10 @@ class MemberImportExecutionService
 
             foreach ($finalValidation->rows as $row) {
                 $norm = $row->normalizedData;
-                $pokok = number_format((float) ($norm['opening_balance_pokok'] ?? 0), 2, '.', '');
-                $wajib = number_format((float) ($norm['opening_balance_wajib'] ?? 0), 2, '.', '');
-                $sukarela = number_format((float) ($norm['opening_balance_sukarela'] ?? 0), 2, '.', '');
-                $khusus = number_format((float) ($norm['opening_balance_khusus'] ?? 0), 2, '.', '');
+                $pokok = (string) ($norm['opening_balance_pokok'] ?? '0.00');
+                $wajib = (string) ($norm['opening_balance_wajib'] ?? '0.00');
+                $sukarela = (string) ($norm['opening_balance_sukarela'] ?? '0.00');
+                $khusus = (string) ($norm['opening_balance_khusus'] ?? '0.00');
                 $rowTotal = bcadd(bcadd($pokok, $wajib, 2), bcadd($sukarela, $khusus, 2), 2);
 
                 if (bccomp($rowTotal, '0.00', 2) > 0) {
@@ -199,10 +199,10 @@ class MemberImportExecutionService
                             'mode' => 'DIRECT',
                             'cut_off_date' => $effectiveCutoffDate,
                             'direct_amounts' => [
-                                'POKOK' => (float) $pokok,
-                                'WAJIB' => (float) $wajib,
-                                'SUKARELA' => (float) $sukarela,
-                                'KHUSUS' => (float) $khusus,
+                                'POKOK' => $pokok,
+                                'WAJIB' => $wajib,
+                                'SUKARELA' => $sukarela,
+                                'KHUSUS' => $khusus,
                             ],
                             'source_type' => 'EXCEL_IMPORT',
                             'source_reference' => "IMPORT-{$importId}",
@@ -246,7 +246,7 @@ class MemberImportExecutionService
                             'generated_member_number_count' => count($generatedMemberNumbers),
                             'supplied_member_number_count' => count($suppliedMemberNumbers),
                             'opening_balance_drafts_count' => $openingBalanceDraftsCount,
-                            'opening_balance_total_amount' => (float) $openingBalanceTotalAmount,
+                            'opening_balance_total_amount' => $openingBalanceTotalAmount,
                         ],
                         'reason' => 'Batch member onboarding import completed',
                     ],
@@ -270,7 +270,7 @@ class MemberImportExecutionService
                 suppliedMemberNumbers: $suppliedMemberNumbers,
                 status: 'COMPLETED',
                 openingBalanceDraftsCount: $openingBalanceDraftsCount,
-                openingBalanceTotalAmount: (float) $openingBalanceTotalAmount,
+                openingBalanceTotalAmount: $openingBalanceTotalAmount,
             );
         });
     }

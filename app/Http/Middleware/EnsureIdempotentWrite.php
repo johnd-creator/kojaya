@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureIdempotentWrite
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ?string $mode = null): Response
     {
         $idempotencyKey = $request->headers->get('Idempotency-Key');
 
@@ -25,6 +25,21 @@ class EnsureIdempotentWrite
 
         $cacheKey = $this->cacheKey($request, $idempotencyKey);
         $fingerprint = $this->fingerprint($request);
+        if ($mode === 'serialize') {
+            $response = Cache::lock($cacheKey.':lock', 120)->get(
+                fn (): Response => $this->process($request, $next, $cacheKey, $fingerprint),
+            );
+
+            return $response === false
+                ? ApiResponse::error('Bukti sedang diproses. Coba lagi dengan data yang sama.', Response::HTTP_CONFLICT)
+                : $response;
+        }
+
+        return $this->process($request, $next, $cacheKey, $fingerprint);
+    }
+
+    private function process(Request $request, Closure $next, string $cacheKey, string $fingerprint): Response
+    {
         $cached = Cache::get($cacheKey);
 
         if (is_array($cached)) {

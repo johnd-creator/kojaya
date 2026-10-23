@@ -25,7 +25,7 @@ class MemberPaymentResource extends JsonResource
             'poll_after_seconds' => (int) ($presentation['poll_after_seconds'] ?? 5),
             'paid_at' => $this->paid_at?->toDateString(),
             'status' => $this->status,
-            'proof_path' => $this->proof_path,
+            'has_proof' => filled($this->proof_path),
             'reference_no' => $this->reference_no,
             'receipt_no' => $this->receipt_no,
             'receipt_issued_at' => $this->receipt_issued_at?->toISOString(),

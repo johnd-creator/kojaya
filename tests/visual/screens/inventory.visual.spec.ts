@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { captureScreen } from "../helpers/audit-manifest";
+import { assertPaymentAmountsVisible } from "../helpers/payment-amount-visibility";
 import { attachRuntimeHealth, writeRuntimeReport } from "../helpers/runtime-health";
 import { assertNoHorizontalOverflow, installStableEnvironment } from "../helpers/stable-screen";
 import { isAuditScopeIncluded, screenRegistry } from "../helpers/screen-registry";
@@ -82,6 +83,9 @@ for (const authState of authStates) {
                     }
                     if (["tablet", "mobile"].includes(testInfo.project.name)) {
                         await assertNoHorizontalOverflow(page);
+                    }
+                    if (definition.id === "payments-index-default") {
+                        await assertPaymentAmountsVisible(page);
                     }
                     await captureScreen(page, testInfo, definition);
                     if (definition.id === "pos-closings-index-default") {

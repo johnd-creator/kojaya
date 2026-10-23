@@ -4,7 +4,35 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** October 9, 2026
+**Last Updated:** October 23, 2026
+
+## 2026-10-23 - PR 116 approved npm security follow-up
+
+- Updated only follow-redirects 1.16.0 to 1.16.1 and Vite 7.3.6 to 7.3.7. Reviewed the complete lock delta: version/tarball/integrity for those two entries only; package.json, root constraints, all transitive package entries and qs 6.15.3 are unchanged. Existing audit severity policies remain enforced.
+- Added a bounded Node regression suite to the existing Dependency Audit job. Synthetic loopback redirects check object/array credential stripping, custom sensitive header regex characters and same-origin compatibility. Vite tests cover public HTML transformation and resolved import allowlisting with virtual modules; bundled editor helpers run in a deny-by-default VM with filesystem/process mocks for Windows percent paths, path resolution, metacharacter escaping and WSL filename semantics. No editor/shell payload or real credentials are executed.
+- Reproduced the old package failures before the clean lockfile installation. Installed versions are verified as 1.16.1/7.3.7; 13 regression cases pass. Independent review found a missing Windows escaping control, now covered for &, | and ^; no remaining implementation blocker was reported.
+- Local validation: unchanged npm high-threshold audit passes with only the known moderate qs finding; Composer audit passes with its existing medium/low exclusions. Four CI contract tests (139 assertions), six formatter tests, Vite build, six synthetic payment browser checks and all 234 baseline inventory entries pass. Existing CSS optimizer warning remains; no UI source/baseline change is included in this npm follow-up. Final-head remote CI and conditional merge/post-merge verification remain required.
+- Scoped source investigation establishes package vulnerabilities, not a proven application exploit: Axios browser use/SSR presence does not prove a credential-bearing Node redirect, the custom Vite middleware path was not found in application callers, and editor behavior is simulated rather than actual Windows/WSL execution. No deployment, provider activation, Android publication or APK installation.
+
+## 2026-10-23 - PR 116 payment visibility and Symfony patch follow-up
+
+- Corrected compact-table clipping of financial amounts with page-local intrinsic sizing. Linux capture review also exposed narrowed method/status badges; protected their intrinsic sizing and checked text against both label and cell bounds. Added text-bound checks to real visual scenarios and synthetic large-amount/approved/rejected/history coverage at desktop/tablet/mobile widths; sorting, proof controls and pagination remain available.
+- Patched only `symfony/http-foundation` 7.4.14 to 7.4.21 (CVE-2026-108082, including whitespace-separator compatibility repair) and `symfony/yaml` 7.4.15 to 7.4.18 (CVE-2026-109413). Root constraints, other lock entries and audit enforcement are unchanged; Composer update scripts were not run.
+- Added bounded parser regression tests: request Cache-Control with spaces/tabs, unterminated sequence/mapping/mixed YAML nesting, parser reuse and valid header/cookie/frontmatter controls. HTTP input reaches HeaderUtils during request construction before authentication; this application currently parses trusted documentation frontmatter with YAML, with no request-YAML endpoint established by the scoped source review.
+- Local validation: 77 payment/security tests (549 assertions), 91 documentation/deployment tests (697 assertions), eight parser cases included above, Vite build, Pint, supported scoped formatting/lint and six synthetic browser cases pass. The existing CI environment-template test is sensitive to Windows CRLF; Linux final-head CI remains required. The first broad run hit PHP's default 128MB; successful isolated suites used a per-process 512MB limit without config edits.
+- Reviewed exact-source Linux capture 39954192268 at ebfa6119 (101/101 expected desktop screens captured) and updated only four existing payment desktop baselines after amount and method/status bounds passed. Inventory remains 234 images; final comparison is still required. First capture images were rejected when they exposed label clipping.
+- Composer audit passes at the existing CI severity threshold; ten known medium/low advisories remain excluded by existing policy. npm audit now reveals pre-existing high findings in follow-redirects 1.16.0 and vite 7.3.6, plus moderate qs 6.15.3; npm lockfile is unchanged. Merge remains blocked pending separately approved remediation and final CI/UI compare. No bypass, deployment or Android publication.
+
+## 2026-10-23 - Manual transfer proof integration (MNSTR, local)
+
+- Member proof upload remains private/PENDING; invoice ownership is locked and rechecked before writing, storage/DB failure cleans up, and keyed retries are serialized without financial posting.
+- Member response exposes `has_proof` instead of a storage path. Authorized admin list/card links retrieve existing proof through the unchanged policy-protected endpoint.
+- Android consumes the authenticated binary endpoint, renders image/PDF in-app, preserves retry identity for unchanged submissions, handles inaccessible/oversize files, and confirms pending verification before refreshing detail.
+- Aggregator entry points give local development feedback; manual transfer and history remain available. No migrations, provider activation, notification-preference changes, deployment, or real financial tests.
+- Verification: 69 backend tests / 530 assertions pass with SQLite `:memory:` and fake storage, including byte-for-byte valid two-page PDF retrieval by member/admin. Vite build and scoped lint pass (0 errors; existing import/unused warnings remain).
+- The compiled Vue admin page was checked with a loopback-only synthetic fixture at 1440/768/390 px, approver and viewer modes (6 checks): proof links visible/clickable, missing/unauthorized proof links absent, no writes/external traffic. This exposed and fixed proof-control clipping; mobile cards retain their own pager while tablet sorting/pagination remain available.
+- Reproduce the safe browser check after building: `node tests/visual/scripts/manual-transfer-proof-fixture-check.cjs <isolated-output-directory>`. It never connects to Laravel or a database; policy/organization checks are covered separately by PHPUnit. No actual Android-to-Laravel HTTP request, device or live account flow is claimed.
+
 
 ## 2026-10-09 - QAR-BUNDLE-04-SENIOR-REVIEW-FIX-02 (Development PC)
 

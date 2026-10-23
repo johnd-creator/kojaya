@@ -216,7 +216,8 @@ class Phase1MemberSelfServiceApiTest extends TestCase
             ->assertJsonMissingPath('data.cooperative_member_id');
 
         $proofDisk = config('filesystems.payment_proof_disk', 'local');
-        Storage::disk($proofDisk)->assertExists($response->json('data.proof_path'));
+        Storage::disk($proofDisk)->assertExists(CooperativePayment::query()->findOrFail($response->json('data.id'))->proof_path);
+        $response->assertJsonPath('data.has_proof', true)->assertJsonMissingPath('data.proof_path');
     }
 
     public function test_member_loan_endpoints_apply_and_enforce_ownership(): void

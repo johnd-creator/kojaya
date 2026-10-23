@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm } from "@inertiajs/vue3";
+import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import {
   Check,
   CheckCircle2,
@@ -38,6 +38,7 @@ import {
 import {
   approve,
   bulkApprove,
+  proof as paymentProof,
   index,
   store,
 } from "@/routes/cooperative/payments";
@@ -63,6 +64,8 @@ type PaymentRow = {
   payment_method: string;
   amount: number | string;
   notes?: string | null;
+  has_proof?: boolean;
+  can_view_proof?: boolean;
   member?: { name?: string; member_no?: string } | null;
   contribution_type?: { name?: string } | null;
   invoice?: { contribution_type?: { name?: string } | null } | null;
@@ -383,7 +386,7 @@ const columns = computed(() => [
     header: "Tanggal",
     key: "paid_at",
     slot: "paid_at",
-    width: props.canApprovePayments ? "12%" : "13%",
+    width: "11%",
     sortable: true,
     sortKey: "paid_at",
   },
@@ -391,25 +394,27 @@ const columns = computed(() => [
     header: "Anggota",
     key: "member.name",
     slot: "member",
-    width: props.canApprovePayments ? "18%" : "18%",
+    width: "17%",
   },
   {
     header: "Jenis Simpanan",
     key: "contribution_type.name",
     slot: "type",
-    width: props.canApprovePayments ? "14%" : "17%",
+    width: "12%",
   },
   {
     header: "Metode",
     key: "payment_method",
     slot: "method",
-    width: props.canApprovePayments ? "12%" : "12%",
+    class: "max-w-none! whitespace-nowrap",
+    width: "10%",
   },
   {
     header: "Status",
     key: "status",
     slot: "status",
-    width: props.canApprovePayments ? "11%" : "12%",
+    class: "max-w-none! whitespace-nowrap",
+    width: "10%",
     sortable: true,
     sortKey: "status",
   },
@@ -417,28 +422,28 @@ const columns = computed(() => [
     header: "Keterangan",
     key: "notes",
     slot: "notes",
-    width: props.canApprovePayments ? "14%" : "18%",
+    width: "12%",
   },
   {
     header: "Nominal",
     key: "amount",
     slot: "amount",
     align: "right" as const,
-    width: props.canApprovePayments ? "11%" : "10%",
+    // Financial values must size the cell; compact table clipping is unsafe here.
+    class: "max-w-none! whitespace-nowrap",
+    width: "10%",
     sortable: true,
     sortKey: "amount",
   },
-  ...(props.canApprovePayments
-    ? [
-        {
-          header: "Aksi",
-          key: "actions",
-          slot: "actions",
-          align: "right" as const,
-          width: "8%",
-        },
-      ]
-    : []),
+  ...[
+    {
+      header: "Aksi",
+      key: "actions",
+      slot: "actions",
+      align: "right" as const,
+      width: "18%",
+    },
+  ],
 ]);
 </script>
 
@@ -863,7 +868,7 @@ const columns = computed(() => [
                 class="hidden sm:block"
                 :columns="columns"
                 :data="payments"
-                table-class="min-w-0 table-fixed"
+                table-class="min-w-0 table-auto"
                 compact
                 :searchable="false"
                 :empty-icon="ReceiptText"
@@ -910,6 +915,7 @@ const columns = computed(() => [
 
                 <template #method="{ row }">
                   <Badge
+                    data-testid="payment-method"
                     variant="outline"
                     class="inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
@@ -919,6 +925,7 @@ const columns = computed(() => [
 
                 <template #status="{ row }">
                   <Badge
+                    data-testid="payment-status"
                     variant="outline"
                     :class="
                       row.status === 'APPROVED'
@@ -943,15 +950,30 @@ const columns = computed(() => [
 
                 <template #amount="{ value }">
                   <span
+                    data-testid="payment-amount"
                     class="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"
                   >
                     {{ formatCurrency(value) }}
                   </span>
                 </template>
 
-                <template v-if="canApprovePayments" #actions="{ row }">
+                <template #actions="{ row }">
                   <Button
-                    v-if="row.status === 'PENDING'"
+                    v-if="row.has_proof && row.can_view_proof"
+                    class="h-auto min-h-8 max-w-full break-words whitespace-normal px-2 py-1 text-center text-xs leading-tight"
+                    as-child
+                    variant="outline"
+                    size="sm"
+                  >
+                    <a
+                      :href="paymentProof.url(row.id)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Lihat Bukti Transfer</a
+                    >
+                  </Button>
+                  <Button
+                    v-if="canApprovePayments && row.status === 'PENDING'"
                     size="icon"
                     class="size-8"
                     :aria-label="
@@ -969,7 +991,14 @@ const columns = computed(() => [
                   >
                     <CheckCircle2 class="size-4" />
                   </Button>
-                  <span v-else class="text-xs text-zinc-400">-</span>
+                  <span
+                    v-if="
+                      !row.has_proof &&
+                      !(canApprovePayments && row.status === 'PENDING')
+                    "
+                    class="text-xs text-zinc-400"
+                    >-</span
+                  >
                 </template>
               </DataTable>
 
@@ -1019,6 +1048,7 @@ const columns = computed(() => [
                         Nominal
                       </p>
                       <p
+                        data-testid="payment-amount"
                         class="mt-1 text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
                       >
                         {{ formatCurrency(payment.amount) }}
@@ -1074,6 +1104,19 @@ const columns = computed(() => [
                     </div>
                   </dl>
 
+                  <Button
+                    v-if="payment.has_proof && payment.can_view_proof"
+                    as-child
+                    variant="outline"
+                    class="mt-4 w-full"
+                  >
+                    <a
+                      :href="paymentProof.url(payment.id)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >Lihat Bukti Transfer</a
+                    >
+                  </Button>
                   <div
                     v-if="canApprovePayments && payment.status === 'PENDING'"
                     class="mt-4 border-t border-zinc-200/70 pt-3 dark:border-zinc-800/70"
@@ -1094,6 +1137,42 @@ const columns = computed(() => [
                   </div>
                 </article>
               </div>
+              <nav
+                v-if="payments.last_page > 1"
+                aria-label="Halaman pembayaran"
+                class="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-200 p-4 dark:border-zinc-800 sm:hidden"
+              >
+                <Button
+                  v-for="(link, linkIndex) in payments.links"
+                  :key="linkIndex"
+                  as-child
+                  size="sm"
+                  :variant="link.active ? 'default' : 'outline'"
+                  :disabled="!link.url"
+                >
+                  <Link
+                    v-if="link.url"
+                    :href="link.url"
+                    preserve-scroll
+                    :aria-current="link.active ? 'page' : undefined"
+                    @click="selectedPayments = []"
+                    >{{
+                      link.label.includes("Previous")
+                        ? "Sebelumnya"
+                        : link.label.includes("Next")
+                          ? "Berikutnya"
+                          : link.label
+                    }}</Link
+                  >
+                  <span v-else aria-disabled="true">{{
+                    link.label.includes("Previous")
+                      ? "Sebelumnya"
+                      : link.label.includes("Next")
+                        ? "Berikutnya"
+                        : link.label
+                  }}</span>
+                </Button>
+              </nav>
             </CardContent>
           </Card>
         </div>

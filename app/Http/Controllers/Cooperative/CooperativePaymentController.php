@@ -73,7 +73,12 @@ class CooperativePaymentController extends Controller
         $query->orderBy($sortField, $sortDirection)->orderByDesc('id');
 
         return Inertia::render('Cooperative/Payments/Index', [
-            'payments' => $query->paginate(20)->withQueryString(),
+            'payments' => $query->paginate(20)->withQueryString()->through(function (CooperativePayment $payment) use ($request): CooperativePayment {
+                $payment->setAttribute('has_proof', filled($payment->proof_path));
+                $payment->setAttribute('can_view_proof', $request->user()->can('viewProof', $payment));
+
+                return $payment->makeHidden(['proof_path', 'gateway_payload']);
+            }),
             'members' => tap(CooperativeMember::query()->active(), fn ($memberQuery) => $scopeService->scopeVisibleTo($memberQuery, $request->user()))
                 ->orderBy('name')->get(['id', 'member_no', 'name']),
             'contributionTypes' => $this->paymentContributionTypes()->get(),

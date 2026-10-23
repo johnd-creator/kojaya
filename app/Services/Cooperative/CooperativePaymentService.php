@@ -604,6 +604,7 @@ class CooperativePaymentService
 
         return $storage->download($path, $filename, [
             'Cache-Control' => 'private, max-age=0, no-store',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }

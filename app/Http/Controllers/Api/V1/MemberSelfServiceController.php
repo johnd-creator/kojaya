@@ -423,25 +423,41 @@ class MemberSelfServiceController extends Controller
     public function uploadPaymentProof(MemberPaymentProofRequest $request): JsonResponse
     {
         $member = $this->memberOrAbort($request);
-        $invoice = CooperativeDuesInvoice::query()
-            ->where('cooperative_member_id', $member->id)
-            ->whereIn('status', ['UNPAID', 'PARTIAL'])
-            ->findOrFail($request->validated('cooperative_dues_invoice_id'));
+        $proofPath = null;
+        $disk = config('filesystems.payment_proof_disk', \App\Services\Cooperative\CooperativePaymentService::PROOF_DISK);
 
-        $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, config('filesystems.payment_proof_disk', \App\Services\Cooperative\CooperativePaymentService::PROOF_DISK));
+        try {
+            $payment = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $member, $disk, &$proofPath): CooperativePayment {
+                $invoice = CooperativeDuesInvoice::query()
+                    ->where('cooperative_member_id', $member->id)
+                    ->whereIn('status', ['UNPAID', 'PARTIAL'])
+                    ->lockForUpdate()
+                    ->findOrFail($request->validated('cooperative_dues_invoice_id'));
 
-        $payment = CooperativePayment::query()->create([
-            'cooperative_member_id' => $member->id,
-            'cooperative_dues_invoice_id' => $invoice->id,
-            'user_id' => $request->user()?->id,
-            'amount' => $request->validated('amount'),
-            'payment_method' => $request->validated('payment_method'),
-            'paid_at' => $request->validated('paid_at'),
-            'status' => 'PENDING',
-            'proof_path' => $proofPath,
-            'reference_no' => $request->validated('reference_no'),
-            'notes' => $request->validated('notes'),
-        ]);
+                $proofPath = $request->file('proof')->store('cooperative/payment-proofs/'.$member->id, $disk);
+                abort_unless(is_string($proofPath) && $proofPath !== '', 503, 'Bukti belum tersimpan. Silakan coba lagi.');
+
+                // Upload is evidence awaiting review, never a settlement or ledger entry.
+                return CooperativePayment::query()->create([
+                    'cooperative_member_id' => $member->id,
+                    'cooperative_dues_invoice_id' => $invoice->id,
+                    'user_id' => $request->user()?->id,
+                    'amount' => $request->validated('amount'),
+                    'payment_method' => $request->validated('payment_method'),
+                    'paid_at' => $request->validated('paid_at'),
+                    'status' => 'PENDING',
+                    'proof_path' => $proofPath,
+                    'reference_no' => $request->validated('reference_no'),
+                    'notes' => $request->validated('notes'),
+                ]);
+            });
+        } catch (\Throwable $exception) {
+            if (is_string($proofPath) && $proofPath !== '') {
+                \Illuminate\Support\Facades\Storage::disk($disk)->delete($proofPath);
+            }
+
+            throw $exception;
+        }
 
         return (new MemberPaymentResource($payment->load('invoice.contributionType')))
             ->response()

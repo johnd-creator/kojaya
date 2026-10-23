@@ -434,41 +434,56 @@ Authorization: Bearer {token}
 GET /api/v1/member/dues/invoices?status=UNPAID&category=WAJIB&period=2026-05
 GET /api/v1/member/payments?status=APPROVED&category=WAJIB&start_date=2026-01-01&end_date=2026-05-31
 GET /api/v1/member/payments/{payment}/receipt
+GET /api/v1/member/payments/{payment}/proof
 POST /api/v1/member/payments/proof
 Authorization: Bearer {token}
 ```
 
 **Payment Proof (multipart/form-data):**
 ```
-cooperative_dues_invoice_id: uuid
+cooperative_dues_invoice_id: integer (invoice milik anggota, UNPAID/PARTIAL)
 amount: 500000
 payment_method: TRANSFER
 paid_at: 2026-05-05
 reference_no: REF-001 (optional)
 notes: Pembayaran iuran Mei (optional)
-proof: <file> (jpg, png, or pdf, max 4MB)
+proof: <file> (jpg/jpeg/png/pdf, maksimum 4096 KB; wajib)
+Idempotency-Key: <header stabil untuk retry payload/berkas yang sama>
 ```
 
-**Response (201):**
+**Response (201), contoh sintetis:**
 ```json
 {
   "data": {
-    "id": "uuid",
-    "invoice": {
-      "id": "uuid",
-      "invoice_number": "INV-2026-001",
-      "contribution_type": {
-        "name": "Iuran Wajib"
-      }
-    },
+    "id": 71,
+    "invoice_id": 41,
     "amount": 500000,
     "payment_method": "TRANSFER",
     "status": "PENDING",
     "paid_at": "2026-05-05",
-    "proof_url": "https://storage.example.com/proofs/xxx.jpg"
+    "has_proof": true
   }
 }
 ```
+
+Bukti transfer hanya menerima `payment_method=TRANSFER`. Upload membuat pembayaran
+`PENDING`, tanpa melunasi invoice atau menulis ledger. Kirim `Idempotency-Key` yang
+sama setelah timeout: replay mengembalikan pembayaran semula; payload berbeda atau
+key yang masih diproses mengembalikan 409. Lock per key berlaku 120 detik, replay
+cache 24 jam; ini bukan jaminan deduplikasi permanen setelah cache kedaluwarsa.
+Validasi file/data mengembalikan 422; invoice asing/tidak dapat dibayar 404.
+
+`has_proof` menggantikan `proof_path`; tidak ada URL/path penyimpanan publik.
+Endpoint `GET .../{payment}/proof` mengirim JPG/PNG/PDF privat untuk pemilik dengan
+ability `member:read`. Akses asing ditolak 403, file hilang 404. Admin memakai
+`GET /cooperative/payments/{payment}/proof` dengan policy dan organisasi yang sama.
+Tombol **Lihat Bukti Transfer** tersedia di daftar desktop dan kartu mobile admin.
+Bukti unggahan berbeda dari receipt yang hanya tersedia setelah `APPROVED`.
+
+Android saat ini menampilkan **Dalam tahap pengembangan** pada QRIS/VA/e-wallet
+dan checkout agregator (iuran, toko, kopi), tanpa membuat sesi atau memanggil
+charge. Transfer manual dan riwayat tetap tersedia. Kontrak gateway di bawah
+adalah dokumentasi integrasi, bukan bukti aktivasi fitur Android.
 
 **Payment Receipt Response (200):**
 ```json

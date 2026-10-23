@@ -4,7 +4,18 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** October 9, 2026
+**Last Updated:** October 23, 2026
+
+## 2026-10-23 - Manual transfer proof integration (MNSTR, local)
+
+- Member proof upload remains private/PENDING; invoice ownership is locked and rechecked before writing, storage/DB failure cleans up, and keyed retries are serialized without financial posting.
+- Member response exposes `has_proof` instead of a storage path. Authorized admin list/card links retrieve existing proof through the unchanged policy-protected endpoint.
+- Android consumes the authenticated binary endpoint, renders image/PDF in-app, preserves retry identity for unchanged submissions, handles inaccessible/oversize files, and confirms pending verification before refreshing detail.
+- Aggregator entry points give local development feedback; manual transfer and history remain available. No migrations, provider activation, notification-preference changes, deployment, or real financial tests.
+- Verification: 69 backend tests / 530 assertions pass with SQLite `:memory:` and fake storage, including byte-for-byte valid two-page PDF retrieval by member/admin. Vite build and scoped lint pass (0 errors; existing import/unused warnings remain).
+- The compiled Vue admin page was checked with a loopback-only synthetic fixture at 1440/768/390 px, approver and viewer modes (6 checks): proof links visible/clickable, missing/unauthorized proof links absent, no writes/external traffic. This exposed and fixed proof-control clipping; mobile cards retain their own pager while tablet sorting/pagination remain available.
+- Reproduce the safe browser check after building: `node tests/visual/scripts/manual-transfer-proof-fixture-check.cjs <isolated-output-directory>`. It never connects to Laravel or a database; policy/organization checks are covered separately by PHPUnit. No actual Android-to-Laravel HTTP request, device or live account flow is claimed.
+
 
 ## 2026-10-09 - QAR-BUNDLE-04-SENIOR-REVIEW-FIX-02 (Development PC)
 

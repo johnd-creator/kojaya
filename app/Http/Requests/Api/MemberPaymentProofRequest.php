@@ -24,7 +24,7 @@ class MemberPaymentProofRequest extends FormRequest
         return [
             'cooperative_dues_invoice_id' => ['required', 'exists:cooperative_dues_invoices,id'],
             'amount' => ['required', 'numeric', 'min:1'],
-            'payment_method' => ['required', 'in:TRANSFER,QRIS'],
+            'payment_method' => ['required', 'in:TRANSFER'],
             'paid_at' => ['required', 'date'],
             'reference_no' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],

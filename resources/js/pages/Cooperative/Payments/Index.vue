@@ -406,12 +406,14 @@ const columns = computed(() => [
     header: "Metode",
     key: "payment_method",
     slot: "method",
+    class: "max-w-none! whitespace-nowrap",
     width: "10%",
   },
   {
     header: "Status",
     key: "status",
     slot: "status",
+    class: "max-w-none! whitespace-nowrap",
     width: "10%",
     sortable: true,
     sortKey: "status",
@@ -913,6 +915,7 @@ const columns = computed(() => [
 
                 <template #method="{ row }">
                   <Badge
+                    data-testid="payment-method"
                     variant="outline"
                     class="inline-flex max-w-full truncate overflow-hidden whitespace-nowrap bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   >
@@ -922,6 +925,7 @@ const columns = computed(() => [
 
                 <template #status="{ row }">
                   <Badge
+                    data-testid="payment-status"
                     variant="outline"
                     :class="
                       row.status === 'APPROVED'

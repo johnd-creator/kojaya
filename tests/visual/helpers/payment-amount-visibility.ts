@@ -11,8 +11,11 @@ export async function assertPaymentAmountsVisible(
     return;
   }
   await expect(amounts.first()).toBeVisible();
-  for (let index = 0; index < (await amounts.count()); index++) {
-    const amount = amounts.nth(index);
+  const values = page.locator(
+    '[data-testid="payment-amount"]:visible, [data-testid="payment-method"]:visible, [data-testid="payment-status"]:visible',
+  );
+  for (let index = 0; index < (await values.count()); index++) {
+    const amount = values.nth(index);
     await amount.scrollIntoViewIfNeeded();
     const metrics = await amount.evaluate((element) => {
       const range = document.createRange();
@@ -21,19 +24,25 @@ export async function assertPaymentAmountsVisible(
       const cell =
         element.closest("td") ?? element.closest("article") ?? element;
       const bounds = cell.getBoundingClientRect();
+      const labelBounds = element.getBoundingClientRect();
       return {
         value: element.textContent?.trim(),
+        isAmount: element.getAttribute("data-testid") === "payment-amount",
         left: text.left,
         right: text.right,
         top: text.top,
         bottom: text.bottom,
-        cellLeft: bounds.left,
-        cellRight: bounds.right,
+        cellLeft: Math.max(bounds.left, labelBounds.left),
+        cellRight: Math.min(bounds.right, labelBounds.right),
         viewportWidth: innerWidth,
         viewportHeight: innerHeight,
       };
     });
-    expect(metrics.value).toMatch(/^Rp\s*[\d.,]+$/);
+    if (metrics.isAmount) {
+      expect(metrics.value).toMatch(/^Rp\s*[\d.,]+$/);
+    } else {
+      expect(metrics.value).toBeTruthy();
+    }
     expect(
       metrics.left,
       `${metrics.value}: clipped left edge`,

@@ -16,7 +16,7 @@ const results = [];
 const requests = [];
 
 function page(canApprove=true, pageNo=1) {
- const row=(id,proof,permission)=>({id,status:'PENDING',paid_at:'2026-10-23',payment_method:'TRANSFER',amount:id===72?'9876543210.00':'100000.00',notes:'FIXTURE SINTETIS - BUKAN TRANSAKSI NYATA',has_proof:proof,can_view_proof:permission,member:{name:'Anggota Sintetis '+id,member_no:'SYN-'+id},invoice:{contribution_type:{name:'Simpanan Wajib'}}});
+ const row=(id,proof,permission)=>({id,status:id===72?'APPROVED':id===73?'REJECTED':'PENDING',paid_at:'2026-10-23',payment_method:id===72?'QRIS':'TRANSFER',amount:id===72?'9876543210.00':'100000.00',notes:'FIXTURE SINTETIS - BUKAN TRANSAKSI NYATA',has_proof:proof,can_view_proof:permission,member:{name:'Anggota Sintetis '+id,member_no:'SYN-'+id},invoice:{contribution_type:{name:'Simpanan Wajib'}}});
  return {component:'Cooperative/Payments/Index',url:'/cooperative/payments',version:'synthetic-only',clearHistory:false,encryptHistory:false,
  props:{name:'Kojaya - PREVIEW SINTETIS',csrf_token:'synthetic-only',appearance:'light',sidebarOpen:true,flash:{},notifications:{unreadCount:0},contextualHelp:null,active_organization:null,user_organizations:[],
  auth:{user:{id:999999,name:'Admin Sintetis',email:'synthetic@example.test',roles:['Admin Koperasi'],organization_id:999999},roles:['Admin Koperasi'],permissions:['manage_cooperative_payments'],primary_role:'cooperative_admin',member_access:null},
@@ -63,11 +63,11 @@ const server = http.createServer((req,res)=>{
     assert.equal(await p.locator('a[href="/cooperative/payments/72/proof"]').count(),0);
     assert.equal(await p.locator('a[href="/cooperative/payments/73/proof"]').count(),0);
     const amountMetrics = [];
-    const amounts = p.locator('[data-testid="payment-amount"]:visible');
+    const amounts = p.locator('[data-testid="payment-amount"]:visible, [data-testid="payment-method"]:visible, [data-testid="payment-status"]:visible');
     assert.equal(
       await amounts.count(),
-      3,
-      "Every synthetic payment must expose its full amount",
+      width >= 640 ? 9 : 3,
+      "Every synthetic payment must expose its full amount and desktop method/status",
     );
     for (
       let amountIndex = 0;
@@ -83,14 +83,15 @@ const server = http.createServer((req,res)=>{
         const cell = (
           element.closest("td") || element.closest("article")
         ).getBoundingClientRect();
+        const label = element.getBoundingClientRect();
         return {
           value: element.textContent.trim(),
           left: text.left,
           right: text.right,
           top: text.top,
           bottom: text.bottom,
-          cellLeft: cell.left,
-          cellRight: cell.right,
+          cellLeft: Math.max(cell.left, label.left),
+          cellRight: Math.min(cell.right, label.right),
           viewportWidth: innerWidth,
           viewportHeight: innerHeight,
         };

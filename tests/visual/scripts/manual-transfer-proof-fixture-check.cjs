@@ -16,7 +16,7 @@ const results = [];
 const requests = [];
 
 function page(canApprove=true, pageNo=1) {
- const row=(id,proof,permission)=>({id,status:'PENDING',paid_at:'2026-10-23',payment_method:'TRANSFER',amount:'100000.00',notes:'FIXTURE SINTETIS - BUKAN TRANSAKSI NYATA',has_proof:proof,can_view_proof:permission,member:{name:'Anggota Sintetis '+id,member_no:'SYN-'+id},invoice:{contribution_type:{name:'Simpanan Wajib'}}});
+ const row=(id,proof,permission)=>({id,status:'PENDING',paid_at:'2026-10-23',payment_method:'TRANSFER',amount:id===72?'9876543210.00':'100000.00',notes:'FIXTURE SINTETIS - BUKAN TRANSAKSI NYATA',has_proof:proof,can_view_proof:permission,member:{name:'Anggota Sintetis '+id,member_no:'SYN-'+id},invoice:{contribution_type:{name:'Simpanan Wajib'}}});
  return {component:'Cooperative/Payments/Index',url:'/cooperative/payments',version:'synthetic-only',clearHistory:false,encryptHistory:false,
  props:{name:'Kojaya - PREVIEW SINTETIS',csrf_token:'synthetic-only',appearance:'light',sidebarOpen:true,flash:{},notifications:{unreadCount:0},contextualHelp:null,active_organization:null,user_organizations:[],
  auth:{user:{id:999999,name:'Admin Sintetis',email:'synthetic@example.test',roles:['Admin Koperasi'],organization_id:999999},roles:['Admin Koperasi'],permissions:['manage_cooperative_payments'],primary_role:'cooperative_admin',member_access:null},
@@ -62,6 +62,60 @@ const server = http.createServer((req,res)=>{
     assert.equal(await proof.count(),1);
     assert.equal(await p.locator('a[href="/cooperative/payments/72/proof"]').count(),0);
     assert.equal(await p.locator('a[href="/cooperative/payments/73/proof"]').count(),0);
+    const amountMetrics = [];
+    const amounts = p.locator('[data-testid="payment-amount"]:visible');
+    assert.equal(
+      await amounts.count(),
+      3,
+      "Every synthetic payment must expose its full amount",
+    );
+    for (
+      let amountIndex = 0;
+      amountIndex < (await amounts.count());
+      amountIndex++
+    ) {
+      const amount = amounts.nth(amountIndex);
+      await amount.scrollIntoViewIfNeeded();
+      const metrics = await amount.evaluate((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const text = range.getBoundingClientRect();
+        const cell = (
+          element.closest("td") || element.closest("article")
+        ).getBoundingClientRect();
+        return {
+          value: element.textContent.trim(),
+          left: text.left,
+          right: text.right,
+          top: text.top,
+          bottom: text.bottom,
+          cellLeft: cell.left,
+          cellRight: cell.right,
+          viewportWidth: innerWidth,
+          viewportHeight: innerHeight,
+        };
+      });
+      assert(
+        metrics.left >= metrics.cellLeft - 1 &&
+          metrics.right <= metrics.cellRight + 1,
+        "Financial digits are clipped inside their cell: " +
+          JSON.stringify(metrics),
+      );
+      assert(
+        metrics.left >= -1 &&
+          metrics.right <= width + 1 &&
+          metrics.top >= -1 &&
+          metrics.bottom <= height + 1,
+        "Full amount cannot be brought into the viewport",
+      );
+      amountMetrics.push(metrics);
+    }
+    assert(
+      amountMetrics.some(
+        (m) => m.value.replace(/\s/g, "") === "Rp9.876.543.210",
+      ),
+      "Large synthetic amount must remain complete",
+    );
     await proof.scrollIntoViewIfNeeded();
     const box=await proof.boundingBox();
     const overflow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
@@ -78,13 +132,28 @@ const server = http.createServer((req,res)=>{
     await p.waitForTimeout(400);
     const after=requests.filter(x=>x.url==='/cooperative/payments/71/proof').length;
     assert(after>before,'Proof click did not request the existing download route');
+    if (width >= 640) {
+      const beforeSort = requests.length;
+      const amountHeader = p.locator("th").filter({ hasText: "Nominal" });
+      await amountHeader.scrollIntoViewIfNeeded();
+      await Promise.all([
+        p.waitForResponse((r) => r.url().includes("sort_field=amount")),
+        amountHeader.click(),
+      ]);
+      assert(
+        requests
+          .slice(beforeSort)
+          .some((r) => r.url.includes("sort_field=amount")),
+        "Amount sorting must remain available",
+      );
+    }
     const pageTwo = p.locator('a:visible').filter({hasText:/^2$/});
     assert.equal(await pageTwo.count(),1,'Page 2 must remain accessible at every viewport');
     await pageTwo.click();
     await p.getByText('Anggota Sintetis 74',{exact:true}).filter({visible:true}).first().waitFor({state:'visible'});
     assert(requests.some(r=>r.url.includes('page=2')),'Pagination did not request page 2');
     assert.equal(errors.length,0,errors.join('\n'));
-    results.push({viewport:name,width,approve,visibleProofLinks:1,unauthorizedAndMissingProofLinks:0,clickRequestedDownload:true,paginationPageTwo:true,horizontalOverflow:overflow,screenshot,errors});
+    results.push({viewport:name,width,approve,visibleProofLinks:1,unauthorizedAndMissingProofLinks:0,clickRequestedDownload:true,paginationPageTwo:true,horizontalOverflow:overflow,amountMetrics,screenshot,errors});
     await context.close();
    }
   }

@@ -6,6 +6,14 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** October 23, 2026
 
+## 2026-10-23 - PR 116 payment visibility and Symfony patch follow-up
+
+- Corrected compact-table clipping of financial amounts with page-local intrinsic sizing. Added text-bound checks to real visual scenarios and synthetic large-amount coverage at desktop/tablet/mobile widths; sorting, proof controls and pagination remain available.
+- Patched only `symfony/http-foundation` 7.4.14 to 7.4.21 (CVE-2026-108082, including whitespace-separator compatibility repair) and `symfony/yaml` 7.4.15 to 7.4.18 (CVE-2026-109413). Root constraints, other lock entries and audit enforcement are unchanged; Composer update scripts were not run.
+- Added bounded parser regression tests: request Cache-Control with spaces/tabs, unterminated sequence/mapping/mixed YAML nesting, parser reuse and valid header/cookie/frontmatter controls. HTTP input reaches HeaderUtils during request construction before authentication; this application currently parses trusted documentation frontmatter with YAML, with no request-YAML endpoint established by the scoped source review.
+- Local validation: 77 payment/security tests (549 assertions), 91 documentation/deployment tests (697 assertions), eight parser cases included above, Vite build, Pint, supported scoped formatting/lint and six synthetic browser cases pass. The existing CI environment-template test is sensitive to Windows CRLF; Linux final-head CI remains required. The first broad run hit PHP's default 128MB; successful isolated suites used a per-process 512MB limit without config edits.
+- Composer audit passes at the existing CI severity threshold; ten known medium/low advisories remain excluded by existing policy. npm audit now reveals pre-existing high findings in follow-redirects 1.16.0 and vite 7.3.6, plus moderate qs 6.15.3; npm lockfile is unchanged. Merge remains blocked pending separately approved remediation and final CI/UI compare. No bypass, deployment or Android publication.
+
 ## 2026-10-23 - Manual transfer proof integration (MNSTR, local)
 
 - Member proof upload remains private/PENDING; invoice ownership is locked and rechecked before writing, storage/DB failure cleans up, and keyed retries are serialized without financial posting.

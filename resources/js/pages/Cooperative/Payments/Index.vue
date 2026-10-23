@@ -427,6 +427,8 @@ const columns = computed(() => [
     key: "amount",
     slot: "amount",
     align: "right" as const,
+    // Financial values must size the cell; compact table clipping is unsafe here.
+    class: "max-w-none! whitespace-nowrap",
     width: "10%",
     sortable: true,
     sortKey: "amount",
@@ -864,7 +866,7 @@ const columns = computed(() => [
                 class="hidden sm:block"
                 :columns="columns"
                 :data="payments"
-                table-class="min-w-0 table-fixed"
+                table-class="min-w-0 table-auto"
                 compact
                 :searchable="false"
                 :empty-icon="ReceiptText"
@@ -944,6 +946,7 @@ const columns = computed(() => [
 
                 <template #amount="{ value }">
                   <span
+                    data-testid="payment-amount"
                     class="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-300"
                   >
                     {{ formatCurrency(value) }}
@@ -1041,6 +1044,7 @@ const columns = computed(() => [
                         Nominal
                       </p>
                       <p
+                        data-testid="payment-amount"
                         class="mt-1 text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-300"
                       >
                         {{ formatCurrency(payment.amount) }}

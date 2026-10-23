@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { captureScreen } from "../helpers/audit-manifest";
+import { assertPaymentAmountsVisible } from "../helpers/payment-amount-visibility";
 import {
   attachRuntimeHealth,
   writeRuntimeReport,
@@ -184,6 +185,10 @@ for (const [id, route] of scenarios) {
       }
       if (id.startsWith("admin-payments")) {
         await assertPaymentLayout(page);
+        await assertPaymentAmountsVisible(
+          page,
+          id === "admin-payments-index-empty",
+        );
       }
       await captureScreen(page, testInfo, definition);
     } finally {
@@ -256,6 +261,7 @@ test("admin-payments-index-selected @visual", async ({ page }, testInfo) => {
             .first()
         : page.locator("table tbody input[type=checkbox]").first();
     await paymentCheckbox.check();
+    await assertPaymentAmountsVisible(page);
     await captureScreen(page, testInfo, definition);
   } finally {
     await writeRuntimeReport(runtime, testInfo);

@@ -6,6 +6,14 @@
 **Current Status:** Internal Alpha / Active Development
 **Last Updated:** October 23, 2026
 
+## 2026-10-23 - PR 116 approved npm security follow-up
+
+- Updated only follow-redirects 1.16.0 to 1.16.1 and Vite 7.3.6 to 7.3.7. Reviewed the complete lock delta: version/tarball/integrity for those two entries only; package.json, root constraints, all transitive package entries and qs 6.15.3 are unchanged. Existing audit severity policies remain enforced.
+- Added a bounded Node regression suite to the existing Dependency Audit job. Synthetic loopback redirects check object/array credential stripping, custom sensitive header regex characters and same-origin compatibility. Vite tests cover public HTML transformation and resolved import allowlisting with virtual modules; bundled editor helpers run in a deny-by-default VM with filesystem/process mocks for Windows percent paths, path resolution, metacharacter escaping and WSL filename semantics. No editor/shell payload or real credentials are executed.
+- Reproduced the old package failures before the clean lockfile installation. Installed versions are verified as 1.16.1/7.3.7; 13 regression cases pass. Independent review found a missing Windows escaping control, now covered for &, | and ^; no remaining implementation blocker was reported.
+- Local validation: unchanged npm high-threshold audit passes with only the known moderate qs finding; Composer audit passes with its existing medium/low exclusions. Four CI contract tests (139 assertions), six formatter tests, Vite build, six synthetic payment browser checks and all 234 baseline inventory entries pass. Existing CSS optimizer warning remains; no UI source/baseline change is included in this npm follow-up. Final-head remote CI and conditional merge/post-merge verification remain required.
+- Scoped source investigation establishes package vulnerabilities, not a proven application exploit: Axios browser use/SSR presence does not prove a credential-bearing Node redirect, the custom Vite middleware path was not found in application callers, and editor behavior is simulated rather than actual Windows/WSL execution. No deployment, provider activation, Android publication or APK installation.
+
 ## 2026-10-23 - PR 116 payment visibility and Symfony patch follow-up
 
 - Corrected compact-table clipping of financial amounts with page-local intrinsic sizing. Linux capture review also exposed narrowed method/status badges; protected their intrinsic sizing and checked text against both label and cell bounds. Added text-bound checks to real visual scenarios and synthetic large-amount/approved/rejected/history coverage at desktop/tablet/mobile widths; sorting, proof controls and pagination remain available.

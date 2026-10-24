@@ -496,7 +496,20 @@ adalah dokumentasi integrasi, bukan bukti aktivasi fitur Android.
 }
 ```
 
-Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk file PDF receipt.
+Receipt hanya tersedia untuk pembayaran berstatus `APPROVED`. `download_url` adalah signed URL sementara untuk rute web yang tetap memerlukan sesi web terverifikasi.
+
+**Native receipt PDF:** `GET /api/v1/member/payments/{payment}/receipt/file`
+memakai Bearer Sanctum berkemampuan `member:read`, keanggotaan aktif, organisasi
+saat ini, dan kepemilikan pembayaran serta receipt. Respons sukses berupa
+`application/pdf` dengan `Content-Disposition: attachment`, `Cache-Control:
+private, no-store`, dan `X-Content-Type-Options: nosniff`, bukan JSON atau redirect.
+Status selain `APPROVED`, receipt/file privat tidak tersedia, atau referensi file
+di luar folder receipt privat menghasilkan 404; anggota/organisasi lain 403.
+Tidak ada fallback ke disk publik. Permintaan berulang memakai receipt yang
+sama; penerbitan receipt yang belum ada mengikuti service terkunci yang ada,
+tanpa memposting ulang ledger, saldo, atau status pembayaran. Audit unduhan
+mengikuti kebijakan best-effort rute web. QRIS/agregator Android tetap nonaktif.
+
 
 ### **Payment Gateway Charge**
 Member app membuat QRIS Sandbox untuk invoice iuran/simpanan milik anggota melalui `CooperativePayment` yang sudah dibuat dari invoice. Settlement tetap masuk ke `CooperativePaymentService` dan ledger `SAVING_PAYMENT`.

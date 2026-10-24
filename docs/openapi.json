@@ -3377,6 +3377,57 @@
                 ]
             }
         },
+        "/api/v1/member/payments/{payment}/receipt/file": {
+            "get": {
+                "summary": "api.v1.member.payments.receipt.file",
+                "operationId": "get_api_v1_member_payments__payment__receipt_file",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Private payment receipt PDF",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    },
+                    "404": {
+                        "description": "Payment not found, not approved, or private receipt unavailable"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "description": "Private PDF for an APPROVED payment owned by the active member in the current organization. No web session or signed URL is required."
+            }
+        },
         "/api/v1/member/payments/{payment}/proof": {
             "get": {
                 "summary": "api.v1.member.payments.proof",

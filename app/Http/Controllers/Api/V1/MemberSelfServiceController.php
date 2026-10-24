@@ -34,6 +34,7 @@ use App\Models\CooperativeMember;
 use App\Models\CooperativePayment;
 use App\Models\CooperativeShuPeriod;
 use App\Models\CooperativeSupportTicket;
+use App\Models\DownloadLog;
 use App\Models\Loan;
 use App\Models\LoanInstallment;
 use App\Models\LoanType;
@@ -41,6 +42,7 @@ use App\Models\MemberPaymentIntent;
 use App\Models\MemberResignationRequest;
 use App\Models\PosTransaction;
 use App\Models\RewardRedemption;
+use App\Services\Authorization\OrganizationScopeService;
 use App\Services\Cooperative\CooperativeReceiptService;
 use App\Services\Cooperative\LoanRestructureService;
 use App\Services\Cooperative\MemberOnboardingService;
@@ -58,6 +60,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -355,6 +358,41 @@ class MemberSelfServiceController extends Controller
                     ['receipt' => $receipt->id],
                 ),
             ],
+        ]);
+    }
+
+    public function paymentReceiptFile(Request $request, CooperativePayment $payment, CooperativeReceiptService $receiptService, OrganizationScopeService $scope): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $member = $this->memberOrAbort($request);
+        $scope->assertVisible($request->user(), $member);
+
+        abort_unless($payment->cooperative_member_id === $member->id, 403, 'Akses tanda terima ditolak.');
+        abort_unless($payment->status === 'APPROVED', 404, 'Receipt pembayaran belum tersedia.');
+
+        $receipt = $payment->receipt ?: $receiptService->issue($payment, $request->user());
+        abort_unless($receipt->cooperative_member_id === $member->id && $receipt->cooperative_payment_id === $payment->id, 404, 'Receipt pembayaran tidak tersedia.');
+
+        $path = (string) $receipt->pdf_path;
+        // Only service-managed receipt files on the private local disk are eligible.
+        abort_unless(preg_match('~\Acooperative/receipts/[A-Za-z0-9._-]+\.pdf\z~D', $path) === 1, 404, 'Receipt pembayaran tidak tersedia.');
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404, 'Receipt pembayaran tidak tersedia.');
+
+        $name = preg_replace('/[^A-Za-z0-9._-]/', '_', (string) $receipt->receipt_no) ?: 'receipt-'.$payment->id;
+        // Keep the existing web download's best-effort audit policy without recording URLs or file paths.
+        rescue(fn () => DownloadLog::query()->create([
+            'user_id' => $request->user()->id,
+            'document_type' => 'cooperative-receipt',
+            'document_id' => $receipt->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]), report: false);
+
+        return $disk->download($path, substr($name, 0, 120).'.pdf', [
+            'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'private, no-store',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

@@ -1920,3 +1920,12 @@ Core CI #563 passed all 18 jobs at 405843b8. Reviewed the five intended F007/F00
 
 
 CI closure at implementation head 847117d9: CI #564 PASS all 18 jobs, 3464 tests / 28544 assertions, no errors/failures/skips and 81.48% coverage. Visual compare #319 PASS 177 desktop tests; all-viewport compare #320 PASS 448 tests, no flaky. Evidence-only follow-up preserves that implementation and still requires mandatory exact-head PR checks; no merge/deployment.
+
+### 2026-10-24 — Authenticated native receipt PDF
+
+Added the scoped member receipt-file API without loosening the signed web route.
+Isolated SQLite/fake-storage tests cover actual Bearer auth without a web session,
+private PDF bytes and headers, replay, ownership/organization/status/ability and
+missing-file boundaries. Existing financial state is asserted unchanged. Native
+client integration and exact-head CI/review remain separate acceptance gates; no
+shared QA data or running services were changed.

@@ -1864,3 +1864,13 @@ The existing production `bin/deploy.sh` remains unchanged. QA deployment needs
 an explicit, current traffic-hold attestation and protected runtime file. The
 new source change creates a new release-candidate SHA; the prior rc.7 approval
 does not authorize a later candidate or any production deployment.
+
+## 2026-10-24 — Native member receipt download
+
+Keep signed, verified-session web downloads unchanged. Add a separate Sanctum
+`member:read` binary PDF route with canonical member organization visibility,
+payment/receipt ownership and APPROVED status checks. Serve only service-managed
+private local receipt paths, with no public fallback or external redirect. Reuse
+locked idempotent receipt issuance; downloading does not re-post financial entries.
+The Android client must request this fixed authenticated route, not forward its
+token to a metadata URL. Source merge does not deploy this endpoint to QA.

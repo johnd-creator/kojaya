@@ -186,6 +186,16 @@ class OpenApiGenerator
             ];
         }
 
+        if ($uri === 'api/v1/member/payments/{payment}/receipt/file') {
+            $item['description'] = 'Private PDF for an APPROVED payment owned by the active member in the current organization. No web session or signed URL is required.';
+            $item['responses']['200'] = [
+                'description' => 'Private payment receipt PDF',
+                'content' => ['application/pdf' => ['schema' => ['type' => 'string', 'format' => 'binary']]],
+            ];
+            $item['responses']['404'] = ['description' => 'Payment not found, not approved, or private receipt unavailable'];
+            $item['parameters'] = array_values(array_filter($item['parameters'] ?? [], fn (array $parameter): bool => $parameter['in'] === 'path'));
+        }
+
         if (str_ends_with($uri, 'login')) {
             $item['security'] = [];
         }

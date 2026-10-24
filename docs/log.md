@@ -1929,3 +1929,20 @@ private PDF bytes and headers, replay, ownership/organization/status/ability and
 missing-file boundaries. Existing financial state is asserted unchanged. Native
 client integration and exact-head CI/review remain separate acceptance gates; no
 shared QA data or running services were changed.
+
+### 2026-10-24 — Receipt CI dependency baseline repair candidate
+
+Receipt CI17dcfad5 failed the unchanged high/critical Composer audit for
+GHSA-f9x3-7vq9-cph6 in the existing Laravel12.64.0 lock. Composer policy rejected
+the12.68.0 temporary constraint for other advisories; an intact-policy minimal
+resolution updates only laravel/framework to12.70.1. No dependencies are added,
+no composer.json constraint changes, no audit ignore/rule change, and no deploy.
+The malformed-token regression fails2/3 on12.64.0 and passes on the patched
+version; the complete affected auth/member/financial/receipt/OpenAPI set passes
+297 tests/1716 assertions on isolated SQLite with the required Vite build.
+The first direct-directory run retained11 failures: ten missing Vite-manifest
+failures and one PostgreSQL-only test normally excluded by phpunit.xml. Final
+execution uses the unchanged configured suites/exclusions. PostgreSQL concurrency
+and all exact-head remote CI remain required; publication of this additional
+shared-framework repair was held until explicit Kojaya-backend scope approval
+was received on2026-10-24. Exact-head CI and independent review remain mandatory.

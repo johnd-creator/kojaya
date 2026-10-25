@@ -196,6 +196,18 @@ class OpenApiGenerator
             $item['parameters'] = array_values(array_filter($item['parameters'] ?? [], fn (array $parameter): bool => $parameter['in'] === 'path'));
         }
 
+        if (in_array($uri, ['api/auth/session-capabilities', 'api/auth/session/renew'], true)) {
+            $item['security'] = [];
+        }
+        if ($uri === 'api/auth/sessions/{sessionId}') {
+            unset($item['requestBody']);
+            foreach ($item['parameters'] ?? [] as $index => $parameter) {
+                if ($parameter['name'] === 'sessionId') {
+                    $item['parameters'][$index]['schema'] = ['type' => 'string', 'format' => 'uuid'];
+                }
+            }
+        }
+
         if (str_ends_with($uri, 'login')) {
             $item['security'] = [];
         }
@@ -210,9 +222,35 @@ class OpenApiGenerator
     /**
      * @return array<string, mixed>
      */
+    /** @return array<string, mixed> */
+    private function memberSessionSchemas(): array
+    {
+        $dates = [];
+        foreach (['server_time', 'access_expires_at', 'idle_expires_at', 'absolute_expires_at'] as $field) {
+            $dates[$field] = ['type' => 'string', 'format' => 'date-time'];
+        }
+
+        return [
+            'MemberSessionBundle' => ['type' => 'object', 'required' => ['protocol', 'id', 'remembered', 'renewal_token', ...array_keys($dates)], 'properties' => [
+                'protocol' => ['type' => 'integer', 'enum' => [2]], 'id' => ['type' => 'string', 'format' => 'uuid'], 'remembered' => ['type' => 'boolean'],
+                'renewal_token' => ['type' => 'string', 'description' => 'Single-use credential; persist securely before replacing the old record; never log.'], ...$dates,
+            ]],
+            'MemberSessionRenewalResponse' => ['type' => 'object', 'required' => ['token', 'abilities', 'session'], 'properties' => [
+                'token_type' => ['type' => 'string', 'enum' => ['Bearer']], 'token' => ['type' => 'string'], 'abilities' => ['type' => 'array', 'items' => ['type' => 'string']],
+                'session' => ['$ref' => '#/components/schemas/MemberSessionBundle'],
+            ]],
+            'MemberDeviceSession' => ['type' => 'object', 'required' => ['id', 'device_name', 'remembered', 'current', 'active', 'created_at', 'last_renewed_at', 'idle_expires_at', 'absolute_expires_at'], 'properties' => [
+                'id' => ['type' => 'string', 'format' => 'uuid'], 'device_name' => ['type' => 'string'], 'remembered' => ['type' => 'boolean'], 'current' => ['type' => 'boolean'], 'active' => ['type' => 'boolean'],
+                'created_at' => ['type' => 'string', 'format' => 'date-time'], 'last_renewed_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                'idle_expires_at' => $dates['idle_expires_at'], 'absolute_expires_at' => $dates['absolute_expires_at'],
+            ]],
+        ];
+    }
+
     private function buildSchemas(): array
     {
         return [
+            ...$this->memberSessionSchemas(),
             'SuccessEnvelope' => [
                 'type' => 'object',
                 'required' => ['success'],
@@ -838,6 +876,7 @@ class OpenApiGenerator
         }
 
         return match (true) {
+            $uri === 'api/auth/session/renew' => ['type' => 'object', 'required' => ['renewal_token'], 'properties' => ['renewal_token' => ['type' => 'string', 'maxLength' => 101, 'writeOnly' => true, 'description' => 'Single-use UUID.secret renewal credential; never send as a bearer.']]],
             str_ends_with($uri, 'api/payments/charge') => ['$ref' => '#/components/schemas/CreatePaymentChargeRequest'],
             str_ends_with($uri, 'api/payments/webhook') => ['$ref' => '#/components/schemas/PaymentGatewayWebhookRequest'],
             str_contains($uri, 'api/v1/member/bills/') && str_ends_with($uri, '/payment-intent') => ['$ref' => '#/components/schemas/CreateMemberBillPaymentIntentRequest'],
@@ -892,6 +931,9 @@ class OpenApiGenerator
         $method = strtolower($method);
 
         return match (true) {
+            $method === 'get' && $uri === 'api/auth/session-capabilities' => ['type' => 'object', 'required' => ['session_protocol'], 'properties' => ['session_protocol' => ['type' => 'integer', 'enum' => [2, null], 'nullable' => true]]],
+            $method === 'post' && $uri === 'api/auth/session/renew' => ['$ref' => '#/components/schemas/MemberSessionRenewalResponse'],
+            $method === 'get' && $uri === 'api/auth/sessions' => ['type' => 'object', 'required' => ['data'], 'properties' => ['data' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/MemberDeviceSession']]]],
             $method === 'get' && $uri === 'api/v1/members' => ['$ref' => '#/components/schemas/PaginatedMemberResponse'],
             $method === 'get' && $uri === 'api/v1/members/{member}' => ['$ref' => '#/components/schemas/MemberResponse'],
             $method === 'get' && $uri === 'api/v1/loans' => ['$ref' => '#/components/schemas/PaginatedLoanResponse'],

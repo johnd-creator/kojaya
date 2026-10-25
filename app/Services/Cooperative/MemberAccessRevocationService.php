@@ -30,6 +30,7 @@ class MemberAccessRevocationService
     public function __construct(
         private readonly AuditLogService $audit,
         private readonly LegacyTokenClassifier $legacyTokenClassifier,
+        private readonly \App\Services\Auth\MemberSessionService $memberSessions,
     ) {}
 
     /**
@@ -66,7 +67,7 @@ class MemberAccessRevocationService
 
         try {
             return DB::transaction(function () use ($member, $user, $actor, $reason, $context): int {
-                $count = $this->revokeSelectedMemberTokens($user);
+                $count = $this->revokeSelectedMemberTokens($user, $actor, $context);
                 $this->logRevocation($member, $user, $actor, $reason, $count, $context);
 
                 return $count;
@@ -87,7 +88,7 @@ class MemberAccessRevocationService
     ): int {
         try {
             return DB::transaction(function () use ($user, $reason, $actor, $member, $context): int {
-                $count = $this->revokeSelectedMemberTokens($user);
+                $count = $this->revokeSelectedMemberTokens($user, $actor, $context);
                 $this->logRevocation($member, $user, $actor, $reason, $count, $context);
 
                 return $count;
@@ -104,6 +105,7 @@ class MemberAccessRevocationService
         try {
             return DB::transaction(function () use ($user, $reason, $actor): int {
                 $count = $user->tokens()->count();
+                $this->memberSessions->revokeForUser($user, 'logout_all', $actor, $this->contextFor($actor));
                 $user->tokens()->delete();
 
                 $this->audit->log('account.tokens.revoked', 'auth.token', null, [
@@ -172,10 +174,11 @@ class MemberAccessRevocationService
         );
     }
 
-    private function revokeSelectedMemberTokens(User $user): int
+    private function revokeSelectedMemberTokens(User $user, ?User $actor = null, ?AuditContext $context = null): int
     {
         $tokens = $this->memberProfileTokens($user);
         $count = $tokens->count();
+        $this->memberSessions->revokeForUser($user, 'member_lifecycle', $actor, $context ?? $this->contextFor($actor));
 
         if ($count > 0) {
             $user->tokens()->whereKey($tokens->modelKeys())->delete();

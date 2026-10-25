@@ -26,6 +26,131 @@
             }
         },
         "schemas": {
+            "MemberSessionBundle": {
+                "type": "object",
+                "required": [
+                    "protocol",
+                    "id",
+                    "remembered",
+                    "renewal_token",
+                    "server_time",
+                    "access_expires_at",
+                    "idle_expires_at",
+                    "absolute_expires_at"
+                ],
+                "properties": {
+                    "protocol": {
+                        "type": "integer",
+                        "enum": [
+                            2
+                        ]
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "remembered": {
+                        "type": "boolean"
+                    },
+                    "renewal_token": {
+                        "type": "string",
+                        "description": "Single-use credential; persist securely before replacing the old record; never log."
+                    },
+                    "server_time": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "access_expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "idle_expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "absolute_expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "MemberSessionRenewalResponse": {
+                "type": "object",
+                "required": [
+                    "token",
+                    "abilities",
+                    "session"
+                ],
+                "properties": {
+                    "token_type": {
+                        "type": "string",
+                        "enum": [
+                            "Bearer"
+                        ]
+                    },
+                    "token": {
+                        "type": "string"
+                    },
+                    "abilities": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "session": {
+                        "$ref": "#/components/schemas/MemberSessionBundle"
+                    }
+                }
+            },
+            "MemberDeviceSession": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "device_name",
+                    "remembered",
+                    "current",
+                    "active",
+                    "created_at",
+                    "last_renewed_at",
+                    "idle_expires_at",
+                    "absolute_expires_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "device_name": {
+                        "type": "string"
+                    },
+                    "remembered": {
+                        "type": "boolean"
+                    },
+                    "current": {
+                        "type": "boolean"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "last_renewed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "idle_expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "absolute_expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
             "SuccessEnvelope": {
                 "type": "object",
                 "required": [
@@ -1376,6 +1501,108 @@
         }
     ],
     "paths": {
+        "/api/auth/session-capabilities": {
+            "get": {
+                "summary": "Mengambil Auth/Session-Capabilities",
+                "operationId": "get_api_auth_session-capabilities",
+                "tags": [
+                    "Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "session_protocol"
+                                    ],
+                                    "properties": {
+                                        "session_protocol": {
+                                            "type": "integer",
+                                            "enum": [
+                                                2,
+                                                null
+                                            ],
+                                            "nullable": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/api/auth/session/renew": {
+            "post": {
+                "summary": "Membuat Auth/Session/Renew",
+                "operationId": "post_api_auth_session_renew",
+                "tags": [
+                    "Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MemberSessionRenewalResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "renewal_token"
+                                ],
+                                "properties": {
+                                    "renewal_token": {
+                                        "type": "string",
+                                        "maxLength": 101,
+                                        "writeOnly": true,
+                                        "description": "Single-use UUID.secret renewal credential; never send as a bearer."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "summary": "Membuat Auth/Login",
@@ -1476,6 +1703,100 @@
                 },
                 "x-required-abilities": [
                     "profile:read"
+                ]
+            }
+        },
+        "/api/auth/sessions": {
+            "get": {
+                "summary": "Mengambil Auth/Sessions",
+                "operationId": "get_api_auth_sessions",
+                "tags": [
+                    "Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MemberDeviceSession"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:read"
+                ]
+            }
+        },
+        "/api/auth/sessions/{sessionId}": {
+            "delete": {
+                "summary": "Menghapus Auth/Sessions/{Sessionid}",
+                "operationId": "delete_api_auth_sessions__sessionId",
+                "tags": [
+                    "Auth"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthenticated"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "429": {
+                        "description": "Too many requests"
+                    }
+                },
+                "x-required-abilities": [
+                    "member:write"
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
                 ]
             }
         },

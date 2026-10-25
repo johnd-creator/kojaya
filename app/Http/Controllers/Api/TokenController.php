@@ -21,6 +21,8 @@ class TokenController extends Controller
 
         abort_unless($user && $currentToken instanceof PersonalAccessToken, 400, 'Only bearer tokens can be rotated.');
 
+        abort_if($currentToken->getAttribute('member_session_id') !== null, 409, 'Gunakan renewal sesi perangkat.');
+
         $validated = $request->validated();
         $deviceName = $validated['device_name'] ?? $currentToken->name;
         $requestedApp = $validated['app'] ?? null;

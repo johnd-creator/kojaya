@@ -3130,3 +3130,54 @@ Production operations track six distinct operational states during the SEC-P0-03
 4. **Public Cleanup Verified:** `php artisan security:migrate-employee-documents-private --execute --cleanup` removes verified public copies and confirms their complete absence.
 5. **Orphan Inventory Resolved:** Unreferenced public orphan files (including soft-deleted records accounted for via `withTrashed()`) are inventoried and reconciled.
 6. **SEC-P0-03 Operationally Closed:** All legacy copies are removed, all orphans are resolved, and the migration tool verifies zero unresolved items.
+
+
+## Member device sessions (local protocol2 candidate; disabled by default)
+
+This additive protocol does not change legacy token expiry or web sessions. No QA
+activation, live migration, account revocation or deployment is included. Candidate
+TTL proposals are access15minutes, remembered inactivity30days/absolute90days;
+normal mode inactivity30minutes/absolute12hours. These are unapproved live-policy
+values in config/member_sessions.php. Capability remains null unless the explicit
+feature flag is enabled and the additive schema exists. Existing protocol2 families
+remain validated and can drain even when new issuance is disabled.
+
+- GET /api/auth/session-capabilities: no-store {session_protocol:2|null}.
+- Existing password/verified Google mobile login accepts optional session_protocol:2
+  and remember_device:boolean for app=member only. Legacy requests are unchanged.
+  V2 response adds session {protocol,id,remembered,renewal_token,server_time,
+  access_expires_at,idle_expires_at,absolute_expires_at}. Normal mode must never
+  persist credentials on Android; remembered mode stores one encrypted record.
+- POST /api/auth/session/renew: no bearer required; body renewal_token is a UUID
+  selector plus dot plus a random64hex secret. Only its SHA256 hash is stored.
+  Success returns new access token/abilities/session. Each secret is single-use.
+  Family and renewal row locks make rotation atomic. Valid consumed-secret reuse
+  commits family revocation before returning401. Wrong secrets cannot revoke a family.
+  Ordinary requests do not extend inactivity; renewal extends it only within the
+  original absolute deadline. Renewal secrets never authenticate ordinary API calls.
+- GET /api/auth/sessions (member:read): owner-only new-family list, no secrets or
+  internal device identifier. active explicitly distinguishes expired rows. current
+  identifies the bearer family. This list does not claim to include legacy sessions.
+- DELETE /api/auth/sessions/{id} (member:write): owner-only idempotent revocation;
+  another owner's ID returns404. Existing logout revokes the current family;
+  existing logout-all additionally revokes new families and retains its prior policy.
+- Existing /api/token/rotate rejects family-bound tokens with409 rather than
+  producing an unbound legacy token. Access guard also checks strict deadlines,
+  current owner/app/abilities and a fresh password/member/tenant/role fingerprint.
+
+Password update/reset revoke new member families atomically. Legacy/ESS/admin
+password-change token policy is deliberately unchanged and remains an open decision.
+No financial step-up policy, PIN or biometric is introduced. Sensitive-action
+selection and server challenge design require explicit policy approval.
+
+Clients serialize renewal, persist the next record before publishing it, bind any
+GET/HEAD retry to the original owner/family, and never automatically replay writes.
+A lost/ambiguous rotation response fails closed and requires sign-in; retrying an
+unknown consumed secret is unsafe. Process death with a persisted pending rotation
+also requires sign-in. No background keepalive extends remembered-device activity.
+Remote logout failures must not claim server revocation; local-only exit is explicit.
+
+Rollback must drain sessions first. The migration removes family-bound PATs before
+dropping the relationship, so rollback never converts them into unbound credentials.
+Do not run rollback or migration on an existing live/QA database under this package.
+No credential/renewal/fingerprint content belongs in logs or audit payloads.

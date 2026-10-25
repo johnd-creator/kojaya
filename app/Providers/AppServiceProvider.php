@@ -121,6 +121,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(static function ($token, bool $valid): bool {
+            return $valid && app(\App\Services\Auth\MemberSessionService::class)->accessAllowed($token);
+        });
         QaRuntimeFileCreationMask::apply((string) $this->app->environment(), PHP_SAPI);
         $this->configureDefaults();
         $this->configureUiAuditClock();

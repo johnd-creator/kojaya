@@ -23,9 +23,10 @@ class PasswordController extends Controller
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update([
-            'password' => $request->password,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request): void {
+            $request->user()->update(['password' => $request->password]);
+            app(\App\Services\Auth\MemberSessionService::class)->revokeForUser($request->user(), 'password_changed', $request->user());
+        });
 
         return back();
     }

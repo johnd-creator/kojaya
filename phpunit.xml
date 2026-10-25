@@ -17,6 +17,7 @@
             <exclude>tests/Feature/Cooperative/MemberLifecycleConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Cooperative/StoreCreditConcurrencyTest.php</exclude>
             <exclude>tests/Feature/PaymentConcurrencyTest.php</exclude>
+            <exclude>tests/Feature/Auth/MemberSessionConcurrencyTest.php</exclude>
             <exclude>tests/Feature/Backup/PostgresRestoreDrillTest.php</exclude>
             <exclude>tests/Feature/Database/CooperativeLedgerMetadataMigrationRollbackTest.php</exclude>
             <exclude>tests/Feature/Cooperative/MemberImportConcurrencyTest.php</exclude>

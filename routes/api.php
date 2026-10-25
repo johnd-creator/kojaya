@@ -29,10 +29,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
+    Route::get('/session-capabilities', [\App\Http\Controllers\Api\MemberSessionController::class, 'capabilities'])->middleware('throttle:login');
+    Route::post('/session/renew', [\App\Http\Controllers\Api\MemberSessionController::class, 'renew'])->middleware('throttle:login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/google/mobile', [AuthController::class, 'loginWithGoogle'])->middleware('throttle:login');
     Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/session', [AuthController::class, 'session'])->middleware('ability.dual:profile:read');
+        Route::get('/sessions', [\App\Http\Controllers\Api\MemberSessionController::class, 'index'])->middleware('ability:member:read');
+        Route::delete('/sessions/{sessionId}', [\App\Http\Controllers\Api\MemberSessionController::class, 'destroy'])->middleware(['ability:member:write', 'throttle:api-write']);
         Route::post('/logout', [AuthController::class, 'logout'])->middleware('throttle:api-write');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->middleware('throttle:api-write');
     });

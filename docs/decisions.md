@@ -1874,3 +1874,18 @@ private local receipt paths, with no public fallback or external redirect. Reuse
 locked idempotent receipt issuance; downloading does not re-post financial entries.
 The Android client must request this fixed authenticated route, not forward its
 token to a metadata URL. Source merge does not deploy this endpoint to QA.
+
+
+## 2026-10-25: local member-session protocol2 candidate
+
+Choose an additive, feature-disabled member-only session family with single-use
+renewal rotation and server-side revocation rather than extending legacy PAT life.
+Fresh security fingerprint checks cover bulk role/tenant/password changes without
+relying only on Eloquent events. Preserve Sanctum's pre-existing validity decision.
+Server clock and absolute deadlines are authoritative; Android uses a monotonic
+in-process access deadline and renews on restore. Unknown rotation outcome requires
+reauthentication; no financial write replay or retry grace that hides credential reuse.
+Normal mode is memory-only; remembered mode uses atomic encrypted persistence.
+TTL proposals, normal mode policy, cross-app legacy password revocation, retention
+and financial step-up remain policy decisions before live activation. This source
+candidate does not authorize publishing, migrations, settings or deployments.

@@ -27,6 +27,8 @@ class MobileLoginRequest extends FormRequest
             'device_name' => ['nullable', 'string', 'max:255'],
             'device_id' => ['nullable', 'string', 'max:100'],
             'app' => ['nullable', 'string', 'in:member,ess,technician,admin'],
+            'session_protocol' => ['nullable', 'integer', 'in:2'],
+            'remember_device' => ['sometimes', 'boolean'],
         ];
     }
 }

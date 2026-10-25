@@ -1946,3 +1946,14 @@ execution uses the unchanged configured suites/exclusions. PostgreSQL concurrenc
 and all exact-head remote CI remain required; publication of this additional
 shared-framework repair was held until explicit Kojaya-backend scope approval
 was received on2026-10-24. Exact-head CI and independent review remain mandatory.
+
+
+### 2026-10-25 — isolated remembered member-session candidate
+
+Add protocol negotiation, member family/renewal tables, atomic rotation and reuse
+revocation, owner-scoped device management, strict access/fingerprint checks and
+new-family password/logout hooks. Defaults remain disabled; no live data/config or
+credentials changed. Synthetic SQLite and separate-process disposable PostgreSQL
+coverage validate expiry, reuse, owner isolation, actor audit attribution, migration
+rollback and rotation/revoke races. Final counts and remaining gates are recorded
+in the task evidence rather than implying CI or deployment has run.

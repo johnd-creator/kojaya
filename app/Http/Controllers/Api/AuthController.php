@@ -30,6 +30,7 @@ class AuthController extends Controller
     public function __construct(
         private readonly TokenIssuanceService $tokenIssuer,
         private readonly MemberAccessRevocationService $tokenRevocation,
+        private readonly \App\Services\Auth\MemberSessionService $memberSessions,
     ) {}
 
     public function login(MobileLoginRequest $request): JsonResponse
@@ -55,7 +56,7 @@ class AuthController extends Controller
             ? TokenApp::from($validated['app'])
             : $this->defaultTokenAppFor($user);
         $deviceName = $validated['device_name'] ?? $this->defaultDeviceName($app->value);
-        $token = $this->tokenIssuer->issue($user, $app, $deviceName, $validated['device_id'] ?? null);
+        [$token, $deviceSession] = $this->loginToken($request, $user, $app, $deviceName, $validated['device_id'] ?? null);
         $abilities = $token->accessToken->abilities;
 
         $refreshedUser = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
@@ -72,7 +73,8 @@ class AuthController extends Controller
             'validation_status' => $member?->validation_status,
             'lifecycle_experience' => $experience?->value,
             'onboarding_next_step' => $this->onboardingNextStep($refreshedUser),
-        ]);
+            ...($deviceSession === null ? [] : ['session' => $deviceSession]),
+        ])->header('Cache-Control', 'no-store');
     }
 
     public function session(Request $request): JsonResponse
@@ -101,7 +103,11 @@ class AuthController extends Controller
         $currentToken = $request->user()->currentAccessToken();
 
         if ($currentToken instanceof PersonalAccessToken) {
-            $currentToken->delete();
+            if ($id = $currentToken->getAttribute('member_session_id')) {
+                $this->memberSessions->revoke($id, 'logout', $request->user());
+            } else {
+                $currentToken->delete();
+            }
         }
 
         return response()->json(['message' => 'Logged out.']);
@@ -116,6 +122,17 @@ class AuthController extends Controller
         );
 
         return response()->json(['message' => 'All tokens revoked.']);
+    }
+
+    /** @return array{\Laravel\Sanctum\NewAccessToken, ?array<string, mixed>} */
+    private function loginToken(Request $request, User $user, TokenApp $app, string $deviceName, ?string $deviceId): array
+    {
+        if ($request->integer('session_protocol') !== 2) {
+            return [$this->tokenIssuer->issue($user, $app, $deviceName, $deviceId), null];
+        }
+        $bundle = $this->memberSessions->issue($user, $app, $deviceName, $deviceId, $request->boolean('remember_device'));
+
+        return [$bundle['token'], $bundle['session']];
     }
 
     private function defaultDeviceName(?string $app): string
@@ -156,6 +173,8 @@ class AuthController extends Controller
             'device_name' => 'nullable|string|max:255',
             'device_id' => 'nullable|string|max:100',
             'platform' => 'nullable|string',
+            'session_protocol' => 'nullable|integer|in:2',
+            'remember_device' => 'sometimes|boolean',
             'app' => 'nullable|string|in:member,ess,technician,admin',
         ]);
 
@@ -280,7 +299,7 @@ class AuthController extends Controller
             ? TokenApp::from((string) $request->input('app'))
             : $this->defaultTokenAppFor($user);
         $deviceName = $request->input('device_name') ?? $this->defaultDeviceName($app->value);
-        $token = $this->tokenIssuer->issue($user, $app, $deviceName, $request->input('device_id'));
+        [$token, $deviceSession] = $this->loginToken($request, $user, $app, $deviceName, $request->input('device_id'));
         $abilities = $token->accessToken->abilities;
         $user = $user->refresh()->load(['roles', 'employee', 'cooperativeMember']);
 
@@ -296,7 +315,8 @@ class AuthController extends Controller
             'validation_status' => $user->cooperativeMember?->validation_status,
             'lifecycle_experience' => $experience?->value,
             'onboarding_next_step' => $this->onboardingNextStep($user),
-        ]);
+            ...($deviceSession === null ? [] : ['session' => $deviceSession]),
+        ])->header('Cache-Control', 'no-store');
     }
 
     /**

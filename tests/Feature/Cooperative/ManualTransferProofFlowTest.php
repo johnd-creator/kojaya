@@ -90,7 +90,7 @@ class ManualTransferProofFlowTest extends TestCase
         $download = $this->get("/api/v1/member/payments/{$id}/proof")->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff');
         $this->assertSame(file_get_contents($payload['proof']->getPathname()), $download->streamedContent());
         $this->actingAs($this->admin)->get(route('cooperative.payments.proof', $id))->assertOk()->assertHeader('Content-Disposition', 'inline; filename=bukti-pembayaran-'.$id.'.'.pathinfo(CooperativePayment::findOrFail($id)->proof_path, PATHINFO_EXTENSION));
-        $this->actingAs($this->admin)->get(route('cooperative.payments.index'))
+        $this->actingAs($this->admin)->get(route('cooperative.payments.index'))->assertOk()
             ->assertInertia(fn ($page) => $page->where('payments.data.0.has_proof', true)->where('payments.data.0.can_view_proof', true)->missing('payments.data.0.proof_path'));
     }
 
@@ -199,7 +199,7 @@ class ManualTransferProofFlowTest extends TestCase
         $id = $this->postJson('/api/v1/member/payments/proof', $this->payload())->assertCreated()->json('data.id');
         $payment = CooperativePayment::findOrFail($id);
         $path = $payment->proof_path;
-        $this->actingAs($this->admin)->get(route('cooperative.payments.index'))
+        $this->actingAs($this->admin)->get(route('cooperative.payments.index'))->assertOk()
             ->assertInertia(fn ($page) => $page->where('payments.data.0.can_cancel', true));
         $this->post(route('cooperative.payments.cancel', $id), ['reason' => 'Pengajuan ganda, bukti sama.'])->assertSessionHasNoErrors();
         $this->assertSame('VOID', $payment->fresh()->status);

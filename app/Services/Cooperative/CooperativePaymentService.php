@@ -10,6 +10,7 @@ use App\Models\CooperativePayment;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Support\AuditContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -94,6 +95,12 @@ class CooperativePaymentService
 
             $originalStatus = $payment->getOriginal('status');
 
+            if (! in_array($originalStatus, ['PENDING', 'APPROVED'], true)) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Pengajuan yang dibatalkan atau ditolak tidak dapat disetujui.',
+                ]);
+            }
+
             if ($payment->status === 'APPROVED' && $payment->ledgerEntries->isNotEmpty()) {
                 $this->receiptService->issue($payment, $approver);
 
@@ -122,7 +129,18 @@ class CooperativePaymentService
                     ->with('contributionType')
                     ->findOrFail($payment->cooperative_dues_invoice_id);
 
-                $paidAmount = (float) $invoice->paid_amount + (float) $payment->amount;
+                $remainingCents = (int) round((float) $invoice->amount * 100)
+                    - (int) round((float) $invoice->paid_amount * 100);
+                $paymentCents = (int) round((float) $payment->amount * 100);
+
+                if (! in_array($invoice->status, ['UNPAID', 'PARTIAL'], true)
+                    || $paymentCents <= 0 || $paymentCents > $remainingCents) {
+                    throw ValidationException::withMessages([
+                        'payment' => 'Pembayaran melebihi sisa tagihan atau tagihan sudah lunas/dibatalkan. Periksa pengajuan lain sebelum menyetujui.',
+                    ]);
+                }
+
+                $paidAmount = round((float) $invoice->paid_amount + (float) $payment->amount, 2);
 
                 $invoice->forceFill([
                     'paid_amount' => $paidAmount,
@@ -156,7 +174,7 @@ class CooperativePaymentService
                     'debit' => 0,
                     'credit' => $payment->amount,
                     'period' => $invoice?->period ?? $payment->paid_at?->format('Y-m'),
-                    'description' => $payment->notes ?: 'Pembayaran iuran/simpanan koperasi',
+                    'description' => $this->paymentLedgerDescription($payment),
                     'posted_at' => $payment->paid_at,
                 ],
             );
@@ -189,6 +207,46 @@ class CooperativePaymentService
             $this->scheduleOutboxDelivery($outboxIds);
 
             return $payment->refresh()->load('receipt');
+        });
+    }
+
+    public function cancelPendingPayment(CooperativePayment $payment, User $user, string $reason, ?AuditContext $context = null): CooperativePayment
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::withMessages(['reason' => 'Alasan pembatalan wajib diisi.']);
+        }
+
+        $context ??= AuditContext::forActor($user);
+
+        return DB::transaction(function () use ($payment, $user, $reason, $context): CooperativePayment {
+            $payment = CooperativePayment::query()->lockForUpdate()->findOrFail($payment->id);
+
+            if ($payment->status !== 'PENDING' || $payment->approved_at || $payment->reconciled_at
+                || $payment->ledgerEntries()->exists() || $payment->receipt()->exists()
+                || ! in_array($payment->payment_method, ['CASH', 'TRANSFER'], true)
+                || filled($payment->gateway_provider) || filled($payment->gateway_reference)) {
+                throw ValidationException::withMessages([
+                    'reason' => 'Hanya pengajuan manual PENDING yang belum dibukukan dapat dibatalkan. Muat ulang daftar pembayaran.',
+                ]);
+            }
+
+            $this->periodLockService->assertUnlocked($payment->invoice?->period ?? $payment->paid_at?->format('Y-m'));
+
+            $oldNotes = $payment->notes;
+            $payment->forceFill([
+                'status' => 'VOID',
+                'notes' => trim((string) $oldNotes."\nPengajuan dibatalkan oleh {$user->name}: {$reason}"),
+            ])->save();
+
+            $payment->logApproval('PENDING', 'VOID', $user, $reason);
+            $this->audit->log('payment.pending_cancelled', 'cooperative.payment', $payment, [
+                'old' => ['status' => 'PENDING', 'notes' => $oldNotes],
+                'new' => ['status' => 'VOID', 'notes' => $payment->notes],
+                'reason' => $reason,
+            ], $context);
+
+            return $payment->refresh();
         });
     }
 
@@ -377,7 +435,7 @@ class CooperativePaymentService
                     'credit' => $newAmount,
                     'debit' => 0,
                     'period' => $ledgerPeriod,
-                    'description' => $payment->notes ?: 'Pembayaran iuran/simpanan koperasi',
+                    'description' => $this->paymentLedgerDescription($payment),
                     'posted_at' => $payment->paid_at,
                 ])->save();
             }
@@ -463,6 +521,21 @@ class CooperativePaymentService
 
             return $payments->count();
         });
+    }
+
+    private function paymentLedgerDescription(CooperativePayment $payment): string
+    {
+        $invoice = $payment->invoice;
+        $type = $invoice?->contributionType ?? $payment->contributionType;
+
+        if ($invoice && ($type?->code === 'WAJIB' || $type?->category === 'WAJIB')) {
+            $month = CarbonImmutable::createFromFormat('!Y-m', $invoice->period)
+                ->locale('id')->translatedFormat('F Y');
+
+            return 'Simpanan Wajib '.$month.(filled($payment->notes) ? ' — '.$payment->notes : '');
+        }
+
+        return $payment->notes ?: 'Pembayaran iuran/simpanan koperasi';
     }
 
     /**
@@ -579,7 +652,7 @@ class CooperativePaymentService
         ])->save();
     }
 
-    public function downloadProofResponse(CooperativePayment $payment): ?\Symfony\Component\HttpFoundation\StreamedResponse
+    public function downloadProofResponse(CooperativePayment $payment, bool $inline = false): ?\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $path = $payment->proof_path;
 
@@ -602,9 +675,15 @@ class CooperativePaymentService
         $extension = $extension !== '' ? $extension : 'bin';
         $filename = "bukti-pembayaran-{$payment->id}.{$extension}";
 
-        return $storage->download($path, $filename, [
+        $mimeType = $storage->mimeType($path);
+        $disposition = $inline && in_array($mimeType, ['image/jpeg', 'image/png', 'application/pdf'], true)
+            ? 'inline'
+            : 'attachment';
+
+        return $storage->response($path, $filename, [
             'Cache-Control' => 'private, max-age=0, no-store',
             'X-Content-Type-Options' => 'nosniff',
-        ]);
+            'Content-Security-Policy' => "sandbox; default-src 'none'; frame-ancestors 'none'",
+        ], $disposition);
     }
 }

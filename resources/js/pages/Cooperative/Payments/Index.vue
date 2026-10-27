@@ -11,6 +11,7 @@ import {
   Search,
   Sparkles,
   WalletCards,
+  XCircle,
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
 import SectionHeader from "@/components/dashboard/SectionHeader.vue";
@@ -22,6 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import BulkActionBar from "@/components/ui/data-table/BulkActionBar.vue";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +47,7 @@ import {
 import {
   approve,
   bulkApprove,
+  cancel as cancelPayment,
   proof as paymentProof,
   index,
   store,
@@ -66,6 +76,7 @@ type PaymentRow = {
   notes?: string | null;
   has_proof?: boolean;
   can_view_proof?: boolean;
+  can_cancel?: boolean;
   member?: { name?: string; member_no?: string } | null;
   contribution_type?: { name?: string } | null;
   invoice?: { contribution_type?: { name?: string } | null } | null;
@@ -358,12 +369,21 @@ const confirmBulkAction = () => {
           showBulkConfirm.value = false;
           pendingBulkAction.value = null;
         },
+        onError: (errors) => {
+          showBulkConfirm.value = false;
+          pendingBulkAction.value = null;
+          paymentActionError.value =
+            errors.payment ??
+            Object.values(errors)[0] ??
+            "Pembayaran belum dapat disetujui.";
+        },
       },
     );
   }
 };
 
 const approvePayment = (payment: { id: number }) => {
+  paymentActionError.value = "";
   approvingPaymentId.value = payment.id;
 
   router.post(
@@ -377,8 +397,48 @@ const approvePayment = (payment: { id: number }) => {
       onFinish: () => {
         approvingPaymentId.value = null;
       },
+      onError: (errors) => {
+        paymentActionError.value =
+          errors.payment ??
+          errors.approved_by ??
+          Object.values(errors)[0] ??
+          "Pembayaran belum dapat disetujui.";
+      },
     },
   );
+};
+
+const paymentActionError = ref("");
+const showCancelDialog = ref(false);
+const cancellingPayment = ref<PaymentRow | null>(null);
+const cancelForm = useForm({ reason: "" });
+
+const openCancelDialog = (payment: PaymentRow) => {
+  cancellingPayment.value = payment;
+  cancelForm.reset();
+  cancelForm.clearErrors();
+  showCancelDialog.value = true;
+};
+
+const submitCancellation = () => {
+  if (!cancellingPayment.value || cancelForm.processing) return;
+
+  cancelForm.post(cancelPayment(cancellingPayment.value.id).url, {
+    preserveScroll: true,
+    onError: (errors) => {
+      cancelForm.setError(
+        "reason",
+        errors.reason ??
+          Object.values(errors)[0] ??
+          "Pengajuan belum dapat dibatalkan.",
+      );
+    },
+    onSuccess: () => {
+      showCancelDialog.value = false;
+      selectedPayments.value = [];
+      cancelForm.reset();
+    },
+  });
 };
 
 const columns = computed(() => [
@@ -794,6 +854,13 @@ const columns = computed(() => [
               tone="emerald"
             />
             <CardContent class="px-0 pb-0">
+              <p
+                v-if="paymentActionError"
+                role="alert"
+                class="px-4 py-3 text-sm text-red-600 dark:text-red-400"
+              >
+                {{ paymentActionError }}
+              </p>
               <form
                 class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1.35fr)_minmax(9.5rem,1fr)_minmax(9.5rem,1fr)_minmax(10.5rem,1fr)] dark:border-zinc-800/70"
                 @submit.prevent="applyFilters"
@@ -999,6 +1066,20 @@ const columns = computed(() => [
                     class="text-xs text-zinc-400"
                     >-</span
                   >
+                  <Button
+                    v-if="row.can_cancel && row.status === 'PENDING'"
+                    variant="destructive"
+                    size="icon"
+                    class="size-8"
+                    aria-label="Batalkan pengajuan"
+                    title="Batalkan pengajuan"
+                    :disabled="
+                      approvingPaymentId === row.id || cancelForm.processing
+                    "
+                    @click="openCancelDialog(row)"
+                  >
+                    <XCircle class="size-4" />
+                  </Button>
                 </template>
               </DataTable>
 
@@ -1135,6 +1216,19 @@ const columns = computed(() => [
                       }}
                     </Button>
                   </div>
+                  <Button
+                    v-if="payment.can_cancel && payment.status === 'PENDING'"
+                    variant="destructive"
+                    size="sm"
+                    class="mt-3 w-full"
+                    :disabled="
+                      approvingPaymentId === payment.id || cancelForm.processing
+                    "
+                    @click="openCancelDialog(payment)"
+                  >
+                    <XCircle class="size-4" />
+                    Batalkan pengajuan
+                  </Button>
                 </article>
               </div>
               <nav
@@ -1178,6 +1272,50 @@ const columns = computed(() => [
         </div>
       </div>
     </PageContainer>
+
+    <Dialog v-model:open="showCancelDialog">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Batalkan pengajuan pembayaran</DialogTitle>
+          <DialogDescription>
+            Pengajuan {{ cancellingPayment?.member?.name }} sebesar
+            {{ formatCurrency(cancellingPayment?.amount ?? 0) }} akan
+            dibatalkan. Bukti dan riwayat tetap tersimpan. Saldo dan tagihan
+            tidak berubah.
+          </DialogDescription>
+        </DialogHeader>
+        <form class="space-y-4" @submit.prevent="submitCancellation">
+          <div class="space-y-2">
+            <Label for="payment-cancellation-reason">Alasan pembatalan</Label>
+            <Textarea
+              id="payment-cancellation-reason"
+              v-model="cancelForm.reason"
+              required
+              maxlength="1000"
+              placeholder="Contoh: pengajuan ganda untuk transfer yang sama"
+              :disabled="cancelForm.processing"
+            />
+            <InputError :message="cancelForm.errors.reason" />
+          </div>
+          <DialogFooter class="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              :disabled="cancelForm.processing"
+              @click="showCancelDialog = false"
+              >Kembali</Button
+            >
+            <Button
+              type="submit"
+              variant="destructive"
+              :disabled="cancelForm.processing || !cancelForm.reason.trim()"
+            >
+              {{ cancelForm.processing ? "Memproses" : "Batalkan pengajuan" }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
 
     <ConfirmDialog
       v-if="pendingBulkAction"

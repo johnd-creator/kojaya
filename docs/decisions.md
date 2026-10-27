@@ -1889,3 +1889,10 @@ Normal mode is memory-only; remembered mode uses atomic encrypted persistence.
 TTL proposals, normal mode policy, cross-app legacy password revocation, retention
 and financial step-up remain policy decisions before live activation. This source
 candidate does not authorize publishing, migrations, settings or deployments.
+
+
+### Payment review clarification — 2026-10-27
+
+Pending manual payment cancellation is distinct from correction of posted subledger entries: the same cooperative operator authorized for the payment queue may transition an unposted, unreconciled, non-gateway PENDING submission to VOID, with a required reason and atomic approval/audit history. Proof and submitted amount remain intact; no ledger or receipt is created/removed. Existing System Admin-only correction rules for posted payments remain authoritative.
+
+The owner requires explicit invoice-month selection. Approval may not exceed the locked invoice's remaining balance; duplicate submissions never move automatically to a subsequent month. Mandatory-savings ledger descriptions derive their month/year from the selected invoice, allowing arrears for distinct months to be collected on the same transaction date.

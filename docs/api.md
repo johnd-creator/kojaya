@@ -417,7 +417,7 @@ Authorization: Bearer {token}
         "name": "Simpanan Wajib",
         "category": "WAJIB"
       },
-      "description": "Setoran bulan Mei",
+      "description": "Simpanan Wajib Mei 2026",
       "posted_at": "2026-05-01",
       "debit": 0,
       "credit": 500000,
@@ -430,6 +430,9 @@ Authorization: Bearer {token}
 ```
 
 ### **Dues and Payments**
+
+Approval pembayaran invoice memeriksa sisa tagihan di dalam transaksi; tagihan lunas/batal atau nominal yang melebihi sisa ditolak dengan validation error (422). Deskripsi ledger simpanan wajib memakai bulan/tahun invoice yang dipilih, bukan tanggal pembayaran. Pembayaran tunggakan beberapa bulan pada tanggal yang sama tetap mengacu pada invoice masing-masing. Endpoint unduh bukti anggota mempertahankan respons attachment; preview inline gambar/PDF hanya di endpoint staff web yang terautentikasi.
+
 ```http
 GET /api/v1/member/dues/invoices?status=UNPAID&category=WAJIB&period=2026-05
 GET /api/v1/member/payments?status=APPROVED&category=WAJIB&start_date=2026-01-01&end_date=2026-05-31

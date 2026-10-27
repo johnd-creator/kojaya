@@ -17,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -136,34 +137,36 @@ class CooperativeDuesController extends Controller
             ->whereIn('id', $request->validated('invoice_ids'))
             ->whereIn('status', ['UNPAID', 'PARTIAL']);
         $scopeService->scopeVisibleTo($invoices, $request->user());
-        $invoices = $invoices->get();
+        DB::transaction(function () use ($invoices, $requestedAmount, $request, $paymentService, &$paidCount): void {
+            $invoices = $invoices->orderBy('id')->lockForUpdate()->get();
 
-        foreach ($invoices as $invoice) {
-            $remainingAmount = (float) $invoice->amount - (float) $invoice->paid_amount;
+            foreach ($invoices as $invoice) {
+                $remainingAmount = (float) $invoice->amount - (float) $invoice->paid_amount;
 
-            if ($remainingAmount <= 0) {
-                continue;
+                if ($remainingAmount <= 0) {
+                    continue;
+                }
+
+                $paymentAmount = $requestedAmount === null
+                    ? $remainingAmount
+                    : min((float) $requestedAmount, $remainingAmount);
+
+                $payment = CooperativePayment::query()->create([
+                    'cooperative_member_id' => $invoice->cooperative_member_id,
+                    'cooperative_dues_invoice_id' => $invoice->id,
+                    'user_id' => $request->user()?->id,
+                    'amount' => $paymentAmount,
+                    'payment_method' => $request->validated('payment_method') ?: 'CASH',
+                    'paid_at' => $request->validated('paid_at'),
+                    'status' => 'APPROVED',
+                    'reference_no' => $request->validated('reference_no'),
+                    'notes' => $request->validated('notes') ?: 'Ditandai sudah membayar dari halaman iuran.',
+                ]);
+
+                $paymentService->approve($payment, $request->user());
+                $paidCount++;
             }
-
-            $paymentAmount = $requestedAmount === null
-                ? $remainingAmount
-                : min((float) $requestedAmount, $remainingAmount);
-
-            $payment = CooperativePayment::query()->create([
-                'cooperative_member_id' => $invoice->cooperative_member_id,
-                'cooperative_dues_invoice_id' => $invoice->id,
-                'user_id' => $request->user()?->id,
-                'amount' => $paymentAmount,
-                'payment_method' => $request->validated('payment_method') ?: 'CASH',
-                'paid_at' => $request->validated('paid_at'),
-                'status' => 'APPROVED',
-                'reference_no' => $request->validated('reference_no'),
-                'notes' => $request->validated('notes') ?: 'Ditandai sudah membayar dari halaman iuran.',
-            ]);
-
-            $paymentService->approve($payment, $request->user());
-            $paidCount++;
-        }
+        });
 
         if ($paidCount === 0) {
             return back()->with('error', 'Tidak ada tagihan belum lunas yang dapat ditandai sudah membayar.');

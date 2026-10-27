@@ -13,6 +13,7 @@ route_names:
   - cooperative.payments.index
   - cooperative.payments.approve
   - cooperative.payments.bulk-approve
+  - cooperative.payments.cancel
 risk_level: medium
 screenshot_entries:
   - admin-koperasi-payment-queue-desktop
@@ -54,12 +55,20 @@ pembukuan.
    - **Nominal**: sesuai dengan tagihan anggota.
    - **Metode**: kanal pembayaran yang digunakan anggota.
    - **Anggota**: nama dan data anggota yang membayar.
-4. Jika pembayaran valid, tekan ikon centang (**Setujui**).
+4. Tekan **Lihat Bukti Transfer** untuk membuka gambar atau PDF di tab browser baru. Akses bukti tetap memerlukan login dan hak akses organisasi.
+5. Jika ada pengajuan ganda/tidak valid yang masih menunggu, pilih **Batalkan pengajuan**, isi alasan, lalu konfirmasi. Status menjadi **Dibatalkan**; bukti, nominal dan riwayat tetap disimpan, tanpa perubahan saldo/tagihan.
+6. Jika pembayaran valid, tekan ikon centang (**Setujui**).
    Status berubah menjadi **Terverifikasi** dan pembayaran
    tercatat di pembukuan.
-5. Untuk memproses banyak pembayaran sekaligus, centang
+7. Untuk memproses banyak pembayaran sekaligus, centang
    baris-baris yang sudah diyakini valid, lalu gunakan
    **Approve Semua** untuk verifikasi massal.
+
+### Bulan tagihan dan tunggakan
+
+Admin tetap memilih tagihan bulan yang dibayar. Keterangan ledger simpanan wajib menggunakan bulan/tahun tagihan, bukan tanggal transfer: **Simpanan Wajib Oktober 2026**, **Simpanan Wajib November 2026**, dan seterusnya; catatan pembayaran tetap disertakan. Beberapa tunggakan boleh dibayar pada hari/bulan yang sama. Tagihan yang sudah lunas tidak dapat dibayar lagi; nominal persetujuan tidak boleh melebihi sisa tagihan. Pengajuan duplikat tidak otomatis dialihkan ke bulan berikutnya.
+
+Pembatalan di antrean hanya untuk pengajuan manual berstatus **Menunggu Verifikasi** yang belum dibukukan. Koreksi pembayaran yang sudah terverifikasi tetap mengikuti kewenangan koreksi ledger yang berlaku.
 
 ## Hasil yang diharapkan
 
@@ -73,6 +82,7 @@ pembukuan.
 - **Menunggu Verifikasi**: pembayaran baru masuk, belum
   diproses.
 - **Terverifikasi**: pembayaran valid, tercatat di pembukuan.
+- **Dibatalkan**: pengajuan manual dibatalkan dengan alasan; tidak menambah saldo/tagihan.
 
 ## Kondisi gagal
 

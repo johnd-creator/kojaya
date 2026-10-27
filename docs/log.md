@@ -1957,3 +1957,12 @@ credentials changed. Synthetic SQLite and separate-process disposable PostgreSQL
 coverage validate expiry, reuse, owner isolation, actor audit attribution, migration
 rollback and rotation/revoke races. Final counts and remaining gates are recorded
 in the task evidence rather than implying CI or deployment has run.
+
+
+### 2026-10-27 — Payment proof preview, pending cancellation and invoice-month ledger
+
+Admin payment proofs render supported JPEG/PNG/PDF inline in a new browser tab through the existing authenticated, organization-authorized endpoint; member download behavior remains unchanged. Pending manual submissions can be cancelled with a required reason, approval history and transactional audit, preserving proof and amount without posting money. Posted, reconciled, gateway and locked-period records retain their existing boundaries.
+
+Approval locks the invoice and checks its current remaining balance before crediting it; distinct submissions cannot overpay the same invoice, including bulk approval. Collect now locks selected invoices and creates/posts payments in one transaction. Mandatory-savings descriptions use the selected invoice month/year and preserve notes for both mobile-proof approval and collect; multiple arrears months can settle on the same day. The owner selected explicit invoice choice: duplicate submissions are not shifted to another month. Existing historical ledger rows are not rewritten.
+
+Validation: isolated SQLite `:memory:` suites passed 114 tests / 1342 assertions (17 focused proof/review tests; 68 payment/organization/outbox regressions; 29 finance-ledger/dues regressions). Chrome headless verified cancellation, proof new-tab behavior and approval errors at desktop/tablet/mobile sizes using intercepted synthetic HTTP; a two-page fixture PDF was visually verified in the native Chrome viewer. Build, scoped formatting and Pint passed. Full user-guide validation remains blocked locally by the existing CRLF frontmatter parser and pre-existing screenshot-manifest hash mismatches; generated failure reports were not retained. Development-PC validation did not access QA/shared databases or deploy. Publication and merge, explicitly authorized afterwards, follow required GitHub Actions checks.

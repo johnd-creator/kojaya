@@ -36,4 +36,9 @@ class CooperativePaymentPolicy extends BasePolicy
         return $this->can($user, PermissionEnum::COOPERATIVE_PAYMENT_MANAGE->value)
             && $this->sameOrganization($user, $cooperativePayment);
     }
+
+    public function cancel(User $user, CooperativePayment $cooperativePayment): bool
+    {
+        return $this->approve($user, $cooperativePayment);
+    }
 }

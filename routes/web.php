@@ -273,6 +273,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('payments', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'store'])->name('payments.store');
             Route::get('payments/{payment}/proof', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'downloadProof'])->name('payments.proof');
             Route::post('payments/{payment}/approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'approve'])->name('payments.approve');
+            Route::post('payments/{payment}/cancel', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'cancel'])->name('payments.cancel');
             Route::post('payments/bulk-approve', [\App\Http\Controllers\Cooperative\CooperativePaymentController::class, 'bulkApprove'])->name('payments.bulk-approve');
         });
 

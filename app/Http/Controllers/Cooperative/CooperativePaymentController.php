@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cooperative;
 use App\Contracts\OrganizationScopedQueryService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cooperative\BulkApprovePaymentsRequest;
+use App\Http\Requests\Cooperative\CancelPendingPaymentRequest;
 use App\Http\Requests\Cooperative\StoreCooperativePaymentRequest;
 use App\Models\CooperativeContributionType;
 use App\Models\CooperativeMember;
@@ -73,9 +74,14 @@ class CooperativePaymentController extends Controller
         $query->orderBy($sortField, $sortDirection)->orderByDesc('id');
 
         return Inertia::render('Cooperative/Payments/Index', [
-            'payments' => $query->paginate(20)->withQueryString()->through(function (CooperativePayment $payment) use ($request): CooperativePayment {
+            'payments' => $query->paginate(20)->withQueryString()->through(function (CooperativePayment $payment) use ($request, $canApprovePayments): CooperativePayment {
                 $payment->setAttribute('has_proof', filled($payment->proof_path));
                 $payment->setAttribute('can_view_proof', $request->user()->can('viewProof', $payment));
+                $payment->setAttribute('can_cancel', $canApprovePayments
+                    && $payment->status === 'PENDING'
+                    && in_array($payment->payment_method, ['CASH', 'TRANSFER'], true)
+                    && blank($payment->gateway_provider) && blank($payment->gateway_reference)
+                    && $request->user()->can('cancel', $payment));
 
                 return $payment->makeHidden(['proof_path', 'gateway_payload']);
             }),
@@ -124,7 +130,7 @@ class CooperativePaymentController extends Controller
     {
         $this->authorize('viewProof', $payment);
 
-        $response = $service->downloadProofResponse($payment);
+        $response = $service->downloadProofResponse($payment, inline: true);
         if ($response === null) {
             abort(404, 'Bukti pembayaran tidak tersedia.');
         }
@@ -179,6 +185,15 @@ class CooperativePaymentController extends Controller
         $service->approve($payment, $request->user());
 
         return back()->with('success', 'Pembayaran simpanan berhasil disetujui.');
+    }
+
+    public function cancel(CancelPendingPaymentRequest $request, CooperativePayment $payment, CooperativePaymentService $service): RedirectResponse
+    {
+        abort_unless($this->canApprovePaymentsFromUi($request), 403);
+
+        $service->cancelPendingPayment($payment, $request->user(), $request->validated('reason'));
+
+        return back()->with('success', 'Pengajuan pembayaran dibatalkan. Saldo dan tagihan tidak berubah.');
     }
 
     private function paymentContributionTypes(): Builder

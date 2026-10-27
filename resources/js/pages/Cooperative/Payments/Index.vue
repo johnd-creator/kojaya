@@ -1068,16 +1068,17 @@ const columns = computed(() => [
                   >
                   <Button
                     v-if="row.can_cancel && row.status === 'PENDING'"
-                    variant="outline"
-                    size="sm"
-                    class="min-h-8 whitespace-normal text-xs text-red-600 dark:text-red-400"
+                    variant="destructive"
+                    size="icon"
+                    class="size-8"
+                    aria-label="Batalkan pengajuan"
+                    title="Batalkan pengajuan"
                     :disabled="
                       approvingPaymentId === row.id || cancelForm.processing
                     "
                     @click="openCancelDialog(row)"
                   >
                     <XCircle class="size-4" />
-                    Batalkan pengajuan
                   </Button>
                 </template>
               </DataTable>
@@ -1217,8 +1218,9 @@ const columns = computed(() => [
                   </div>
                   <Button
                     v-if="payment.can_cancel && payment.status === 'PENDING'"
-                    variant="outline"
-                    class="mt-3 w-full text-red-600 dark:text-red-400"
+                    variant="destructive"
+                    size="sm"
+                    class="mt-3 w-full"
                     :disabled="
                       approvingPaymentId === payment.id || cancelForm.processing
                     "

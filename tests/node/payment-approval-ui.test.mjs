@@ -162,6 +162,26 @@ test("payment proof tabs, cancellation and approval errors on desktop/tablet/mob
       });
       await cancelButtons.first().waitFor();
       assert.equal(await cancelButtons.count(), 2);
+      const approveButton = page
+        .getByRole("button", { name: "Approve pembayaran", exact: true })
+        .first();
+      const approveSize = await approveButton.boundingBox();
+      const cancelSize = await cancelButtons.first().boundingBox();
+      assert.ok(approveSize && cancelSize);
+      assert.equal(Math.round(cancelSize.width), Math.round(approveSize.width));
+      assert.equal(
+        Math.round(cancelSize.height),
+        Math.round(approveSize.height),
+      );
+      if (viewport.width >= 640) {
+        assert.equal(cancelSize.width, 32);
+        assert.equal(cancelSize.height, 32);
+        assert.equal((await cancelButtons.first().textContent()).trim(), "");
+        assert.equal(
+          await cancelButtons.first().getAttribute("title"),
+          "Batalkan pengajuan",
+        );
+      }
       const proof = page
         .getByRole("link", { name: "Lihat Bukti Transfer" })
         .first();

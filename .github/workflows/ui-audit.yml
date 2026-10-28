@@ -48,6 +48,11 @@ on:
       - 'tests/visual/**'
       - 'tests/node/*workspace-ui.test.mjs'
       - 'tests/node/payment-approval-ui.test.mjs'
+      - 'docs/user-guide/**'
+      - 'public/docs/user-guide/**'
+      - 'resources/docs/user-guide/**'
+      - 'scripts/validate-user-guide*.mjs'
+      - 'scripts/export-user-guide-screenshots*.mjs'
       - 'tests/Feature/UiAudit*.php'
       - 'playwright.config.ts'
       - 'package.json'
@@ -81,6 +86,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve UI audit metadata
         shell: bash

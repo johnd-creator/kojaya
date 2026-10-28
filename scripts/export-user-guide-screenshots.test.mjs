@@ -179,6 +179,7 @@ test("runScreenshots copies new sources and writes the public manifest", async (
     assert.equal(publicManifest.source_commit, "deadbeef");
     assert.equal(publicManifest.generated_at, "2026-08-05T00:00:00.000Z");
     assert.equal(publicManifest.entries.length, 2);
+    assert.equal(publicManifest.entries[0].source, "tests/visual/baselines/desktop/example.png");
     assert.equal(publicManifest.entries[0].asset, "/docs/user-guide/screens/desktop/example-desktop.png");
     assert.match(publicManifest.entries[0].checksum, /^sha256:[0-9a-f]{64}$/);
     assert.equal(publicManifest.entries[0].module, "demo");
@@ -187,6 +188,7 @@ test("runScreenshots copies new sources and writes the public manifest", async (
     const coverage = JSON.parse(readFileSync(fx.paths.coverage, "utf8"));
     assert.equal(coverage.counts.copied, 2);
     assert.equal(coverage.entries[0].status, "copied");
+    assert.equal(coverage.entries[0].source, "tests/visual/baselines/desktop/example.png");
   } finally {
     fx.cleanup();
   }

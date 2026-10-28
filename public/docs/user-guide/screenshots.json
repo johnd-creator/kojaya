@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "source_commit": "0f5000a3d0ffbeedbc0064cc63ab480f85bc49c9",
-  "generated_at": "2026-10-28T12:17:59.915Z",
+  "source_commit": "e88d77c626e04af42e8df0d77b669103aface7b5",
+  "generated_at": "2026-10-28T12:24:39.408Z",
   "entries": [
     {
       "id": "anggota-portal-overview-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\member-portal--member--default.png",
+      "source": "tests/visual/baselines/desktop/member-portal--member--default.png",
       "asset": "/docs/user-guide/screens/desktop/anggota-portal-overview-desktop.png",
       "viewport": "desktop",
       "module": "portal",
@@ -15,7 +15,7 @@
     },
     {
       "id": "anggota-payment-flow-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\dues-payments-ledger--payments--default.png",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
       "asset": "/docs/user-guide/screens/desktop/anggota-payment-flow-desktop.png",
       "viewport": "desktop",
       "module": "payments",
@@ -25,7 +25,7 @@
     },
     {
       "id": "anggota-loan-flow-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\member-portal--loans--default.png",
+      "source": "tests/visual/baselines/desktop/member-portal--loans--default.png",
       "asset": "/docs/user-guide/screens/desktop/anggota-loan-flow-desktop.png",
       "viewport": "desktop",
       "module": "loans",
@@ -35,7 +35,7 @@
     },
     {
       "id": "anggota-loan-flow-mobile",
-      "source": "tests\\visual\\baselines\\mobile\\member-portal--loans--default.png",
+      "source": "tests/visual/baselines/mobile/member-portal--loans--default.png",
       "asset": "/docs/user-guide/screens/mobile/anggota-loan-flow-mobile.png",
       "viewport": "mobile",
       "module": "loans",
@@ -45,7 +45,7 @@
     },
     {
       "id": "admin-koperasi-operational-dashboard-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\dashboard--dashboard--admin-koperasi.png",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
       "asset": "/docs/user-guide/screens/desktop/admin-koperasi-operational-dashboard-desktop.png",
       "viewport": "desktop",
       "module": "dashboard",
@@ -55,7 +55,7 @@
     },
     {
       "id": "admin-koperasi-loan-types-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\loans--index--admin-default.png",
+      "source": "tests/visual/baselines/desktop/loans--index--admin-default.png",
       "asset": "/docs/user-guide/screens/desktop/admin-koperasi-loan-types-desktop.png",
       "viewport": "desktop",
       "module": "loans",
@@ -65,7 +65,7 @@
     },
     {
       "id": "admin-koperasi-pos-inventory-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\pos-inventory--index--default.png",
+      "source": "tests/visual/baselines/desktop/pos-inventory--index--default.png",
       "asset": "/docs/user-guide/screens/desktop/admin-koperasi-pos-inventory-desktop.png",
       "viewport": "desktop",
       "module": "pos",
@@ -75,7 +75,7 @@
     },
     {
       "id": "admin-koperasi-payment-queue-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\dues-payments-ledger--payments--default.png",
+      "source": "tests/visual/baselines/desktop/dues-payments-ledger--payments--default.png",
       "asset": "/docs/user-guide/screens/desktop/admin-koperasi-payment-queue-desktop.png",
       "viewport": "desktop",
       "module": "payments",
@@ -85,7 +85,7 @@
     },
     {
       "id": "manajer-loan-review-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\loans--loans--admin-default.png",
+      "source": "tests/visual/baselines/desktop/loans--loans--admin-default.png",
       "asset": "/docs/user-guide/screens/desktop/manajer-loan-review-desktop.png",
       "viewport": "desktop",
       "module": "loans",
@@ -95,7 +95,7 @@
     },
     {
       "id": "manajer-financial-monitoring-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\dashboard--dashboard--admin-koperasi.png",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
       "asset": "/docs/user-guide/screens/desktop/manajer-financial-monitoring-desktop.png",
       "viewport": "desktop",
       "module": "reports",
@@ -105,7 +105,7 @@
     },
     {
       "id": "pengurus-loan-approval-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\loans--loans--default.png",
+      "source": "tests/visual/baselines/desktop/loans--loans--default.png",
       "asset": "/docs/user-guide/screens/desktop/pengurus-loan-approval-desktop.png",
       "viewport": "desktop",
       "module": "loans",
@@ -115,7 +115,7 @@
     },
     {
       "id": "pengurus-shu-and-governance-desktop",
-      "source": "tests\\visual\\baselines\\desktop\\dashboard--dashboard--admin-koperasi.png",
+      "source": "tests/visual/baselines/desktop/dashboard--dashboard--admin-koperasi.png",
       "asset": "/docs/user-guide/screens/desktop/pengurus-shu-and-governance-desktop.png",
       "viewport": "desktop",
       "module": "governance",

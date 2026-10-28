@@ -47,9 +47,10 @@ type EligibleMember = {
   member_no: string | null;
   name: string | null;
 };
+type AccountFilters = { q?: string; filter?: string };
 const props = defineProps<{
   accounts: PaginatedResource<Account>;
-  filters: { q?: string; filter?: string };
+  filters: AccountFilters | [];
   eligibleMembers: EligibleMember[];
   canManage: boolean;
 }>();
@@ -59,12 +60,16 @@ const balanceTone = (account: Account): string =>
     : account.balance < 0
       ? "text-rose-600"
       : "text-zinc-500";
-const filters = ref({
-  q: props.filters.q ?? "",
-  filter: props.filters.filter ?? "",
+// An empty Request::only() payload is [], whose .filter is an array method.
+const initialFilters: AccountFilters = Array.isArray(props.filters)
+  ? {}
+  : props.filters;
+const accountFilters = ref({
+  q: initialFilters.q ?? "",
+  filter: initialFilters.filter ?? "",
 });
 function applyFilter(): void {
-  router.get(index.url(), filters.value, {
+  router.get(index.url(), accountFilters.value, {
     preserveState: true,
     preserveScroll: true,
     replace: true,
@@ -221,7 +226,7 @@ function submitOpenAccount(): void {
             <div class="relative min-w-0 basis-full sm:basis-auto sm:flex-1">
               <Search class="absolute left-2 top-2.5 size-4 text-zinc-400" />
               <Input
-                v-model="filters.q"
+                v-model="accountFilters.q"
                 placeholder="Cari nama / nomor anggota"
                 aria-label="Cari akun anggota"
                 class="pl-8"
@@ -231,7 +236,7 @@ function submitOpenAccount(): void {
             <div class="relative">
               <select
                 aria-label="Filter saldo akun"
-                v-model="filters.filter"
+                v-model="accountFilters.filter"
                 class="h-9 w-40 appearance-none rounded-md border border-zinc-200 bg-white py-1 pl-3 pr-8 text-sm dark:border-zinc-800 dark:bg-zinc-950"
                 @change="applyFilter"
               >

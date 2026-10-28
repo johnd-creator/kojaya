@@ -262,7 +262,8 @@ function fixtures(empty = false, manage = true) {
           links: {},
           meta: { ...paginate(accounts), data: undefined, per_page: 15 },
         },
-        filters: {},
+        // Laravel serializes an empty Request::only result as an array.
+        filters: [],
         eligibleMembers: [member],
         canManage: manage,
       },
@@ -648,6 +649,9 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
             }
           }
           if (fixture.key === "store-credit") {
+            await expect(
+              page.getByLabel("Filter saldo akun").locator("option:checked"),
+            ).toHaveText("Semua");
             await expect(
               page.getByText(
                 empty

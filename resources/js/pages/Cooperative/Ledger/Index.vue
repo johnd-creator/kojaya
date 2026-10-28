@@ -3,8 +3,6 @@ import { Head, Link, useForm } from "@inertiajs/vue3";
 import {
   Banknote,
   CalendarCheck,
-  ClipboardList,
-  Filter,
   HandCoins,
   HelpCircle,
   Info,
@@ -18,7 +16,8 @@ import {
 } from "lucide-vue-next";
 import { computed, ref } from "vue";
 import type { Component } from "vue";
-import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import SelectFilter from "@/components/SelectFilter.vue";
@@ -121,13 +120,6 @@ const ENTRY_TYPE_LABELS: Record<string, string> = {
   MEMBER_RESIGNATION_SETTLEMENT: "Penyelesaian Resign",
 };
 
-const SCOPE_TONE: Record<string, string> = {
-  SAVINGS:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30",
-  LOAN: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 border-blue-200 dark:border-blue-500/30",
-  POS: "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 border-purple-200 dark:border-purple-500/30",
-};
-
 const CATEGORY_TONE: Record<string, string> = {
   POKOK:
     "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30",
@@ -154,10 +146,6 @@ const ENTRY_TYPE_TONE: Record<string, string> = {
 
 const formatEntryType = (value: string | null | undefined) =>
   ENTRY_TYPE_LABELS[value ?? ""] ?? value ?? "-";
-
-const scopeTone = (value: string | null | undefined) =>
-  SCOPE_TONE[value ?? ""] ??
-  "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700";
 
 const categoryTone = (code: string | null | undefined) =>
   CATEGORY_TONE[code ?? ""] ??
@@ -236,8 +224,12 @@ const kpiCards = computed(() => {
         filters.value.ledger_scope === "POS"
           ? "Nilai mutasi subledger operasional; bukan omzet penjualan."
           : `${totalEntries.value} mutasi pada filter aktif`,
-      icon: (filters.value.ledger_scope === "POS" ? Sparkles : Wallet) as Component,
-      tone: (filters.value.ledger_scope === "POS" ? "violet" : "emerald") as Tone,
+      icon: (filters.value.ledger_scope === "POS"
+        ? Sparkles
+        : Wallet) as Component,
+      tone: (filters.value.ledger_scope === "POS"
+        ? "violet"
+        : "emerald") as Tone,
       href: ledgerIndex().url,
     },
   ];
@@ -276,19 +268,59 @@ const breadcrumbs = computed(() => [
   { title: pageTitle.value, href: ledgerIndex().url },
 ]);
 
-const columns = [
-  { header: "Tanggal", key: "posted_at", slot: "posted_at" },
-  { header: "Anggota", key: "member.name", slot: "member" },
+const columns: Array<{
+  header: string;
+  key: string;
+  slot: string;
+  align?: "right";
+  class?: string;
+  width?: string;
+}> = [
+  {
+    header: "Tanggal",
+    key: "posted_at",
+    slot: "posted_at",
+    class: "max-w-none! min-w-[105px] whitespace-nowrap",
+  },
+  {
+    header: "Anggota",
+    key: "member.name",
+    slot: "member",
+    class: "max-w-none! min-w-[150px] whitespace-normal",
+  },
   {
     header: "Jenis Simpanan",
     key: "contribution_type.name",
     slot: "contribution",
+    class: "max-w-none! min-w-[145px] whitespace-normal",
   },
-  { header: "Tipe Mutasi", key: "entry_type", slot: "entry_type" },
-  { header: "Scope", key: "ledger_scope", slot: "scope" },
-  { header: "Debit", key: "debit", slot: "debit", align: "right" as const },
-  { header: "Kredit", key: "credit", slot: "credit", align: "right" as const },
-  { header: "Keterangan", key: "description", slot: "description" },
+  {
+    header: "Tipe Mutasi",
+    key: "entry_type",
+    slot: "entry_type",
+    class: "max-w-none! min-w-[150px] whitespace-normal",
+  },
+  {
+    header: "Debit",
+    key: "debit",
+    slot: "debit",
+    class: "max-w-none! min-w-[85px] whitespace-nowrap",
+    align: "right" as const,
+  },
+  {
+    header: "Kredit",
+    key: "credit",
+    slot: "credit",
+    class: "max-w-none! whitespace-nowrap",
+    align: "right" as const,
+  },
+  {
+    header: "Keterangan",
+    key: "description",
+    slot: "description",
+    width: "32%",
+    class: "max-w-none! min-w-[280px] whitespace-normal",
+  },
 ];
 
 if (props.canCorrectLedgerPayment) {
@@ -296,6 +328,7 @@ if (props.canCorrectLedgerPayment) {
     header: "Aksi",
     key: "id",
     slot: "actions",
+    class: "max-w-none! whitespace-nowrap",
     align: "right" as const,
   });
 }
@@ -386,137 +419,54 @@ const memberNo = (entry: any) =>
   <Head :title="pageTitle" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <PageContainer class="max-w-none">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-6 shadow-sm shadow-emerald-950/5 sm:p-7 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div class="space-y-3">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
-            >
-              <Sparkles class="size-3.5" />
-              Buku Besar Koperasi
-            </span>
-            <h1
-              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-            >
-              {{ pageTitle }}
-            </h1>
-            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              {{ pageDescription }}
-            </p>
-          </div>
-          <div
-            class="grid min-w-0 grid-cols-2 gap-2 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-zinc-950/5 backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/40"
-          >
-            <div class="min-w-0">
-              <p class="text-[11px] font-medium uppercase text-zinc-500">
-                Mutasi
-              </p>
-              <p
-                class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
-              >
-                {{ totalEntries }}
-              </p>
-            </div>
-            <div class="min-w-0">
-              <p class="text-[11px] font-medium uppercase text-zinc-500">
-                Ditampilkan
-              </p>
-              <p
-                class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
-              >
-                {{ currentPageCount }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
-        aria-label="Ringkasan ledger simpanan"
-      >
-        <GradientKpiCard
-          v-for="card in kpiCards"
-          :key="card.label"
-          :label="card.label"
-          :value="card.value"
-          :meta="card.meta"
-          :icon="card.icon"
-          :tone="card.tone"
-          :href="card.href"
-        />
-      </section>
-
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader :title="pageTitle" :description="pageDescription" />
+      <WorkspaceSummary
+        :items="
+          kpiCards.map((card) => ({
+            label: card.label,
+            value: card.value,
+            hint: card.meta,
+            href: card.href,
+            tone: card.tone,
+          }))
+        "
+        label="Ringkasan ledger"
+      />
       <div
         v-if="filters.ledger_scope === 'POS'"
         class="flex flex-col gap-2 rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-violet-900/50 dark:bg-violet-950/20"
       >
         <div class="flex items-start gap-3">
-          <Info class="mt-0.5 size-5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <Info
+            class="mt-0.5 size-5 shrink-0 text-violet-600 dark:text-violet-400"
+          />
           <div class="text-sm text-violet-900 dark:text-violet-200">
-            <span class="font-semibold">Informasi Subledger POS:</span> Nilai mutasi subledger operasional mencakup pencatatan penjualan, HPP, retur, dan rekap harian; ini bukan omzet penjualan atau laba. Untuk angka resmi omzet kotor (gross sales), omzet bersih (net sales), dan laba kotor (gross profit), silakan buka
+            <span class="font-semibold">Informasi Subledger POS:</span> Nilai
+            mutasi subledger operasional mencakup pencatatan penjualan, HPP,
+            retur, dan rekap harian; ini bukan omzet penjualan atau laba. Untuk
+            angka resmi omzet kotor (gross sales), omzet bersih (net sales), dan
+            laba kotor (gross profit), silakan buka
             <Link
               href="/cooperative/pos/reports"
               class="font-semibold underline hover:text-violet-700 dark:hover:text-violet-300"
             >
-              Laporan POS
-            </Link>.
+              Laporan POS </Link
+            >.
           </div>
         </div>
       </div>
 
       <Card
         data-testid="ledger-filter-card"
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <div
-          class="flex flex-col gap-4 border-b border-zinc-200/70 px-5 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-zinc-800/70"
+        <CardContent
+          class="flex flex-col items-stretch gap-2 p-3 xl:flex-row xl:items-center"
         >
-          <div class="flex items-start gap-3">
-            <span
-              class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 ring-1 ring-inset ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60"
-            >
-              <Filter class="size-4" />
-            </span>
-            <div>
-              <h2
-                class="text-base font-semibold tracking-tight text-zinc-950 dark:text-white"
-              >
-                Filter Ledger
-              </h2>
-              <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                Saring berdasarkan anggota, scope, jenis simpanan, tipe mutasi,
-                atau rentang tanggal.
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="self-start text-zinc-500 hover:text-zinc-700 lg:self-auto dark:hover:text-zinc-200"
-            @click="resetFilters"
-          >
-            Reset
-          </Button>
-        </div>
-        <CardContent class="p-5">
           <div
             data-testid="ledger-filter-grid"
-            class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6"
+            class="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-6"
           >
             <div class="relative sm:col-span-2 lg:col-span-1">
               <Search
@@ -527,6 +477,7 @@ const memberNo = (entry: any) =>
                 v-model="filters.member_search"
                 type="search"
                 placeholder="Cari nama / no anggota"
+                aria-label="Cari anggota ledger"
                 class="h-9 pl-9"
               />
             </div>
@@ -565,33 +516,19 @@ const memberNo = (entry: any) =>
               class="w-full lg:col-span-1"
             />
           </div>
+          <Button type="button" variant="ghost" size="sm" @click="resetFilters"
+            >Reset</Button
+          >
         </CardContent>
       </Card>
 
       <section class="space-y-4">
-        <div
-          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div class="flex items-start gap-3">
-            <span
-              class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-200/70 dark:bg-violet-900/40 dark:text-violet-300 dark:ring-violet-900/60"
-            >
-              <ClipboardList class="size-4" />
-            </span>
-            <div>
-              <h2
-                class="text-base font-semibold tracking-tight text-zinc-950 sm:text-lg dark:text-white"
-              >
-                Mutasi Ledger
-              </h2>
-              <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                {{ currentPageCount }} dari {{ totalEntries }} mutasi pada
-                filter aktif
-              </p>
-            </div>
-          </div>
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold">Mutasi Ledger</h2>
+          <span class="text-xs text-zinc-500"
+            >{{ currentPageCount }} dari {{ totalEntries }} mutasi</span
+          >
         </div>
-
         <div class="relative">
           <div
             v-if="isFiltering"
@@ -609,6 +546,8 @@ const memberNo = (entry: any) =>
             :columns="columns"
             :data="entries"
             :searchable="false"
+            compact
+            table-class="min-w-[1100px] table-auto"
             :empty-icon="ScrollText"
             empty-message="Belum ada transaksi ledger pada filter saat ini."
           >
@@ -658,21 +597,18 @@ const memberNo = (entry: any) =>
               <Badge
                 variant="outline"
                 :class="[
-                  'px-2.5 py-0.5 text-xs',
+                  'whitespace-normal px-2.5 py-0.5 text-left text-xs',
                   entryTypeTone(row.entry_type),
                 ]"
               >
                 {{ formatEntryType(row.entry_type) }}
               </Badge>
-            </template>
-
-            <template #scope="{ row }">
-              <Badge
-                variant="outline"
-                :class="['px-2.5 py-0.5 text-xs', scopeTone(row.ledger_scope)]"
+              <div
+                v-if="!filters.ledger_scope"
+                class="mt-1 text-[10px] text-zinc-500"
               >
-                {{ row.ledger_scope || "-" }}
-              </Badge>
+                {{ row.ledger_scope }}
+              </div>
             </template>
 
             <template #debit="{ value }">
@@ -688,7 +624,7 @@ const memberNo = (entry: any) =>
             <template #credit="{ value }">
               <span
                 v-if="Number(value) > 0"
-                class="font-semibold text-emerald-600 dark:text-emerald-400"
+                class="font-semibold text-emerald-700 dark:text-emerald-400"
               >
                 {{ formatCurrency(value) }}
               </span>
@@ -697,7 +633,7 @@ const memberNo = (entry: any) =>
 
             <template #description="{ row }">
               <span
-                class="block max-w-[280px] truncate text-zinc-600 dark:text-zinc-400"
+                class="block whitespace-normal break-words leading-relaxed text-zinc-600 dark:text-zinc-400"
                 :title="row.description || ''"
               >
                 {{ row.description || "-" }}

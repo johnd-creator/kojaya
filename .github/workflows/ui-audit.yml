@@ -46,6 +46,13 @@ on:
       - 'resources/css/**'
       - 'routes/**'
       - 'tests/visual/**'
+      - 'tests/node/*workspace-ui.test.mjs'
+      - 'tests/node/payment-approval-ui.test.mjs'
+      - 'docs/user-guide/**'
+      - 'public/docs/user-guide/**'
+      - 'resources/docs/user-guide/**'
+      - 'scripts/validate-user-guide*.mjs'
+      - 'scripts/export-user-guide-screenshots*.mjs'
       - 'tests/Feature/UiAudit*.php'
       - 'playwright.config.ts'
       - 'package.json'
@@ -79,6 +86,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve UI audit metadata
         shell: bash
@@ -173,6 +182,20 @@ jobs:
 
       - name: Disable Vite development server
         run: rm -f public/hot
+
+      - name: Verify user guide content and screenshot exports
+        if: github.event_name == 'pull_request'
+        run: |
+          npm run docs:validate
+          npm run docs:screenshots:test
+
+      - name: Verify compact workspace interactions and responsive layout
+        if: github.event_name == 'pull_request'
+        run: >-
+          node --test
+          tests/node/cooperative-workspace-ui.test.mjs
+          tests/node/operational-workspace-ui.test.mjs
+          tests/node/payment-approval-ui.test.mjs
 
       - name: Run global setup lifecycle tests
         run: npm run ui:test-global-setup

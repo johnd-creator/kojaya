@@ -49,7 +49,9 @@ koperasi.
 
 ### Pratinjau dan tutup periode SHU
 
-1. Buka menu **SHU** untuk melihat halaman periode SHU.
+1. Buka menu **SHU** untuk melihat halaman periode SHU. Ringkasan pool,
+   skor, dan status periode tampil dalam satu strip. Arahkan kursor,
+   fokuskan dengan keyboard, atau ketuk ikon **i** untuk membaca keterangan.
 2. Masukkan nilai **Pool SHU Koperasi** dan **Pool Laba POS**
    sesuai data pembukuan tahun berjalan.
 3. Tekan **Preview** untuk melihat pratinjau alokasi SHU per

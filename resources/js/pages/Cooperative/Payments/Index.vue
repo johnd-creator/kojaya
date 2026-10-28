@@ -3,19 +3,17 @@ import { Head, Link, router, useForm } from "@inertiajs/vue3";
 import {
   Check,
   CheckCircle2,
-  CheckCheck,
   ImagePlus,
-  Layers,
   PiggyBank,
   ReceiptText,
   Search,
-  Sparkles,
   WalletCards,
   XCircle,
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +33,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/AppLayout.vue";
-import { formatCurrency, formatDate } from "@/lib/formatters";
 import {
   contributionAmountHelper,
   isFixedContributionCode,
 } from "@/lib/contribution-payment";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import {
   isPendingPayment,
   reconcilePaymentSelection,
@@ -230,16 +228,23 @@ const clearSelectedMember = () => {
   memberSearchFocused.value = false;
 };
 
-const closeMemberResults = () => {
-  window.setTimeout(() => {
-    memberSearchFocused.value = false;
-  }, 150);
+const closeMemberResults = (event: FocusEvent) => {
+  const container = event.currentTarget as HTMLElement;
+  if (
+    event.relatedTarget instanceof Node &&
+    container.contains(event.relatedTarget)
+  ) {
+    return;
+  }
+  memberSearchFocused.value = false;
 };
 
 const handleProofChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   form.proof = target.files?.[0] ?? null;
 };
+
+const createDialogOpen = ref(false);
 
 const submit = () =>
   form.post(store().url, {
@@ -254,6 +259,7 @@ const submit = () =>
         "proof",
       );
       memberSearch.value = "";
+      createDialogOpen.value = false;
     },
   });
 
@@ -446,6 +452,7 @@ const columns = computed(() => [
     header: "Tanggal",
     key: "paid_at",
     slot: "paid_at",
+    class: "max-w-none! whitespace-nowrap",
     width: "11%",
     sortable: true,
     sortKey: "paid_at",
@@ -454,12 +461,14 @@ const columns = computed(() => [
     header: "Anggota",
     key: "member.name",
     slot: "member",
-    width: "17%",
+    class: "max-w-none! min-w-[170px] whitespace-normal",
+    width: "16%",
   },
   {
     header: "Jenis Simpanan",
     key: "contribution_type.name",
     slot: "type",
+    class: "max-w-none! whitespace-nowrap",
     width: "12%",
   },
   {
@@ -482,7 +491,8 @@ const columns = computed(() => [
     header: "Keterangan",
     key: "notes",
     slot: "notes",
-    width: "12%",
+    class: "max-w-none! min-w-[220px] whitespace-normal",
+    width: "22%",
   },
   {
     header: "Nominal",
@@ -500,8 +510,9 @@ const columns = computed(() => [
       header: "Aksi",
       key: "actions",
       slot: "actions",
+      class: "max-w-none! min-w-[96px] whitespace-nowrap",
       align: "right" as const,
-      width: "18%",
+      width: "9%",
     },
   ],
 ]);
@@ -516,343 +527,235 @@ const columns = computed(() => [
       { title: 'Pembayaran', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-none">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-6 shadow-sm shadow-emerald-950/5 sm:p-7 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Pembayaran Simpanan"
+        description="Catat setoran anggota, verifikasi bukti, dan tinjau riwayat pembayaran simpanan."
       >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+        <Button size="sm" @click="createDialogOpen = true"
+          ><PiggyBank class="size-4" /> Catat Pembayaran</Button
         >
-          <div class="space-y-3">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
-            >
-              <Sparkles class="size-3.5" />
-              Transaksi Simpanan
-            </span>
-            <h1
-              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-            >
-              Pembayaran Koperasi
-            </h1>
-            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Catat setoran simpanan anggota, pilih jenis simpanan, upload
-              bukti, dan lihat riwayat pembayaran.
-            </p>
-          </div>
-
-          <div class="grid min-w-0 shrink-0 grid-cols-2 gap-3 sm:max-w-sm">
-            <div
-              class="rounded-xl border border-white/60 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-emerald-800/40 dark:bg-emerald-950/30"
-            >
-              <div
-                class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
-              >
-                Total sesuai filter
-              </div>
-              <div
-                class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
-              >
-                {{ payments.total ?? 0 }}
-              </div>
-              <div class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Transaksi yang ditemukan
-              </div>
-            </div>
-            <div
-              class="rounded-xl border border-white/60 bg-white/70 p-3 shadow-sm backdrop-blur dark:border-sky-800/40 dark:bg-sky-950/30"
-            >
-              <div
-                class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
-              >
-                Data ditampilkan
-              </div>
-              <div
-                class="mt-1 text-lg font-bold tabular-nums text-zinc-950 dark:text-white"
-              >
-                {{ payments.data?.length ?? 0 }}
-              </div>
-              <div class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Pada halaman ini
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div
-        class="grid min-w-0 gap-6 xl:grid-cols-[minmax(20rem,22rem)_minmax(0,1fr)]"
-      >
-        <Card
-          class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
-        >
-          <SectionHeader
-            title="Catat Pembayaran"
-            description="Cari anggota, pilih jenis simpanan, lalu simpan."
-            :icon="PiggyBank"
-            tone="emerald"
-          />
-          <CardContent class="space-y-5 px-5 pb-5">
-            <form class="space-y-5" @submit.prevent="submit">
-              <div class="space-y-2">
-                <Label for="member-search">Anggota</Label>
-                <div class="relative">
-                  <Search
-                    class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
-                  />
-                  <Input
-                    id="member-search"
-                    v-model="memberSearch"
-                    class="pl-9"
-                    placeholder="Ketik nama atau nomor anggota"
-                    autocomplete="off"
-                    @focus="memberSearchFocused = true"
-                    @input="form.cooperative_member_id = ''"
-                    @blur="closeMemberResults"
-                  />
-
-                  <div
-                    v-if="showMemberResults"
-                    class="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg shadow-zinc-950/10 dark:border-zinc-800/80 dark:bg-zinc-900"
-                  >
-                    <button
-                      v-for="member in filteredMembers"
-                      :key="member.id"
-                      type="button"
-                      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      @mousedown.prevent="selectMember(member)"
-                    >
-                      <div>
-                        <div
-                          class="font-medium text-zinc-950 dark:text-zinc-50"
-                        >
-                          {{ member.name }}
-                        </div>
-                        <div class="text-xs text-zinc-500">
-                          No. Anggota {{ member.member_no }}
-                        </div>
-                      </div>
-                      <Check class="size-4 text-zinc-400" />
-                    </button>
-                    <div
-                      v-if="filteredMembers.length === 0"
-                      class="px-3 py-4 text-sm text-zinc-500"
-                    >
-                      Anggota tidak ditemukan.
-                    </div>
-                  </div>
-                </div>
-                <InputError :message="form.errors.cooperative_member_id" />
+      </WorkspaceHeader>
+      <WorkspaceSummary
+        :items="[
+          {
+            label: 'Hasil Filter',
+            value: payments.total ?? paymentRows.length,
+          },
+          { label: 'Ditampilkan', value: paymentRows.length },
+          {
+            label: 'Menunggu di Halaman Ini',
+            value: paymentRows.filter((row) => row.status === 'PENDING').length,
+          },
+          { label: 'Dipilih', value: selectedPayments.length },
+        ]"
+      />
+      <Dialog v-model:open="createDialogOpen">
+        <DialogContent class="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader
+            ><DialogTitle>Catat Pembayaran</DialogTitle
+            ><DialogDescription
+              >Cari anggota, pilih jenis simpanan, lalu simpan
+              pembayaran.</DialogDescription
+            ></DialogHeader
+          >
+          <form class="space-y-4" @submit.prevent="submit">
+            <div class="space-y-2">
+              <Label for="member-search">Anggota</Label>
+              <div class="relative" @focusout="closeMemberResults">
+                <Search
+                  class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
+                />
+                <Input
+                  id="member-search"
+                  v-model="memberSearch"
+                  class="pl-9"
+                  placeholder="Ketik nama atau nomor anggota"
+                  autocomplete="off"
+                  @focus="memberSearchFocused = true"
+                  @input="form.cooperative_member_id = ''"
+                />
 
                 <div
-                  v-if="selectedMember"
-                  class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200/70 bg-zinc-50/90 px-3 py-2 text-sm dark:border-zinc-800/70 dark:bg-zinc-950/70"
+                  v-if="showMemberResults"
+                  class="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-lg border border-zinc-200/80 bg-white p-1 shadow-lg shadow-zinc-950/10 dark:border-zinc-800/80 dark:bg-zinc-900"
                 >
-                  <div>
-                    <div class="font-medium text-zinc-950 dark:text-zinc-50">
-                      {{ selectedMember.name }}
-                    </div>
-                    <div class="text-xs text-zinc-500">
-                      No. Anggota {{ selectedMember.member_no }}
-                    </div>
-                  </div>
-                  <Button
+                  <button
+                    v-for="member in filteredMembers"
+                    :key="member.id"
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    @click="clearSelectedMember"
+                    class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    @mousedown.prevent
+                    @click="selectMember(member)"
                   >
-                    Ganti
-                  </Button>
+                    <div>
+                      <div class="font-medium text-zinc-950 dark:text-zinc-50">
+                        {{ member.name }}
+                      </div>
+                      <div class="text-xs text-zinc-500">
+                        No. Anggota {{ member.member_no }}
+                      </div>
+                    </div>
+                    <Check class="size-4 text-zinc-400" />
+                  </button>
+                  <div
+                    v-if="filteredMembers.length === 0"
+                    class="px-3 py-4 text-sm text-zinc-500"
+                  >
+                    Anggota tidak ditemukan.
+                  </div>
                 </div>
+              </div>
+              <InputError :message="form.errors.cooperative_member_id" />
+
+              <div
+                v-if="selectedMember"
+                class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200/70 bg-zinc-50/90 px-3 py-2 text-sm dark:border-zinc-800/70 dark:bg-zinc-950/70"
+              >
+                <div>
+                  <div class="font-medium text-zinc-950 dark:text-zinc-50">
+                    {{ selectedMember.name }}
+                  </div>
+                  <div class="text-xs text-zinc-500">
+                    No. Anggota {{ selectedMember.member_no }}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  @click="clearSelectedMember"
+                >
+                  Ganti
+                </Button>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <Label for="cooperative_contribution_type_id"
+                >Jenis Simpanan</Label
+              >
+              <select
+                id="cooperative_contribution_type_id"
+                v-model="form.cooperative_contribution_type_id"
+                required
+                class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-800 dark:bg-zinc-950"
+              >
+                <option value="">Pilih jenis simpanan</option>
+                <option
+                  v-for="type in contributionTypes"
+                  :key="type.id"
+                  :value="String(type.id)"
+                >
+                  {{ type.name }}
+                </option>
+              </select>
+              <InputError
+                :message="form.errors.cooperative_contribution_type_id"
+              />
+            </div>
+
+            <div
+              class="rounded-xl border border-emerald-200/80 bg-emerald-50/80 p-4 text-sm shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+            >
+              <div
+                class="flex items-center gap-2 font-medium text-zinc-950 dark:text-zinc-50"
+              >
+                <WalletCards class="size-4" />
+                Aturan Nominal
+              </div>
+              <p class="mt-2 leading-6 text-zinc-600 dark:text-zinc-300">
+                {{ amountHelper }}
+              </p>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="amount">Nominal</Label>
+                <Input
+                  id="amount"
+                  v-model="form.amount"
+                  type="number"
+                  min="1"
+                  :readonly="isFixedAmount"
+                  placeholder="Masukkan nominal"
+                  required
+                />
+                <InputError :message="form.errors.amount" />
               </div>
 
               <div class="space-y-2">
-                <Label for="cooperative_contribution_type_id"
-                  >Jenis Simpanan</Label
-                >
+                <Label for="payment_method">Metode Pembayaran</Label>
                 <select
-                  id="cooperative_contribution_type_id"
-                  v-model="form.cooperative_contribution_type_id"
-                  required
+                  id="payment_method"
+                  v-model="form.payment_method"
                   class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-800 dark:bg-zinc-950"
                 >
-                  <option value="">Pilih jenis simpanan</option>
-                  <option
-                    v-for="type in contributionTypes"
-                    :key="type.id"
-                    :value="String(type.id)"
-                  >
-                    {{ type.name }}
-                  </option>
+                  <option value="CASH">Tunai</option>
+                  <option value="TRANSFER">Transfer</option>
+                  <option value="QRIS">QRIS</option>
                 </select>
-                <InputError
-                  :message="form.errors.cooperative_contribution_type_id"
-                />
-              </div>
-
-              <div
-                class="rounded-xl border border-emerald-200/80 bg-emerald-50/80 p-4 text-sm shadow-sm shadow-emerald-950/5 dark:border-emerald-500/20 dark:bg-emerald-500/10"
-              >
-                <div
-                  class="flex items-center gap-2 font-medium text-zinc-950 dark:text-zinc-50"
-                >
-                  <WalletCards class="size-4" />
-                  Aturan Nominal
-                </div>
-                <p class="mt-2 leading-6 text-zinc-600 dark:text-zinc-300">
-                  {{ amountHelper }}
-                </p>
-              </div>
-
-              <div class="grid gap-4 md:grid-cols-2">
-                <div class="space-y-2">
-                  <Label for="amount">Nominal</Label>
-                  <Input
-                    id="amount"
-                    v-model="form.amount"
-                    type="number"
-                    min="1"
-                    :readonly="isFixedAmount"
-                    placeholder="Masukkan nominal"
-                    required
-                  />
-                  <InputError :message="form.errors.amount" />
-                </div>
-
-                <div class="space-y-2">
-                  <Label for="payment_method">Metode Pembayaran</Label>
-                  <select
-                    id="payment_method"
-                    v-model="form.payment_method"
-                    class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:border-zinc-800 dark:bg-zinc-950"
-                  >
-                    <option value="CASH">Tunai</option>
-                    <option value="TRANSFER">Transfer</option>
-                    <option value="QRIS">QRIS</option>
-                  </select>
-                  <InputError :message="form.errors.payment_method" />
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <Label for="paid_at">Tanggal Pembayaran</Label>
-                <Input
-                  id="paid_at"
-                  v-model="form.paid_at"
-                  type="date"
-                  required
-                />
-                <InputError :message="form.errors.paid_at" />
-              </div>
-
-              <div class="space-y-2">
-                <Label for="notes">Keterangan</Label>
-                <Textarea
-                  id="notes"
-                  v-model="form.notes"
-                  :rows="3"
-                  placeholder="Contoh: setoran simpanan sukarela anggota"
-                />
-                <InputError :message="form.errors.notes" />
-              </div>
-
-              <div class="space-y-2">
-                <Label for="proof">Bukti Pembayaran</Label>
-                <Input
-                  id="proof"
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  @change="handleProofChange"
-                />
-                <div class="flex items-center gap-2 text-xs text-zinc-500">
-                  <ImagePlus class="size-3.5" />
-                  Upload gambar bukti transfer atau bukti setor.
-                </div>
-                <div v-if="proofFileName" class="text-xs text-zinc-500">
-                  File dipilih: {{ proofFileName }}
-                </div>
-                <InputError :message="form.errors.proof" />
-              </div>
-
-              <Button
-                class="w-full shadow-sm"
-                type="submit"
-                :disabled="form.processing"
-              >
-                {{ form.processing ? "Menyimpan…" : "Submit Pembayaran" }}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <div class="min-w-0 space-y-6">
-          <div class="grid min-w-0 gap-4 sm:grid-cols-3">
-            <div
-              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
-            >
-              <div
-                class="text-xs font-medium uppercase tracking-wide text-zinc-500"
-              >
-                Anggota
-              </div>
-              <div
-                class="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-white"
-              >
-                {{ selectedMember ? selectedMember.name : "Belum dipilih" }}
-              </div>
-              <div v-if="selectedMember" class="text-xs text-zinc-500">
-                {{ selectedMember.member_no }}
+                <InputError :message="form.errors.payment_method" />
               </div>
             </div>
-            <div
-              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
-            >
-              <div
-                class="text-xs font-medium uppercase tracking-wide text-zinc-500"
-              >
-                Jenis Simpanan
-              </div>
-              <div
-                class="mt-1 truncate text-sm font-semibold text-zinc-950 dark:text-white"
-              >
-                {{ selectedContributionType?.name ?? "Belum dipilih" }}
-              </div>
-            </div>
-            <div
-              class="min-w-0 rounded-xl border border-zinc-200/70 bg-white/80 p-4 dark:border-zinc-800/70 dark:bg-zinc-950/40"
-            >
-              <div
-                class="text-xs font-medium uppercase tracking-wide text-zinc-500"
-              >
-                Nominal
-              </div>
-              <div
-                class="mt-1 text-sm font-semibold text-zinc-950 dark:text-white"
-              >
-                {{ form.amount ? formatCurrency(form.amount) : "-" }}
-              </div>
-            </div>
-          </div>
 
+            <div class="space-y-2">
+              <Label for="paid_at">Tanggal Pembayaran</Label>
+              <Input id="paid_at" v-model="form.paid_at" type="date" required />
+              <InputError :message="form.errors.paid_at" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="notes">Keterangan</Label>
+              <Textarea
+                id="notes"
+                v-model="form.notes"
+                :rows="3"
+                placeholder="Contoh: setoran simpanan sukarela anggota"
+              />
+              <InputError :message="form.errors.notes" />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="proof">Bukti Pembayaran</Label>
+              <Input
+                id="proof"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                @change="handleProofChange"
+              />
+              <div class="flex items-center gap-2 text-xs text-zinc-500">
+                <ImagePlus class="size-3.5" />
+                Upload gambar bukti transfer atau bukti setor.
+              </div>
+              <div v-if="proofFileName" class="text-xs text-zinc-500">
+                File dipilih: {{ proofFileName }}
+              </div>
+              <InputError :message="form.errors.proof" />
+            </div>
+
+            <Button
+              class="w-full shadow-sm"
+              type="submit"
+              :disabled="form.processing"
+            >
+              {{ form.processing ? "Menyimpan…" : "Submit Pembayaran" }}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <div class="min-w-0">
+        <div class="min-w-0">
           <Card
             data-testid="payment-history-card"
-            class="min-w-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+            class="min-w-0 gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
           >
-            <SectionHeader
-              title="Riwayat Pembayaran"
-              :description="`${payments.total ?? 0} transaksi tercatat`"
-              :icon="Layers"
-              tone="emerald"
-            />
+            <div class="flex items-center justify-between border-b px-4 py-3">
+              <h2 class="text-sm font-semibold">Riwayat Pembayaran</h2>
+              <span class="text-xs text-zinc-500"
+                >{{ payments.total ?? paymentRows.length }} pembayaran</span
+              >
+            </div>
             <CardContent class="px-0 pb-0">
               <p
                 v-if="paymentActionError"
@@ -862,7 +765,7 @@ const columns = computed(() => [
                 {{ paymentActionError }}
               </p>
               <form
-                class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1.35fr)_minmax(9.5rem,1fr)_minmax(9.5rem,1fr)_minmax(10.5rem,1fr)] dark:border-zinc-800/70"
+                class="grid min-w-0 gap-3 border-b border-zinc-200/70 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1.5fr)_minmax(9rem,1fr)_minmax(9rem,1fr)_minmax(9rem,1fr)_auto] dark:border-zinc-800/70"
                 @submit.prevent="applyFilters"
               >
                 <div class="space-y-1.5 sm:col-span-2 xl:col-span-1">
@@ -908,7 +811,7 @@ const columns = computed(() => [
                     <option value="QRIS">QRIS</option>
                   </select>
                 </div>
-                <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-4">
+                <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-1">
                   <Button type="submit">Terapkan filter</Button>
                   <Button type="button" variant="outline" @click="resetFilters">
                     Reset
@@ -935,7 +838,7 @@ const columns = computed(() => [
                 class="hidden sm:block"
                 :columns="columns"
                 :data="payments"
-                table-class="min-w-0 table-auto"
+                table-class="min-w-[1050px] table-auto [&_tbody_tr]:opacity-100"
                 compact
                 :searchable="false"
                 :empty-icon="ReceiptText"
@@ -957,7 +860,7 @@ const columns = computed(() => [
 
                 <template #member="{ row }">
                   <div
-                    class="truncate font-semibold text-zinc-950 dark:text-white"
+                    class="whitespace-normal break-words font-semibold text-zinc-950 dark:text-white"
                   >
                     {{ row.member?.name || "-" }}
                   </div>
@@ -1008,7 +911,7 @@ const columns = computed(() => [
 
                 <template #notes="{ value }">
                   <span
-                    class="block max-w-[12rem] truncate text-xs text-zinc-600 dark:text-zinc-400"
+                    class="block whitespace-normal break-words text-xs text-zinc-600 dark:text-zinc-400"
                     :title="value || ''"
                   >
                     {{ value || "-" }}
@@ -1103,7 +1006,7 @@ const columns = computed(() => [
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <p
-                        class="truncate font-semibold text-zinc-950 dark:text-white"
+                        class="whitespace-normal break-words font-semibold text-zinc-950 dark:text-white"
                       >
                         {{ payment.member?.name || "Anggota tidak diketahui" }}
                       </p>

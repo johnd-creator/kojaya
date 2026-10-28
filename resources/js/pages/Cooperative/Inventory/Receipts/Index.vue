@@ -1,95 +1,120 @@
 <script setup lang="ts">
-import { Head, Link, router } from "@inertiajs/vue3";
-import { ArrowLeft, FileText, Plus } from "lucide-vue-next";
-import { ref } from "vue";
+import { Head, Link } from "@inertiajs/vue3";
+import { Plus } from "lucide-vue-next";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import PageContainer from "@/components/PageContainer.vue";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
-import { formatCurrency, formatDate } from "@/lib/formatters";
-
-defineProps<{
-    receipts: {
-        data: Array<{
-            id: number;
-            receipt_no: string;
-            received_at: string;
-            total_amount: number | string;
-            status: string;
-            reference_no?: string | null;
-            supplier?: { name: string } | null;
-            location?: { name: string } | null;
-            receiver?: { name: string } | null;
-        }>;
-    };
+import { formatDate, formatCurrency } from "@/lib/formatters";
+import { index, create } from "@/routes/cooperative/pos/inventory/receipts";
+import type { PaginationMeta } from "@/types/pagination";
+const props = defineProps<{
+  receipts: PaginationMeta & {
+    data: Array<{
+      id: number;
+      receipt_no: string;
+      received_at: string;
+      total_amount: number | string;
+      status: string;
+      reference_no?: string | null;
+      supplier?: { name: string } | null;
+      location?: { name: string } | null;
+      receiver?: { name: string } | null;
+    }>;
+  };
 }>();
+const columns = [
+  { header: "No. Penerimaan", key: "receipt_no" },
+  { header: "Tanggal", key: "received_at", format: formatDate },
+  { header: "Supplier", key: "supplier.name" },
+  { header: "Lokasi", key: "location.name" },
+  { header: "Referensi", key: "reference_no" },
+  { header: "Petugas", key: "receiver.name" },
+  {
+    header: "Nominal",
+    key: "total_amount",
+    format: formatCurrency,
+    align: "right" as const,
+  },
+  { header: "Status", key: "status", slot: "status" },
+].map((column) => ({
+  ...column,
+  headerClass: "max-w-none! whitespace-nowrap",
+  class: "max-w-none! whitespace-nowrap",
+}));
+const statusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  REVIEW: "Dalam Review",
+  APPROVED: "Disetujui",
+  POSTED: "Tercatat",
+  CANCELLED: "Dibatalkan",
+};
 </script>
-
 <template>
-    <Head title="Penerimaan Stok POS" />
-    <AppLayout
-        :breadcrumbs="[
-            { title: 'Koperasi', href: '/cooperative' },
-            { title: 'POS', href: '/cooperative/pos' },
-            { title: 'Penerimaan Stok', href: '/cooperative/pos/inventory/receipts' },
+  <Head title="Penerimaan Stok" />
+  <AppLayout
+    :breadcrumbs="[
+      { title: 'Inventory POS', href: '#' },
+      { title: 'Penerimaan Stok', href: index().url },
+    ]"
+  >
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Penerimaan Stok"
+        description="Telusuri stok masuk, supplier, referensi penerimaan, dan lokasi penyimpanan."
+        ><Button as-child size="sm"
+          ><Link :href="create().url"
+            ><Plus class="size-4" /> Catat Penerimaan</Link
+          ></Button
+        ></WorkspaceHeader
+      >
+      <WorkspaceSummary
+        :items="[
+          { label: 'Penerimaan di Halaman Ini', value: receipts.data.length },
+          {
+            label: 'Nominal di Halaman Ini',
+            value: formatCurrency(
+              receipts.data.reduce(
+                (sum, row) => sum + Number(row.total_amount),
+                0,
+              ),
+            ),
+          },
+          {
+            label: 'Tercatat di Halaman Ini',
+            value: receipts.data.filter((row) => row.status === 'POSTED')
+              .length,
+            tone: 'emerald',
+          },
         ]"
-    >
-        <PageContainer>
-            <div class="flex flex-col gap-6">
-                <header class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <Button as-child variant="ghost" size="icon" class="rounded-full">
-                        <Link href="/cooperative/pos" aria-label="Kembali ke POS">
-                            <ArrowLeft class="h-5 w-5" />
-                        </Link>
-                    </Button>
-                        <div>
-                            <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Penerimaan Stok</h1>
-                            <p class="text-sm text-zinc-500">Catat stok masuk dari supplier ke lokasi.</p>
-                        </div>
-                    </div>
-                    <Link href="/cooperative/pos/inventory/receipts/create">
-                        <Button class="rounded-xl">
-                            <Plus class="mr-2 h-4 w-4" />
-                            Catat Penerimaan
-                        </Button>
-                    </Link>
-                </header>
-
-                <div v-if="receipts.data.length === 0" class="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center">
-                    <FileText class="mx-auto h-12 w-12 text-zinc-300" />
-                    <p class="mt-4 text-lg font-bold text-zinc-800">Belum ada penerimaan</p>
-                    <p class="mt-1 text-sm text-zinc-500">Penerimaan stok dari supplier akan muncul di sini.</p>
-                </div>
-
-                <div v-else class="space-y-3">
-                    <div
-                        v-for="receipt in receipts.data"
-                        :key="receipt.id"
-                        class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm"
-                    >
-                        <div class="flex items-center gap-4">
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                                <FileText class="h-5 w-5" />
-                            </div>
-                            <div>
-                                <div class="font-bold text-zinc-800">{{ receipt.receipt_no }}</div>
-                                <div class="text-xs text-zinc-500">
-                                    {{ formatDate(receipt.received_at) }} ·
-                                    {{ receipt.supplier?.name ?? 'Tanpa supplier' }} ·
-                                    {{ receipt.location?.name ?? '-' }}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-extrabold text-zinc-900">{{ formatCurrency(receipt.total_amount) }}</div>
-                            <Badge variant="default" class="mt-1 text-[9px] font-bold uppercase tracking-wider">
-                                {{ receipt.status }}
-                            </Badge>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </PageContainer>
-    </AppLayout>
+        label="Ringkasan halaman ini"
+      />
+      <section class="min-w-0 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold">Daftar Penerimaan Stok</h2>
+          <span class="text-xs text-zinc-500"
+            >{{ props.receipts.data.length }} ditampilkan</span
+          >
+        </div>
+        <DataTable
+          :columns="columns"
+          :data="receipts"
+          :searchable="false"
+          compact
+          table-class="min-w-[900px] table-auto"
+          empty-message="Belum ada dokumen penerimaan stok. Gunakan Catat Penerimaan untuk memulai."
+        >
+          <template #status="{ value }"
+            ><StatusBadge
+              :status="value"
+              :label="statusLabels[value] ?? value"
+              :variant="value === 'POSTED' ? 'success' : undefined"
+          /></template>
+        </DataTable>
+      </section>
+    </PageContainer>
+  </AppLayout>
 </template>

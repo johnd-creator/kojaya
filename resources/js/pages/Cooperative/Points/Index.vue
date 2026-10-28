@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
-import { Gift, Sparkles, Trophy } from "lucide-vue-next";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import PageContainer from "@/components/PageContainer.vue";
-import StatsCard from "@/components/StatsCard.vue";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import DataTable from "@/components/ui/data-table/DataTable.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatNumber } from "@/lib/formatters";
+import type { PaginationMeta } from "@/types/pagination";
 
 defineProps<{
-  members: {
+  members: PaginationMeta & {
     data: Array<{
       id: string | number;
       member_no: string;
@@ -41,19 +41,19 @@ const columns = [
   { header: "Anggota", key: "name", slot: "member" },
   { header: "Tier", key: "member_tier", slot: "tier" },
   {
-    header: "Balance",
+    header: "Saldo Poin",
     key: "total_points",
     slot: "balance",
     align: "right" as const,
   },
   {
-    header: "Earned",
+    header: "Diperoleh",
     key: "points_earned",
     format: formatNumber,
     align: "right" as const,
   },
   {
-    header: "Redeemed",
+    header: "Ditukar",
     key: "points_redeemed",
     format: formatNumber,
     align: "right" as const,
@@ -71,56 +71,45 @@ const columns = [
       { title: 'Points', href: '/cooperative/points' },
     ]"
   >
-    <PageContainer class="max-w-6xl">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/60 to-violet-50/40 p-6 shadow-sm shadow-amber-950/5 sm:p-7 dark:border-amber-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10"
-          aria-hidden="true"
-        />
-        <div class="relative space-y-3">
-          <span
-            class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200/70 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800/60"
-          >
-            <Sparkles class="size-3.5" />
-            Loyalty Program
-          </span>
-          <h1
-            class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-          >
-            Points & Loyalty
-          </h1>
-          <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-            Ringkasan poin anggota koperasi dari transaksi dan penukaran reward.
-          </p>
-        </div>
-      </section>
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Poin Anggota"
+        description="Pantau saldo, perolehan, penukaran poin, dan perkembangan tier anggota."
+      ></WorkspaceHeader>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <StatsCard
-          label="Anggota Aktif"
-          :value="formatNumber(stats.active_members)"
-          :icon="Trophy"
-        />
-        <StatsCard
-          label="Total Balance"
-          :value="formatNumber(stats.total_balance)"
-          :icon="Gift"
-        />
-      </div>
-
+      <WorkspaceSummary
+        :items="[
+          { label: 'Anggota Aktif', value: formatNumber(stats.active_members) },
+          {
+            label: 'Saldo Poin',
+            value: formatNumber(stats.total_balance),
+            tone: 'emerald',
+          },
+          { label: 'Anggota Ditampilkan', value: members.data.length },
+        ]"
+      />
       <Card
         data-testid="points-table-card"
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <SectionHeader
-          title="Daftar Poin Anggota"
-          :icon="Trophy"
-          tone="amber"
-        />
+        <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
+          <h2 class="text-sm font-semibold">Daftar Poin Anggota</h2>
+        </div>
         <CardContent class="px-0 pb-0">
-          <DataTable :columns="columns" :data="members" :searchable="false">
+          <DataTable
+            :columns="
+              columns.map((column) => ({
+                ...column,
+                headerClass: 'max-w-none! whitespace-nowrap',
+                class: 'max-w-none! whitespace-nowrap',
+              }))
+            "
+            :data="members"
+            :searchable="false"
+            compact
+            table-class="min-w-[800px] table-auto"
+            empty-message="Belum ada anggota pada daftar poin ini."
+          >
             <template #member="{ row }">
               <div class="font-semibold text-zinc-950 dark:text-white">
                 {{ row.name }}
@@ -136,7 +125,7 @@ const columns = [
             </template>
             <template #balance="{ value }">
               <span
-                class="text-lg font-bold tabular-nums text-amber-700 dark:text-amber-300"
+                class="text-sm font-semibold tabular-nums text-amber-700 dark:text-amber-300"
                 >{{ formatNumber(value) }}</span
               >
             </template>

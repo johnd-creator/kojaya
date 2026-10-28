@@ -136,7 +136,12 @@ async function assertPaymentLayout(page: Page): Promise<void> {
       ).toBeVisible();
     }
   } else {
-    expect(metrics.tableWidth).toBeLessThanOrEqual(metrics.regionWidth + 1);
+    // Wide financial tables scroll inside a keyboard-accessible region instead
+    // of compressing labels and amounts to fit a tablet viewport.
+    expect(metrics.tableWidth).toBeGreaterThan(0);
+    await expect(
+      page.locator('[data-testid="payment-history-card"] [role="region"]'),
+    ).toHaveAttribute("tabindex", "0");
     await expect(
       page.locator('[data-testid="payment-history-card"] table'),
     ).toBeVisible();

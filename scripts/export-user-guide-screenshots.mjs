@@ -232,7 +232,7 @@ export async function runScreenshots(opts = {}) {
     if (!existsSync(sourceAbsolute)) {
       pushReport(reportEntries, publicEntries, {
         id,
-        source: relative(root, sourceAbsolute),
+        source: relative(root, sourceAbsolute).split(sep).join("/"),
         viewport: entry.viewport,
         status: "missing",
         detail: "Source PNG not found on disk.",
@@ -245,7 +245,7 @@ export async function runScreenshots(opts = {}) {
     if (!stat.isFile() || !sourceAbsolute.toLowerCase().endsWith(".png")) {
       pushReport(reportEntries, publicEntries, {
         id,
-        source: relative(root, sourceAbsolute),
+        source: relative(root, sourceAbsolute).split(sep).join("/"),
         viewport: entry.viewport,
         status: "broken",
         detail: "Source is not a regular PNG file.",
@@ -270,7 +270,7 @@ export async function runScreenshots(opts = {}) {
     } catch (error) {
       pushReport(reportEntries, publicEntries, {
         id,
-        source: relative(root, sourceAbsolute),
+        source: relative(root, sourceAbsolute).split(sep).join("/"),
         viewport: entry.viewport,
         status: "broken",
         detail: `Cannot hash source: ${error.message}`,
@@ -298,7 +298,7 @@ export async function runScreenshots(opts = {}) {
 
     pushReport(reportEntries, publicEntries, {
       id,
-      source: relative(root, sourceAbsolute),
+      source: relative(root, sourceAbsolute).split(sep).join("/"),
       asset: "/" + relative(resolve(root, "public"), destAbsolute).split(sep).join("/"),
       viewport: entry.viewport,
       module: entry.module ?? null,

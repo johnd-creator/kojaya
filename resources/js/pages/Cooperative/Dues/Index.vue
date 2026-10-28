@@ -2,14 +2,8 @@
 import { Deferred, Head, Link, router, useForm } from "@inertiajs/vue3";
 import { useDebounceFn } from "@vueuse/core";
 import {
-  ArrowDown,
-  ArrowUp,
-  Banknote,
-  Building2,
   CheckCircle2,
-  ClipboardList,
   CreditCard,
-  FileText,
   Filter,
   Hash,
   Info,
@@ -18,16 +12,12 @@ import {
   RotateCcw,
   Search,
   Settings2,
-  Sparkles,
-  Wallet,
   X,
 } from "lucide-vue-next";
 import { computed, ref, watch } from "vue";
-import type { Component } from "vue";
-import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
 import StatusPill from "@/components/dashboard/StatusPill.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import InfoTooltip from "@/components/InfoTooltip.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -120,6 +110,8 @@ const contributionTypeId = ref<string>(
 const selectedInvoiceIds = ref<number[]>([]);
 const rowPaymentAmounts = ref<Record<number, string>>({});
 const showBatchConfirm = ref(false);
+const showFilters = ref(false);
+const showBatchPayment = ref(false);
 const showResetConfirm = ref(false);
 const invoicePendingReset = ref<any | null>(null);
 
@@ -294,6 +286,16 @@ const contributionOptions = computed(() => [
   })),
 ]);
 
+const activeFilterCount = computed(
+  () =>
+    [
+      periodScope.value === "all",
+      status.value !== emptyValue,
+      category.value !== emptyValue,
+      contributionTypeId.value !== emptyValue,
+    ].filter(Boolean).length,
+);
+
 const statusTone = (status: string): Tone => {
   switch (status) {
     case "PAID":
@@ -372,8 +374,6 @@ const kpiCards = computed(() => [
   {
     label: "Total Tagihan",
     value: formatNumber(summary.value.totalInvoices),
-    icon: FileText as Component,
-    tone: "sky" as Tone,
     href: index().url,
     meta:
       periodScope.value === "all"
@@ -383,8 +383,6 @@ const kpiCards = computed(() => [
   {
     label: "Total Nominal",
     value: formatCurrency(summary.value.totalNominal),
-    icon: Banknote as Component,
-    tone: "violet" as Tone,
     href: index().url,
     meta:
       periodScope.value === "all"
@@ -394,8 +392,6 @@ const kpiCards = computed(() => [
   {
     label: "Sudah Dibayar",
     value: formatCurrency(summary.value.totalPaid),
-    icon: CheckCircle2 as Component,
-    tone: "emerald" as Tone,
     href: index({
       query: {
         period: period.value,
@@ -408,8 +404,6 @@ const kpiCards = computed(() => [
   {
     label: "Outstanding",
     value: formatCurrency(summary.value.totalOutstanding),
-    icon: Wallet as Component,
-    tone: "rose" as Tone,
     href: index({
       query: {
         period: period.value,
@@ -430,415 +424,474 @@ const kpiCards = computed(() => [
       { title: 'Iuran & Simpanan', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-none">
-      <!-- HERO -->
-      <section
-        class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-6 shadow-sm shadow-emerald-950/5 sm:p-7 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div class="space-y-3">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
-            >
-              <Sparkles class="size-3.5" />
-              Iuran & Simpanan
-            </span>
-            <h1
-              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-            >
-              Iuran Simpanan Wajib
-            </h1>
-            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Monitoring tagihan iuran simpanan wajib anggota per periode. Pilih
-              beberapa tagihan dan proses pelunasan sekaligus.
+    <PageContainer class="max-w-none gap-4">
+      <header class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-2">
+          <h1
+            class="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl dark:text-white"
+          >
+            Iuran Simpanan Wajib
+          </h1>
+          <InfoTooltip label="Informasi iuran dan autodebit">
+            <p>
+              Monitoring tagihan simpanan wajib per periode. Pilih tagihan untuk
+              pembayaran sekaligus.
             </p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <Button
-              as-child
-              variant="outline"
-              class="border-zinc-200 bg-white/80 shadow-sm shadow-zinc-950/5 backdrop-blur hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:bg-zinc-900"
-            >
-              <Link :href="editSavings().url" prefetch>
-                <Settings2 class="mr-2 size-4" />
-                Atur Simpanan
-              </Link>
-            </Button>
-          </div>
+            <p class="font-semibold">
+              Jendela autodebit {{ bankCollectionWindow.period }}
+            </p>
+            <p>
+              {{ bankCollectionWindow.opens_on }} s/d
+              {{ bankCollectionWindow.closes_on }}.
+            </p>
+            <p>
+              {{
+                bankCollectionWindow.is_open
+                  ? "Jendela operasional terbuka."
+                  : "Di luar jendela operasional."
+              }}
+              Bank mengeksekusi autodebit; admin mencatat dan menyetujui hasil
+              bank atau penerimaan manual berdasarkan bukti.
+            </p>
+          </InfoTooltip>
         </div>
-      </section>
+        <Button as-child variant="outline" size="sm">
+          <Link :href="editSavings().url" prefetch>
+            <Settings2 class="mr-2 size-4" />
+            Atur Simpanan
+          </Link>
+        </Button>
+      </header>
 
-      <Card class="mb-4">
-        <CardContent class="space-y-1 pt-4 text-sm">
-          <p class="font-medium">
-            Jendela autodebit bank untuk iuran
-            {{ bankCollectionWindow.period }}:
-            {{ bankCollectionWindow.opens_on }} s/d
-            {{ bankCollectionWindow.closes_on }}
-          </p>
-          <p>
-            {{
-              bankCollectionWindow.is_open
-                ? "Jendela operasional terbuka."
-                : "Di luar jendela operasional."
-            }}
-            Bank mengeksekusi autodebit; admin mencatat dan menyetujui hasil
-            bank atau penerimaan manual berdasarkan bukti.
-          </p>
-        </CardContent>
-      </Card>
-
-      <section
-        v-if="monthlyDuesInfo"
-        class="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_repeat(3,minmax(0,0.75fr))]"
-        aria-label="Informasi simpanan wajib periode"
-      >
-        <div
-          class="rounded-xl border border-emerald-200/70 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-emerald-900/50 dark:bg-zinc-900/80"
+      <section aria-label="Ringkasan iuran">
+        <dl
+          class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-200 bg-zinc-200 sm:grid-cols-4 dark:border-zinc-800 dark:bg-zinc-800"
+          :class="
+            monthlyDuesInfo
+              ? 'xl:grid-cols-[minmax(0,1.35fr)_repeat(7,minmax(0,1fr))]'
+              : ''
+          "
         >
-          <div class="flex items-start gap-3">
-            <span
-              class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800/60"
+          <template v-if="monthlyDuesInfo">
+            <div
+              class="min-w-0 bg-emerald-50/70 px-3 py-3 dark:bg-emerald-950/40"
             >
-              <Info class="size-5" />
-            </span>
-            <div class="min-w-0">
-              <p
-                class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+              <dt
+                class="flex items-center justify-between gap-1 text-xs text-emerald-700 dark:text-emerald-300"
               >
                 Periode aktif
-              </p>
-              <h2
-                class="mt-1 text-xl font-semibold tracking-tight text-zinc-950 dark:text-white"
+                <InfoTooltip label="Informasi periode aktif">
+                  <p class="font-semibold">{{ monthlyDuesInfo.title }}</p>
+                  <p>
+                    Bulan berikutnya otomatis mengikuti periode berjalan:
+                    {{ monthlyDuesInfo.next_period_label }}.
+                  </p>
+                </InfoTooltip>
+              </dt>
+              <dd
+                class="mt-1 text-sm font-semibold text-zinc-950 dark:text-white"
               >
-                {{ monthlyDuesInfo.title }}
-              </h2>
-              <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Bulan berikutnya otomatis mengikuti periode berjalan:
-                {{ monthlyDuesInfo.next_period_label }}.
-              </p>
+                {{ monthlyDuesInfo.period_label }}
+              </dd>
             </div>
-          </div>
-        </div>
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
-        >
-          <div
-            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
-          >
-            <Wallet class="size-4" />
-            Nominal per anggota
-          </div>
-          <p
-            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
-          >
-            {{ formatCurrency(monthlyDuesInfo.amount) }}
-          </p>
-        </div>
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
-        >
-          <div
-            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
-          >
-            <Receipt class="size-4" />
-            Tagihan dibuat
-          </div>
-          <p
-            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
-          >
-            {{ formatNumber(monthlyDuesInfo.total_invoices) }}
-          </p>
-        </div>
-        <div
-          class="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-950/5 dark:border-zinc-800 dark:bg-zinc-900/80"
-        >
-          <div
-            class="flex items-center gap-2 text-sm font-medium text-zinc-500 dark:text-zinc-400"
-          >
-            <Hash class="size-4" />
-            Jatuh tempo
-          </div>
-          <p
-            class="mt-3 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-white"
-          >
-            {{ monthlyDuesInfo.due_date }}
-          </p>
-        </div>
+            <div class="min-w-0 bg-white px-3 py-3 dark:bg-zinc-900">
+              <dt
+                class="flex min-h-7 items-center text-xs text-zinc-500 dark:text-zinc-400"
+              >
+                Per anggota
+              </dt>
+              <dd
+                class="mt-1 break-words text-sm font-semibold tabular-nums text-zinc-950 dark:text-white"
+              >
+                {{ formatCurrency(monthlyDuesInfo.amount) }}
+              </dd>
+            </div>
+            <div class="min-w-0 bg-white px-3 py-3 dark:bg-zinc-900">
+              <dt
+                class="flex min-h-7 items-center text-xs text-zinc-500 dark:text-zinc-400"
+              >
+                Tagihan dibuat
+              </dt>
+              <dd
+                class="mt-1 text-sm font-semibold tabular-nums text-zinc-950 dark:text-white"
+              >
+                {{ formatNumber(monthlyDuesInfo.total_invoices) }}
+              </dd>
+            </div>
+            <div class="min-w-0 bg-white px-3 py-3 dark:bg-zinc-900">
+              <dt
+                class="flex min-h-7 items-center text-xs text-zinc-500 dark:text-zinc-400"
+              >
+                Jatuh tempo
+              </dt>
+              <dd
+                class="mt-1 text-sm font-semibold tabular-nums text-zinc-950 dark:text-white"
+              >
+                {{ monthlyDuesInfo.due_date }}
+              </dd>
+            </div>
+          </template>
+          <Deferred data="stats">
+            <template #fallback>
+              <div
+                v-for="i in 4"
+                :key="i"
+                class="min-h-24 animate-pulse bg-zinc-50 px-3 py-3 dark:bg-zinc-900"
+                :aria-label="i === 1 ? 'Memuat ringkasan iuran' : undefined"
+                :role="i === 1 ? 'status' : undefined"
+              >
+                <dt class="mt-2 h-3 w-20 rounded bg-zinc-200 dark:bg-zinc-800">
+                  <span class="sr-only">Ringkasan</span>
+                </dt>
+                <dd
+                  class="mt-4 h-4 w-24 rounded bg-zinc-200 dark:bg-zinc-800"
+                />
+              </div>
+            </template>
+            <div
+              v-for="card in kpiCards"
+              :key="card.label"
+              class="min-w-0 bg-white px-3 py-3 dark:bg-zinc-900"
+            >
+              <dt
+                class="flex items-center justify-between gap-1 text-xs text-zinc-500 dark:text-zinc-400"
+              >
+                {{ card.label }}
+                <InfoTooltip :label="`Keterangan ${card.label}`">{{
+                  card.meta
+                }}</InfoTooltip>
+              </dt>
+              <dd
+                class="mt-1 break-words text-sm font-semibold tabular-nums"
+                :class="
+                  card.label === 'Outstanding'
+                    ? 'text-rose-700 dark:text-rose-300'
+                    : card.label === 'Sudah Dibayar'
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-zinc-950 dark:text-white'
+                "
+              >
+                <Link
+                  :href="card.href"
+                  class="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                  >{{ card.value }}</Link
+                >
+              </dd>
+            </div>
+          </Deferred>
+        </dl>
       </section>
 
-      <!-- KPI BAND -->
-      <Deferred data="stats">
-        <template #fallback>
-          <div aria-live="polite" class="sr-only">Memuat ringkasan iuran.</div>
-          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div
-              v-for="i in 4"
-              :key="i"
-              class="h-36 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800/60"
-            />
-          </div>
-        </template>
-        <section
-          class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-          aria-label="Ringkasan iuran"
-        >
-          <GradientKpiCard
-            v-for="card in kpiCards"
-            :key="card.label"
-            :label="card.label"
-            :value="card.value"
-            :meta="card.meta"
-            :icon="card.icon"
-            :tone="card.tone"
-            :href="card.href"
-          />
-        </section>
-      </Deferred>
-
-      <!-- FILTER BAR -->
-      <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
-      >
+      <Card class="gap-0 overflow-hidden rounded-xl py-0">
         <div
-          class="flex flex-col gap-3 border-b border-zinc-200/70 px-5 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-zinc-800/70"
+          class="flex flex-wrap items-center gap-2 p-3"
+          role="group"
+          aria-label="Filter tagihan dan batch payment"
         >
-          <div class="flex items-start gap-3">
-            <span
-              class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 ring-1 ring-inset ring-sky-200/70 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900/60"
-            >
-              <Filter class="size-4" />
-            </span>
-            <div>
-              <h2
-                class="text-base font-semibold tracking-tight text-zinc-950 dark:text-white"
-              >
-                Filter Tagihan
-              </h2>
-              <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                Saring berdasarkan cakupan periode, status, anggota, atau jenis
-                iuran.
-              </p>
-            </div>
-          </div>
-          <div
-            class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3"
-          >
-            <div class="relative w-full sm:max-w-xs">
-              <Search
-                class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
-                aria-hidden="true"
-              />
-              <Input
-                v-model="memberSearch"
-                type="search"
-                placeholder="Cari nama / no anggota…"
-                class="pl-9"
-                aria-label="Cari anggota"
-                @keyup.enter="applyFilters"
-              />
-            </div>
-            <Input
-              v-model="period"
-              type="month"
-              class="sm:w-40"
-              aria-label="Periode"
+          <div class="relative min-w-0 flex-1 basis-40 sm:max-w-72">
+            <Search
+              class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden="true"
             />
-            <Select v-model="periodScope">
-              <SelectTrigger class="sm:w-40" aria-label="Cakupan periode">
-                <SelectValue placeholder="Cakupan periode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="opt in periodScopeOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Select v-model="status">
-              <SelectTrigger class="sm:w-40" aria-label="Status tagihan">
-                <SelectValue placeholder="Semua status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="opt in statusOptions"
-                  :key="opt.value || emptyValue"
-                  :value="opt.value || emptyValue"
-                >
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Select v-model="category">
-              <SelectTrigger class="sm:w-40" aria-label="Kategori iuran">
-                <SelectValue placeholder="Semua kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="opt in categoryOptions"
-                  :key="opt.value || emptyValue"
-                  :value="opt.value || emptyValue"
-                >
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Select v-model="contributionTypeId">
-              <SelectTrigger class="sm:w-44" aria-label="Jenis iuran">
-                <SelectValue placeholder="Semua jenis" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="opt in contributionOptions"
-                  :key="opt.value || emptyValue"
-                  :value="opt.value || emptyValue"
-                >
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="shrink-0 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
-              type="button"
-              @click="applyFilters"
+            <Input
+              v-model="memberSearch"
+              type="search"
+              placeholder="Cari nama / no. anggota…"
+              class="h-9 pl-9"
+              aria-label="Cari anggota"
+              @keyup.enter="applyFilters"
+            />
+          </div>
+          <Input
+            v-model="period"
+            type="month"
+            class="h-9 w-40"
+            aria-label="Periode"
+            @change="applyFilters"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            :aria-expanded="showFilters"
+            aria-controls="dues-filter-options"
+            @click="showFilters = !showFilters"
+          >
+            <Filter class="mr-2 size-3.5" />
+            Filter Tagihan
+            <span
+              v-if="activeFilterCount"
+              class="ml-2 rounded bg-zinc-100 px-1.5 text-xs dark:bg-zinc-800"
+              >{{ activeFilterCount }}</span
             >
-              Terapkan
+          </Button>
+          <InfoTooltip label="Keterangan filter tagihan"
+            >Saring berdasarkan cakupan periode, status, anggota, atau jenis
+            iuran. Buka Filter Tagihan untuk pilihan lainnya.</InfoTooltip
+          >
+          <div class="ml-auto flex items-center gap-2">
+            <span
+              v-if="summary.selectedCount > 0"
+              class="hidden text-xs tabular-nums text-zinc-500 lg:inline dark:text-zinc-400"
+              >Sisa {{ formatCurrency(selectedRemainingTotal) }}</span
+            >
+            <Button
+              :variant="showBatchPayment ? 'secondary' : 'outline'"
+              size="sm"
+              :aria-expanded="showBatchPayment"
+              aria-controls="dues-batch-options"
+              @click="showBatchPayment = !showBatchPayment"
+            >
+              <CreditCard class="mr-2 size-4" />
+              Batch Payment
+              <span
+                class="ml-2 rounded bg-emerald-100 px-1.5 text-xs text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+                >{{ summary.selectedCount }}</span
+              >
             </Button>
+            <InfoTooltip label="Keterangan batch payment"
+              >Pilih tagihan pada tabel, buka Batch Payment untuk mengatur
+              pembayaran, lalu klik Proses untuk meninjau sebelum
+              konfirmasi.</InfoTooltip
+            >
           </div>
         </div>
 
-        <!-- BATCH PAYMENT BAR -->
         <div
-          class="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between"
+          v-show="showFilters"
+          id="dues-filter-options"
+          class="border-t border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-950/30"
+          role="region"
+          aria-label="Pilihan filter tagihan"
         >
-          <div class="flex items-start gap-3">
-            <span
-              :class="[
-                'inline-flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset transition-colors',
-                summary.selectedCount > 0
-                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-900/60'
-                  : 'bg-zinc-100 text-zinc-500 ring-zinc-200/70 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-700/60',
-              ]"
-            >
-              <CreditCard class="size-4" />
-            </span>
-            <div>
-              <p class="text-sm font-semibold text-zinc-950 dark:text-white">
-                Batch Payment
-                <span
-                  v-if="summary.selectedCount > 0"
-                  class="ml-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-900/60"
+          <form
+            class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:items-end"
+            @submit.prevent="applyFilters"
+          >
+            <div class="space-y-1.5">
+              <Label
+                for="dues-period-scope"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Cakupan periode</Label
+              >
+              <Select v-model="periodScope">
+                <SelectTrigger
+                  id="dues-period-scope"
+                  class="h-9"
+                  aria-label="Cakupan periode"
+                  ><SelectValue placeholder="Cakupan periode"
+                /></SelectTrigger>
+                <SelectContent
+                  ><SelectItem
+                    v-for="opt in periodScopeOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                    >{{ opt.label }}</SelectItem
+                  ></SelectContent
                 >
-                  {{ summary.selectedCount }} dipilih
-                </span>
-              </p>
-              <p class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-                {{
-                  summary.selectedCount > 0
-                    ? `Total sisa ${formatCurrency(selectedRemainingTotal)}.`
-                    : "Pilih tagihan pada tabel di bawah untuk melakukan pembayaran sekaligus."
-                }}
-              </p>
+              </Select>
             </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="flex items-center gap-2">
+            <div class="space-y-1.5">
+              <Label
+                for="dues-status"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Status tagihan</Label
+              >
+              <Select v-model="status">
+                <SelectTrigger
+                  id="dues-status"
+                  class="h-9"
+                  aria-label="Status tagihan"
+                  ><SelectValue placeholder="Semua status"
+                /></SelectTrigger>
+                <SelectContent
+                  ><SelectItem
+                    v-for="opt in statusOptions"
+                    :key="opt.value || emptyValue"
+                    :value="opt.value || emptyValue"
+                    >{{ opt.label }}</SelectItem
+                  ></SelectContent
+                >
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label
+                for="dues-category"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Kategori iuran</Label
+              >
+              <Select v-model="category">
+                <SelectTrigger
+                  id="dues-category"
+                  class="h-9"
+                  aria-label="Kategori iuran"
+                  ><SelectValue placeholder="Semua kategori"
+                /></SelectTrigger>
+                <SelectContent
+                  ><SelectItem
+                    v-for="opt in categoryOptions"
+                    :key="opt.value || emptyValue"
+                    :value="opt.value || emptyValue"
+                    >{{ opt.label }}</SelectItem
+                  ></SelectContent
+                >
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label
+                for="dues-type"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Jenis iuran</Label
+              >
+              <Select v-model="contributionTypeId">
+                <SelectTrigger
+                  id="dues-type"
+                  class="h-9"
+                  aria-label="Jenis iuran"
+                  ><SelectValue placeholder="Semua jenis"
+                /></SelectTrigger>
+                <SelectContent
+                  ><SelectItem
+                    v-for="opt in contributionOptions"
+                    :key="opt.value || emptyValue"
+                    :value="opt.value || emptyValue"
+                    >{{ opt.label }}</SelectItem
+                  ></SelectContent
+                >
+              </Select>
+            </div>
+            <Button type="submit" variant="secondary" size="sm" class="h-9"
+              >Terapkan</Button
+            >
+          </form>
+        </div>
+
+        <div
+          v-show="showBatchPayment"
+          id="dues-batch-options"
+          class="border-t border-zinc-200 bg-zinc-50/50 p-3 dark:border-zinc-800 dark:bg-zinc-950/30"
+          role="region"
+          aria-label="Pengaturan batch payment"
+        >
+          <div
+            class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_auto] xl:items-end"
+          >
+            <div class="space-y-1.5">
               <Label
                 for="batch-paid-at"
-                class="shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Tanggal bayar</Label
               >
-                Tanggal
-              </Label>
               <Input
                 id="batch-paid-at"
                 v-model="markPaidForm.paid_at"
                 type="date"
-                class="h-9 w-40"
+                class="h-9"
               />
             </div>
-            <Select v-model="markPaidForm.payment_method">
-              <SelectTrigger class="h-9 w-40" aria-label="Metode pembayaran">
-                <SelectValue placeholder="Metode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="opt in paymentMethodOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <div class="flex items-center gap-2">
+            <div class="space-y-1.5">
               <Label
-                for="batch-amount"
-                class="shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400"
+                for="batch-method"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >Metode pembayaran</Label
               >
-                Nominal
-              </Label>
+              <Select v-model="markPaidForm.payment_method">
+                <SelectTrigger
+                  id="batch-method"
+                  class="h-9"
+                  aria-label="Metode pembayaran"
+                  ><SelectValue placeholder="Metode"
+                /></SelectTrigger>
+                <SelectContent
+                  ><SelectItem
+                    v-for="opt in paymentMethodOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                    >{{ opt.label }}</SelectItem
+                  ></SelectContent
+                >
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-1">
+                <Label
+                  for="batch-amount"
+                  class="text-xs text-zinc-500 dark:text-zinc-400"
+                  >Nominal per tagihan</Label
+                >
+                <InfoTooltip label="Keterangan nominal pembayaran"
+                  >Kosongkan untuk melunasi sisa setiap tagihan. Nominal yang
+                  diisi berlaku per tagihan, maksimal sebesar sisa masing-masing
+                  tagihan.</InfoTooltip
+                >
+              </div>
               <Input
                 id="batch-amount"
                 v-model="markPaidForm.amount"
                 type="number"
                 min="1"
                 step="1000"
-                :placeholder="formatCurrency(selectedRemainingTotal)"
-                class="h-9 w-40"
+                placeholder="Lunasi sisa tagihan"
+                class="h-9"
               />
             </div>
-            <Input
-              v-model="markPaidForm.reference_no"
-              placeholder="No. referensi"
-              class="h-9 w-44"
-            />
-            <Button
-              v-if="summary.selectedCount > 0"
-              variant="ghost"
-              size="sm"
-              class="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
-              @click="clearSelection"
-            >
-              <X class="mr-1.5 size-3.5" />
-              Clear
-            </Button>
-            <Button
-              class="bg-emerald-700 hover:bg-emerald-800"
-              :disabled="summary.selectedCount === 0 || markPaidForm.processing"
-              @click="showBatchConfirm = true"
-            >
-              <CheckCircle2 class="mr-2 size-4" />
-              Proses ({{ summary.selectedCount }})
-            </Button>
+            <div class="space-y-1.5">
+              <Label
+                for="batch-reference"
+                class="text-xs text-zinc-500 dark:text-zinc-400"
+                >No. referensi</Label
+              >
+              <Input
+                id="batch-reference"
+                v-model="markPaidForm.reference_no"
+                placeholder="Opsional"
+                class="h-9"
+              />
+            </div>
+            <div class="flex items-center gap-2">
+              <Button
+                v-if="summary.selectedCount > 0"
+                variant="ghost"
+                size="sm"
+                aria-label="Hapus pilihan tagihan"
+                @click="clearSelection"
+                ><X class="size-4"
+              /></Button>
+              <Button
+                size="sm"
+                class="h-9 bg-emerald-700 hover:bg-emerald-800"
+                :disabled="
+                  summary.selectedCount === 0 || markPaidForm.processing
+                "
+                @click="showBatchConfirm = true"
+                ><CheckCircle2 class="mr-2 size-4" />Proses ({{
+                  summary.selectedCount
+                }})</Button
+              >
+            </div>
           </div>
+          <p
+            v-if="summary.selectedCount > 0"
+            class="mt-2 text-xs text-zinc-500 dark:text-zinc-400"
+          >
+            {{ summary.selectedCount }} tagihan dipilih · Total sisa
+            {{ formatCurrency(selectedRemainingTotal) }}
+          </p>
         </div>
       </Card>
 
       <!-- TABEL TAGIHAN -->
-      <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
-      >
-        <SectionHeader
-          title="Daftar Tagihan"
-          :description="`${summary.currentPageCount} dari ${summary.totalInvoices} tagihan pada filter ini`"
-          :icon="ClipboardList"
-          tone="violet"
-        />
+      <Card class="gap-0 overflow-hidden rounded-xl py-0">
+        <div
+          class="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800"
+        >
+          <h2 class="text-sm font-semibold text-zinc-950 dark:text-white">
+            Daftar Tagihan
+          </h2>
+          <span class="text-xs tabular-nums text-zinc-500 dark:text-zinc-400"
+            >{{ summary.currentPageCount }} dari
+            {{ summary.totalInvoices }} tagihan</span
+          >
+        </div>
         <CardContent class="p-0">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">

@@ -4,7 +4,19 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** October 23, 2026
+**Last Updated:** October 28, 2026
+
+## 2026-10-28 - Compact cooperative dues workspace
+
+- Replaced the large dues hero, separate autodebit notice, and eight individual summary cards with a compact heading and a single summary strip on desktop. Supporting descriptions use info tooltips with hover, keyboard focus, and touch access.
+- Combined search, period, filter, and batch payment controls in one toolbar. Filter and payment details expand on demand and retain entered values when collapsed. Invoice actions and payment confirmation remain in the existing flow.
+- Verified the production bundle with synthetic browser fixtures at 1440, 1280, 768, and 390 px, covering Admin/Pengurus views, tooltips, filter requests, eligible selection, and batch review without a Laravel server or database writes. Build, scoped ESLint/Prettier, and the browser regression pass. Global type checking still reports errors outside the changed Vue files; neither changed Vue file has a diagnostic.
+
+- PR CI exposed two newly reported high-severity advisories in the existing PhpSpreadsheet 1.30.6 lock. Updated only that package to 1.30.7, retaining root constraints and audit policy. Bounded scanner/ODS metadata regressions reproduce old-version failures without entity parsing or repeated-cell expansion; all seven pass on the patch. All 157 related import/export tests pass (925 assertions) on isolated SQLite memory; the 46 dues regressions pass (342 assertions). Final remote checks remain required.
+
+- Linux capture run 40649299885 completed all 204 cooperative screenshot entries at implementation head fdfa81b6. Reviewed the four dues states across desktop/tablet/mobile and reconciled only their twelve baselines. The initial desktop compare had exactly four expected dues-image failures (173 tests passed); no threshold, inventory, or workflow was changed. Final-head compare and CI remain required.
+
+- Additional all-viewport compare found six stale member/payment baselines outside the dues change. Main control run 40651609103 at 1f7f46ab reproduces exactly the same six failures; each actual screenshot is byte-identical to the PR head. Visual/source review traced the intended member date guidance and wizard layout to merged PRs #113/#115, and payment column sizing to the existing payment work. Reconciled only those six baselines from the main control, without source, threshold, inventory, or workflow changes. Final-head checks remain required.
 
 ## 2026-10-23 - PR 116 approved npm security follow-up
 

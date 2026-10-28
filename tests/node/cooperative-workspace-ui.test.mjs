@@ -334,6 +334,7 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
               "manage_cooperative_loan_type",
               "manage_cooperative_ledger",
               "manage_member_store_credit",
+              "report_store_credit",
             ],
           },
           flash: {},
@@ -650,6 +651,12 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
           }
           if (fixture.key === "store-credit") {
             await expect(
+              page.getByRole("link", {
+                name: "Laporan Saldo Toko",
+                exact: true,
+              }),
+            ).toBeVisible();
+            await expect(
               page.getByLabel("Filter saldo akun").locator("option:checked"),
             ).toHaveText("Semua");
             await expect(
@@ -682,7 +689,15 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
               fixture.props.canApprovePayments = false;
             if (fixture.key === "ledger")
               fixture.props.canCorrectLedgerPayment = false;
-            if (fixture.key === "store-credit") fixture.props.canManage = false;
+            if (fixture.key === "store-credit") {
+              fixture.props.canManage = false;
+              fixture.props.auth = {
+                ...common.auth,
+                permissions: common.auth.permissions.filter(
+                  (permission) => permission !== "report_store_credit",
+                ),
+              };
+            }
             await page.goto(`http://workspace.test${fixture.url}`);
             if (fixture.key === "payments")
               await expect(
@@ -695,10 +710,14 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
               await expect(
                 page.getByRole("columnheader", { name: "Aksi", exact: true }),
               ).toHaveCount(0);
-            if (fixture.key === "store-credit")
+            if (fixture.key === "store-credit") {
               await expect(
                 page.getByRole("button", { name: "Buka Akun", exact: true }),
               ).toHaveCount(0);
+              await expect(
+                page.locator('a[href="/cooperative/store-credit-report"]'),
+              ).toBeHidden();
+            }
           }
           assert.deepEqual(
             errors,

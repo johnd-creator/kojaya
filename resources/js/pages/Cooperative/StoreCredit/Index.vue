@@ -105,7 +105,11 @@ function submitOpenAccount(): void {
         title="Saldo Toko Anggota"
         description="Kelola saldo, limit kredit, dan status akun toko anggota. Saldo negatif menunjukkan piutang anggota."
       >
-        <Button as-child variant="outline" size="sm"
+        <Button
+          v-can="'report_store_credit'"
+          as-child
+          variant="outline"
+          size="sm"
           ><Link :href="report().url">Laporan Saldo Toko</Link></Button
         >
         <Dialog v-if="canManage" v-model:open="showOpenDialog">

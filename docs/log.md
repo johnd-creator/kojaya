@@ -12,6 +12,8 @@
 - Combined search, period, filter, and batch payment controls in one toolbar. Filter and payment details expand on demand and retain entered values when collapsed. Invoice actions and payment confirmation remain in the existing flow.
 - Verified the production bundle with synthetic browser fixtures at 1440, 1280, 768, and 390 px, covering Admin/Pengurus views, tooltips, filter requests, eligible selection, and batch review without a Laravel server or database writes. Build, scoped ESLint/Prettier, and the browser regression pass. Global type checking still reports errors outside the changed Vue files; neither changed Vue file has a diagnostic.
 
+- PR CI exposed two newly reported high-severity advisories in the existing PhpSpreadsheet 1.30.6 lock. Updated only that package to 1.30.7, retaining root constraints and audit policy. Bounded scanner/ODS metadata regressions reproduce old-version failures without entity parsing or repeated-cell expansion; all seven pass on the patch. All 157 related import/export tests pass (925 assertions) on isolated SQLite memory; the 46 dues regressions pass (342 assertions). Final remote checks remain required.
+
 ## 2026-10-23 - PR 116 approved npm security follow-up
 
 - Updated only follow-redirects 1.16.0 to 1.16.1 and Vite 7.3.6 to 7.3.7. Reviewed the complete lock delta: version/tarball/integrity for those two entries only; package.json, root constraints, all transitive package entries and qs 6.15.3 are unchanged. Existing audit severity policies remain enforced.

@@ -46,6 +46,8 @@ on:
       - 'resources/css/**'
       - 'routes/**'
       - 'tests/visual/**'
+      - 'tests/node/*workspace-ui.test.mjs'
+      - 'tests/node/payment-approval-ui.test.mjs'
       - 'tests/Feature/UiAudit*.php'
       - 'playwright.config.ts'
       - 'package.json'
@@ -173,6 +175,14 @@ jobs:
 
       - name: Disable Vite development server
         run: rm -f public/hot
+
+      - name: Verify compact workspace interactions and responsive layout
+        if: github.event_name == 'pull_request'
+        run: >-
+          node --test
+          tests/node/cooperative-workspace-ui.test.mjs
+          tests/node/operational-workspace-ui.test.mjs
+          tests/node/payment-approval-ui.test.mjs
 
       - name: Run global setup lifecycle tests
         run: npm run ui:test-global-setup

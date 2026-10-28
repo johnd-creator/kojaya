@@ -46,12 +46,15 @@ membaca laporan.
 ## Langkah penggunaan
 
 1. Buka **Saldo Toko** dan cari anggota atau status akun yang diperlukan.
+   Ringkasan membedakan total akun pada filter dengan jumlah status di halaman
+   saat ini. Keterangan tambahan tersedia melalui ikon **i**.
 2. Buka detail akun untuk melihat saldo, limit, status, dan mutasi.
 3. Periksa bukti transfer pada antrean transfer bila tersedia.
 4. Gunakan aksi yang tampil pada role Anda untuk memproses transfer,
    memperbarui akun, atau menindaklanjuti status.
 5. Buka **Laporan Saldo Toko** untuk melihat ringkasan yang tersedia bagi
-   role Anda.
+   role Anda. Tombol laporan juga tersedia di kanan judul daftar akun.
+   Pada daftar utilisasi tinggi, klik identitas anggota untuk membuka akun.
 
 ## Pembagian pekerjaan berdasarkan role
 

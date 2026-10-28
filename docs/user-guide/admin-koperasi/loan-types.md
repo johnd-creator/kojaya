@@ -48,15 +48,16 @@ aturan plafon, bunga, dan tenor.
 
 ## Langkah penggunaan
 
-1. Buka menu **Pinjaman** lalu pilih **Jenis Pinjaman**.
-2. Untuk membuat jenis pinjaman baru, tekan **Buat** dan isikan
+1. Buka menu **Pinjaman** lalu pilih **Jenis Pinjaman**. Ringkasan menampilkan
+   jumlah produk aktif dan nonaktif dalam satu strip.
+2. Untuk membuat jenis pinjaman baru, tekan **Tambah Tipe Pinjaman** dan isikan
    semua kolom wajib: kode jenis, nama, deskripsi, suku bunga,
    biaya admin, denda per hari, jumlah minimum dan maksimum,
    tenor minimum dan maksimum, serta status aktif/nonaktif.
-3. Tekan **Simpan**. Jenis pinjaman baru akan muncul di daftar dan
+3. Tekan **Simpan Tipe**. Jenis pinjaman baru akan muncul di daftar dan
    dapat dipilih anggota saat mengajukan pinjaman.
 4. Untuk memperbarui jenis pinjaman, buka baris yang dimaksud dan
-   tekan **Ubah**. Ubah nilai yang perlu disesuaikan, lalu
+   tekan **Edit**. Ubah nilai yang perlu disesuaikan, lalu
    simpan.
 5. Untuk menghapus jenis pinjaman, tekan **Hapus** pada baris
    yang dimaksud. Sistem akan menolak jika jenis pinjaman

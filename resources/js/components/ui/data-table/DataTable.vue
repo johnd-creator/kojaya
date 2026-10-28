@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PaginationMeta } from "@/types/pagination";
 import { computed } from "vue";
 import { Link } from "@inertiajs/vue3";
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-vue-next";
@@ -21,24 +22,8 @@ interface Column {
   sortKey?: string;
 }
 
-interface PaginationLink {
-  url: string | null;
-  label: string;
-  active: boolean;
-}
-
-interface PaginationData {
-  current_page: number;
-  from: number;
-  last_page: number;
-  links: PaginationLink[];
-  path: string;
-  per_page: number;
-  to: number;
-  total: number;
-}
-
-type Paginated<T = any> = PaginationData & { data: T[] };
+// Laravel returns null bounds for empty pages; keep the shared paginator type.
+type Paginated<T = any> = PaginationMeta & { data: T[] };
 
 interface Props {
   columns: Column[];

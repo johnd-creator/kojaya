@@ -10,7 +10,10 @@ test("payment proof tabs, cancellation and approval errors on desktop/tablet/mob
     await fs.readFile(path.join(root, "manifest.json"), "utf8"),
   );
   const entry = manifest["resources/js/app.ts"];
-  const browser = await chromium.launch({ channel: "chrome", headless: true });
+  const browser = await chromium.launch({
+    ...(process.env.CI ? {} : { channel: "chrome" }),
+    headless: true,
+  });
   try {
     for (const viewport of [
       { width: 1440, height: 900 },

@@ -9,7 +9,9 @@ import {
   Wallet,
   XCircle,
 } from "lucide-vue-next";
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +52,7 @@ interface WithdrawalItem {
   } | null;
 }
 
-defineProps<{
+const props = defineProps<{
   withdrawals: {
     data: WithdrawalItem[];
     links: Array<{ url: string | null; label: string; active: boolean }>;
@@ -61,6 +63,32 @@ defineProps<{
     to: number | null;
   };
 }>();
+
+const statusFilter = ref("");
+const displayedWithdrawals = computed(() =>
+  props.withdrawals.data.filter(
+    (item) => !statusFilter.value || item.status === statusFilter.value,
+  ),
+);
+const withdrawalSummary = computed(() => [
+  { label: "Total Pengajuan", value: props.withdrawals.total },
+  {
+    label: "Menunggu di Halaman Ini",
+    value: props.withdrawals.data.filter((item) => item.status === "PENDING")
+      .length,
+  },
+  {
+    label: "Disetujui di Halaman Ini",
+    value: props.withdrawals.data.filter((item) => item.status === "PROCESSED")
+      .length,
+    tone: "emerald",
+  },
+  {
+    label: "Ditolak di Halaman Ini",
+    value: props.withdrawals.data.filter((item) => item.status === "REJECTED")
+      .length,
+  },
+]);
 
 const approveDialogOpen = ref(false);
 const rejectDialogOpen = ref(false);
@@ -159,59 +187,65 @@ const getStatusBadge = (status: string) => {
       { title: 'Penarikan Simpanan', href: '#' },
     ]"
   >
-    <PageContainer class="max-w-none space-y-6">
-      <!-- Header -->
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-white">
-            Antrian Penarikan Simpanan
-          </h1>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400">
-            Verifikasi, setujui, atau tolak permohonan pencairan simpanan sukarela anggota koperasi.
-          </p>
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Antrian Penarikan Simpanan"
+        description="Verifikasi rekening dan saldo simpanan sukarela sebelum menyetujui atau menolak pengajuan. Persetujuan memproses penarikan sesuai alur yang berlaku."
+      />
+      <WorkspaceSummary :items="withdrawalSummary" />
+      <div
+        class="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2.5"
+      >
+        <h2 class="text-sm font-semibold">Daftar Pengajuan</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-zinc-500">Filter halaman ini</span
+          ><select
+            v-model="statusFilter"
+            aria-label="Status penarikan di halaman ini"
+            class="h-9 rounded-md border bg-transparent px-2 text-sm"
+          >
+            <option value="">Semua status</option>
+            <option value="PENDING">Menunggu</option>
+            <option value="PROCESSED">Disetujui</option>
+            <option value="REJECTED">Ditolak</option>
+          </select>
         </div>
       </div>
-
-      <!-- Empty State -->
-      <div
-        v-if="!withdrawals.data || withdrawals.data.length === 0"
-        class="rounded-xl border border-dashed border-zinc-200 bg-white/60 p-12 text-center text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900/40"
-      >
-        <Wallet class="mx-auto mb-3 size-10 text-zinc-300 dark:text-zinc-600" />
-        <p class="text-base font-medium">Tidak ada pengajuan penarikan</p>
-        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Semua pengajuan penarikan telah diproses atau belum ada pengajuan baru.
-        </p>
-      </div>
-
-      <div v-else class="space-y-4">
+      <div class="space-y-4">
         <!-- Desktop Table View (Hidden on mobile) -->
         <Card
-          class="hidden overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 md:block dark:border-zinc-800/80 dark:bg-zinc-900/80"
+          class="hidden gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 md:block dark:border-zinc-800/80 dark:bg-zinc-900/80"
         >
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm" role="table">
+          <div
+            class="overflow-x-auto"
+            role="region"
+            aria-label="Daftar pengajuan penarikan, geser untuk melihat kolom lainnya"
+            tabindex="0"
+          >
+            <table class="w-full min-w-[1050px] text-left text-sm" role="table">
               <thead
                 class="border-b border-zinc-200 bg-zinc-50/75 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-400"
               >
                 <tr>
-                  <th scope="col" class="px-5 py-3.5">Anggota</th>
-                  <th scope="col" class="px-5 py-3.5">Tanggal Pengajuan</th>
-                  <th scope="col" class="px-5 py-3.5 text-right">Jumlah</th>
-                  <th scope="col" class="px-5 py-3.5">Rekening Tujuan</th>
-                  <th scope="col" class="px-5 py-3.5">Alasan</th>
-                  <th scope="col" class="px-5 py-3.5 text-center">Status</th>
-                  <th scope="col" class="px-5 py-3.5 text-right">Aksi</th>
+                  <th scope="col" class="px-4 py-3">Anggota</th>
+                  <th scope="col" class="px-4 py-3">Tanggal Pengajuan</th>
+                  <th scope="col" class="px-4 py-3 text-right">Jumlah</th>
+                  <th scope="col" class="px-4 py-3">Rekening Tujuan</th>
+                  <th scope="col" class="px-4 py-3">Alasan</th>
+                  <th scope="col" class="px-4 py-3 text-center">Status</th>
+                  <th scope="col" class="px-4 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+              <tbody
+                class="divide-y divide-zinc-200/70 dark:divide-zinc-800/70"
+              >
                 <tr
-                  v-for="item in withdrawals.data"
+                  v-for="item in displayedWithdrawals"
                   :key="item.id"
                   class="transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50"
                 >
                   <!-- Anggota -->
-                  <td class="px-5 py-4">
+                  <td class="px-4 py-3">
                     <div class="font-medium text-zinc-900 dark:text-white">
                       {{ item.member?.name || "-" }}
                     </div>
@@ -225,55 +259,72 @@ const getStatusBadge = (status: string) => {
                   </td>
 
                   <!-- Tanggal Pengajuan -->
-                  <td class="px-5 py-4 text-xs text-zinc-600 dark:text-zinc-400">
+                  <td
+                    class="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400"
+                  >
                     {{ formatDateTime(item.created_at) }}
                   </td>
 
                   <!-- Jumlah -->
-                  <td class="px-5 py-4 text-right font-semibold text-zinc-900 dark:text-white">
+                  <td
+                    class="whitespace-nowrap px-4 py-3 text-right font-semibold text-zinc-900 dark:text-white"
+                  >
                     {{ formatCurrency(item.amount) }}
                   </td>
 
                   <!-- Rekening Tujuan -->
-                  <td class="px-5 py-4 text-xs">
+                  <td class="px-4 py-3 text-xs">
                     <div class="font-medium text-zinc-900 dark:text-white">
                       {{ item.destination_bank || "-" }}
                     </div>
                     <div class="text-zinc-500">
                       {{ item.destination_account_no || "-" }}
                     </div>
-                    <div v-if="item.destination_account_name" class="text-zinc-400">
+                    <div
+                      v-if="item.destination_account_name"
+                      class="text-zinc-500 dark:text-zinc-400"
+                    >
                       a.n. {{ item.destination_account_name }}
                     </div>
                   </td>
 
                   <!-- Alasan -->
-                  <td class="max-w-[200px] px-5 py-4 text-xs text-zinc-600 dark:text-zinc-400">
-                    <span class="line-clamp-2" :title="item.reason || ''">
+                  <td
+                    class="max-w-[200px] px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400"
+                  >
+                    <span
+                      class="whitespace-normal break-words"
+                      :title="item.reason || ''"
+                    >
                       {{ item.reason || "-" }}
                     </span>
                   </td>
 
                   <!-- Status -->
-                  <td class="px-5 py-4 text-center">
+                  <td class="px-4 py-3 text-center">
                     <span
                       :class="[
                         'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold',
                         getStatusBadge(item.status).classes,
                       ]"
                     >
-                      <component :is="getStatusBadge(item.status).icon" class="size-3" />
+                      <component
+                        :is="getStatusBadge(item.status).icon"
+                        class="size-3"
+                      />
                       {{ getStatusBadge(item.status).label }}
                     </span>
                     <div
                       v-if="item.status === 'REJECTED' && item.rejection_reason"
-                      class="mt-1 max-w-[160px] truncate text-[11px] text-rose-600 dark:text-rose-400"
+                      class="mt-1 max-w-[220px] whitespace-normal break-words text-[11px] text-rose-600 dark:text-rose-400"
                       :title="item.rejection_reason"
                     >
                       Ket: {{ item.rejection_reason }}
                     </div>
                     <div
-                      v-else-if="item.status === 'PROCESSED' && item.approved_at"
+                      v-else-if="
+                        item.status === 'PROCESSED' && item.approved_at
+                      "
                       class="mt-1 text-[11px] text-zinc-400"
                     >
                       {{ formatDateTime(item.approved_at) }}
@@ -281,11 +332,14 @@ const getStatusBadge = (status: string) => {
                   </td>
 
                   <!-- Aksi -->
-                  <td class="px-5 py-4 text-right">
-                    <div v-if="item.status === 'PENDING'" class="flex items-center justify-end gap-2">
+                  <td class="px-4 py-3 text-right">
+                    <div
+                      v-if="item.status === 'PENDING'"
+                      class="flex items-center justify-end gap-2"
+                    >
                       <Button
                         size="sm"
-                        class="h-8 gap-1 bg-emerald-600 text-white hover:bg-emerald-700"
+                        class="h-8 gap-1 bg-emerald-700 text-white hover:bg-emerald-800"
                         @click="openApproveModal(item)"
                       >
                         <Check class="size-3.5" />
@@ -301,9 +355,23 @@ const getStatusBadge = (status: string) => {
                         Tolak
                       </Button>
                     </div>
-                    <div v-else class="text-xs text-zinc-400">
-                      -
-                    </div>
+                    <div v-else class="text-xs text-zinc-400">-</div>
+                  </td>
+                </tr>
+                <tr v-if="displayedWithdrawals.length === 0">
+                  <td colspan="7" class="px-4 py-10 text-center">
+                    <Wallet class="mx-auto mb-2 size-6 text-zinc-400" />
+                    <p class="text-sm font-medium">
+                      {{
+                        withdrawals.total === 0
+                          ? "Belum ada pengajuan penarikan"
+                          : "Tidak ada pengajuan sesuai status di halaman ini"
+                      }}
+                    </p>
+                    <p class="mt-1 text-xs text-zinc-500">
+                      Pengajuan anggota akan muncul di sini untuk diverifikasi
+                      dan diproses.
+                    </p>
                   </td>
                 </tr>
               </tbody>
@@ -313,12 +381,20 @@ const getStatusBadge = (status: string) => {
 
         <!-- Mobile Card View (Visible on mobile only) -->
         <div class="grid gap-3 md:hidden">
+          <p
+            v-if="displayedWithdrawals.length === 0"
+            class="rounded-xl border p-6 text-center text-sm text-zinc-500"
+          >
+            Belum ada pengajuan sesuai status di halaman ini.
+          </p>
           <Card
-            v-for="item in withdrawals.data"
+            v-for="item in displayedWithdrawals"
             :key="item.id"
             class="overflow-hidden border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900"
           >
-            <CardHeader class="flex flex-row items-start justify-between gap-2 pb-2">
+            <CardHeader
+              class="flex flex-row items-start justify-between gap-2 pb-2"
+            >
               <div>
                 <CardTitle class="text-base font-semibold">
                   {{ item.member?.name || "-" }}
@@ -333,12 +409,17 @@ const getStatusBadge = (status: string) => {
                   getStatusBadge(item.status).classes,
                 ]"
               >
-                <component :is="getStatusBadge(item.status).icon" class="size-3" />
+                <component
+                  :is="getStatusBadge(item.status).icon"
+                  class="size-3"
+                />
                 {{ getStatusBadge(item.status).label }}
               </span>
             </CardHeader>
             <CardContent class="space-y-3 text-xs">
-              <div class="grid grid-cols-2 gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50">
+              <div
+                class="grid grid-cols-2 gap-2 rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/50"
+              >
                 <div>
                   <span class="text-zinc-500">Jumlah</span>
                   <div class="font-bold text-zinc-900 dark:text-white">
@@ -348,16 +429,23 @@ const getStatusBadge = (status: string) => {
                 <div>
                   <span class="text-zinc-500">Rekening Tujuan</span>
                   <div class="font-medium text-zinc-900 dark:text-white">
-                    {{ item.destination_bank || "-" }} ({{ item.destination_account_no || "-" }})
+                    {{ item.destination_bank || "-" }} ({{
+                      item.destination_account_no || "-"
+                    }})
                   </div>
-                  <div v-if="item.destination_account_name" class="text-zinc-500">
+                  <div
+                    v-if="item.destination_account_name"
+                    class="text-zinc-500"
+                  >
                     a.n. {{ item.destination_account_name }}
                   </div>
                 </div>
               </div>
 
               <div v-if="item.reason" class="text-zinc-600 dark:text-zinc-400">
-                <span class="font-medium text-zinc-700 dark:text-zinc-300">Alasan:</span>
+                <span class="font-medium text-zinc-700 dark:text-zinc-300"
+                  >Alasan:</span
+                >
                 {{ item.reason }}
               </div>
 
@@ -365,13 +453,14 @@ const getStatusBadge = (status: string) => {
                 v-if="item.status === 'REJECTED' && item.rejection_reason"
                 class="text-rose-600 dark:text-rose-400"
               >
-                <span class="font-medium">Alasan penolakan:</span> {{ item.rejection_reason }}
+                <span class="font-medium">Alasan penolakan:</span>
+                {{ item.rejection_reason }}
               </div>
 
               <div v-if="item.status === 'PENDING'" class="flex gap-2 pt-1">
                 <Button
                   size="sm"
-                  class="flex-1 gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                  class="flex-1 gap-1.5 bg-emerald-700 text-white hover:bg-emerald-800"
                   @click="openApproveModal(item)"
                 >
                   <Check class="size-3.5" />
@@ -397,7 +486,8 @@ const getStatusBadge = (status: string) => {
           class="flex flex-wrap items-center justify-between gap-4 pt-2"
         >
           <p class="text-xs text-zinc-500">
-            Menampilkan {{ withdrawals.from ?? 0 }} - {{ withdrawals.to ?? 0 }} dari total
+            Menampilkan {{ withdrawals.from ?? 0 }} -
+            {{ withdrawals.to ?? 0 }} dari total
             {{ withdrawals.total }} pengajuan
           </p>
           <div class="flex flex-wrap items-center gap-1 text-sm">
@@ -419,16 +509,23 @@ const getStatusBadge = (status: string) => {
       </div>
 
       <!-- Approve Confirmation Dialog -->
-      <Dialog :open="approveDialogOpen" @update:open="approveDialogOpen = $event">
+      <Dialog
+        :open="approveDialogOpen"
+        @update:open="approveDialogOpen = $event"
+      >
         <DialogContent class="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle class="flex items-center gap-2 text-zinc-900 dark:text-white">
-              <CheckCircle2 class="size-5 text-emerald-600 dark:text-emerald-400" />
+            <DialogTitle
+              class="flex items-center gap-2 text-zinc-900 dark:text-white"
+            >
+              <CheckCircle2
+                class="size-5 text-emerald-600 dark:text-emerald-400"
+              />
               Konfirmasi Persetujuan Penarikan
             </DialogTitle>
             <DialogDescription>
-              Pastikan rincian pengajuan penarikan simpanan sukarela berikut telah sesuai sebelum
-              diproses.
+              Pastikan rincian pengajuan penarikan simpanan sukarela berikut
+              telah sesuai sebelum diproses.
             </DialogDescription>
           </DialogHeader>
 
@@ -448,7 +545,9 @@ const getStatusBadge = (status: string) => {
                   {{ formatCurrency(selectedWithdrawal.amount) }}
                 </span>
               </div>
-              <div class="border-t border-zinc-200/70 pt-2 dark:border-zinc-800/70">
+              <div
+                class="border-t border-zinc-200/70 pt-2 dark:border-zinc-800/70"
+              >
                 <div class="flex justify-between">
                   <span class="text-zinc-500">Bank Tujuan</span>
                   <span class="font-medium text-zinc-900 dark:text-white">
@@ -474,26 +573,38 @@ const getStatusBadge = (status: string) => {
 
               <!-- Voluntary balance projections from server -->
               <div
-                v-if="selectedWithdrawal.available_voluntary_balance !== undefined"
+                v-if="
+                  selectedWithdrawal.available_voluntary_balance !== undefined
+                "
                 class="space-y-1 border-t border-zinc-200/70 pt-2 text-xs dark:border-zinc-800/70"
               >
                 <div class="flex justify-between">
                   <span class="text-zinc-500">Saldo Sukarela Tersedia</span>
                   <span class="font-medium text-zinc-700 dark:text-zinc-300">
-                    {{ formatCurrency(selectedWithdrawal.available_voluntary_balance) }}
+                    {{
+                      formatCurrency(
+                        selectedWithdrawal.available_voluntary_balance,
+                      )
+                    }}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-zinc-500">Proyeksi Sisa Saldo</span>
                   <span class="font-semibold text-zinc-900 dark:text-white">
-                    {{ formatCurrency(selectedWithdrawal.projected_remaining_balance) }}
+                    {{
+                      formatCurrency(
+                        selectedWithdrawal.projected_remaining_balance,
+                      )
+                    }}
                   </span>
                 </div>
               </div>
             </div>
 
             <div v-if="selectedWithdrawal.reason" class="text-xs text-zinc-500">
-              <span class="font-medium text-zinc-700 dark:text-zinc-300">Alasan Anggota:</span>
+              <span class="font-medium text-zinc-700 dark:text-zinc-300"
+                >Alasan Anggota:</span
+              >
               <p class="mt-0.5 italic">"{{ selectedWithdrawal.reason }}"</p>
             </div>
           </div>
@@ -509,7 +620,7 @@ const getStatusBadge = (status: string) => {
             </Button>
             <Button
               type="button"
-              class="bg-emerald-600 text-white hover:bg-emerald-700"
+              class="bg-emerald-700 text-white hover:bg-emerald-800"
               :disabled="approveForm.processing"
               @click="submitApprove"
             >
@@ -523,12 +634,15 @@ const getStatusBadge = (status: string) => {
       <Dialog :open="rejectDialogOpen" @update:open="rejectDialogOpen = $event">
         <DialogContent class="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle class="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+            <DialogTitle
+              class="flex items-center gap-2 text-rose-600 dark:text-rose-400"
+            >
               <AlertCircle class="size-5" />
               Tolak Pengajuan Penarikan
             </DialogTitle>
             <DialogDescription>
-              Pengajuan ini akan ditolak dan tidak akan memotong saldo simpanan anggota.
+              Pengajuan ini akan ditolak dan tidak akan memotong saldo simpanan
+              anggota.
             </DialogDescription>
           </DialogHeader>
 
@@ -557,11 +671,16 @@ const getStatusBadge = (status: string) => {
               <Textarea
                 id="rejection-reason"
                 v-model="rejectForm.rejection_reason"
-                rows="3"
+                :rows="3"
                 placeholder="Tuliskan alasan penolakan secara jelas (misal: Saldo tidak mencukupi, rekening tidak valid)..."
-                :class="rejectForm.errors.rejection_reason ? 'border-rose-500' : ''"
+                :class="
+                  rejectForm.errors.rejection_reason ? 'border-rose-500' : ''
+                "
               />
-              <p v-if="rejectForm.errors.rejection_reason" class="text-xs text-rose-500">
+              <p
+                v-if="rejectForm.errors.rejection_reason"
+                class="text-xs text-rose-500"
+              >
                 {{ rejectForm.errors.rejection_reason }}
               </p>
             </div>
@@ -579,7 +698,9 @@ const getStatusBadge = (status: string) => {
             <Button
               type="button"
               variant="destructive"
-              :disabled="rejectForm.processing || !rejectForm.rejection_reason.trim()"
+              :disabled="
+                rejectForm.processing || !rejectForm.rejection_reason.trim()
+              "
               @click="submitReject"
             >
               {{ rejectForm.processing ? "Memproses..." : "Tolak Pengajuan" }}

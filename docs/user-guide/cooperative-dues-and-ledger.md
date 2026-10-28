@@ -58,11 +58,19 @@ kewenangan lebih tinggi.
    Payment** pada toolbar yang sama; tinjau rincian melalui **Proses** sebelum
    mengonfirmasi pembayaran.
 3. Buka **Ledger Simpanan** untuk melihat mutasi simpanan berdasarkan
-   tanggal, scope, jenis simpanan, atau tipe mutasi.
+   tanggal, scope, jenis simpanan, atau tipe mutasi pada toolbar ringkas.
+   Keterangan transaksi membungkus ke beberapa baris agar dapat dibaca lengkap.
+   Scope tetap dapat difilter; saat semua scope dipilih, scope tampil di bawah
+   tipe mutasi, tanpa kolom terpisah.
 4. Cocokkan rincian tagihan dengan transaksi ledger dan bukti yang
    tersedia sebelum mengambil tindakan.
 5. Untuk penarikan simpanan atau koreksi transaksi, gunakan aksi yang
    tampil pada akun role Anda dan ikuti catatan auditnya.
+
+Pada **Penarikan Simpanan**, ringkasan menampilkan total pengajuan dan jumlah
+status pada halaman yang sedang dibuka. Filter status hanya menyaring halaman
+tersebut. Gunakan **Setujui** atau **Tolak** pada pengajuan yang menunggu,
+lalu periksa dialog rincian dan konfirmasi sesuai kewenangan.
 
 ## Pembagian pekerjaan berdasarkan role
 

@@ -46,6 +46,11 @@ pembukuan.
 
 ## Langkah penggunaan
 
+Riwayat pembayaran menggunakan lebar penuh halaman. Untuk mencatat setoran,
+klik **Catat Pembayaran** di kanan judul; formulir tampil dalam dialog.
+Keterangan halaman tersedia pada ikon **i**. Pada layar sempit, tabel dapat
+digeser secara horizontal; di ponsel, pembayaran tampil sebagai daftar kartu.
+
 1. Buka menu **Pembayaran**. Sistem menampilkan daftar
    pembayaran dengan kolom tanggal, anggota, jenis simpanan,
    metode, status, keterangan, dan nominal.

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, useForm } from "@inertiajs/vue3";
-import { Plus, Settings, Sparkles } from "lucide-vue-next";
+import { Plus, Settings } from "lucide-vue-next";
 import { computed, nextTick, ref, watch } from "vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
+import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import InputError from "@/components/InputError.vue";
 import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
@@ -131,29 +132,58 @@ const submitDelete = () => {
 };
 
 const columns = [
-  { header: "Tipe Pinjaman", key: "name", slot: "loan_type" },
+  {
+    header: "Tipe Pinjaman",
+    key: "name",
+    slot: "loan_type",
+    class: "max-w-none! min-w-[220px] whitespace-normal",
+  },
   {
     header: "Bunga",
     key: "interest_rate",
     slot: "interest",
     align: "right" as const,
+    class: "max-w-none! whitespace-nowrap",
   },
   {
     header: "Biaya Admin",
     key: "admin_fee",
     slot: "admin_fee",
     align: "right" as const,
+    class: "max-w-none! whitespace-nowrap",
   },
   {
     header: "Denda / Hari",
     key: "late_fee_per_day",
     slot: "late_fee",
     align: "right" as const,
+    class: "max-w-none! whitespace-nowrap",
   },
-  { header: "Plafon", key: "min_amount", slot: "amount" },
-  { header: "Tenor", key: "min_term_months", slot: "term" },
-  { header: "Status", key: "is_active", slot: "status" },
-  { header: "Aksi", key: "id", slot: "actions", align: "right" as const },
+  {
+    header: "Plafon",
+    key: "min_amount",
+    slot: "amount",
+    class: "max-w-none! whitespace-nowrap",
+  },
+  {
+    header: "Tenor",
+    key: "min_term_months",
+    slot: "term",
+    class: "max-w-none! whitespace-nowrap",
+  },
+  {
+    header: "Status",
+    key: "is_active",
+    slot: "status",
+    class: "max-w-none! whitespace-nowrap",
+  },
+  {
+    header: "Aksi",
+    key: "id",
+    slot: "actions",
+    class: "max-w-none! min-w-[150px] whitespace-nowrap",
+    align: "right" as const,
+  },
 ];
 </script>
 
@@ -166,266 +196,254 @@ const columns = [
       { title: 'Tipe Pinjaman', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-6xl">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-white via-sky-50/60 to-emerald-50/40 p-6 shadow-sm shadow-sky-950/5 sm:p-7 dark:border-sky-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Tipe Pinjaman"
+        description="Atur bunga, biaya, plafon, dan tenor untuk setiap produk pinjaman."
       >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-sky-300/20 blur-3xl dark:bg-sky-500/10"
-          aria-hidden="true"
-        />
-        <div class="relative space-y-3">
-          <span
-            class="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-inset ring-sky-200/70 dark:bg-sky-900/40 dark:text-sky-200 dark:ring-sky-800/60"
+        <Button type="button" size="sm" @click="openCreateDialog"
+          ><Plus class="size-4" /> Tambah Tipe Pinjaman</Button
+        >
+      </WorkspaceHeader>
+      <WorkspaceSummary
+        :items="[
+          { label: 'Produk Pinjaman', value: loanTypes.length },
+          {
+            label: 'Aktif',
+            value: loanTypes.filter((type) => type.is_active).length,
+            tone: 'emerald',
+          },
+          {
+            label: 'Nonaktif',
+            value: loanTypes.filter((type) => !type.is_active).length,
+          },
+        ]"
+      />
+      <Dialog v-model:open="createDialogOpen">
+        <DialogContent
+          v-if="createDialogOpen"
+          class="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
+        >
+          <DialogHeader>
+            <DialogTitle>Tambah Tipe Pinjaman</DialogTitle>
+            <DialogDescription>
+              Tentukan bunga, biaya, plafon, dan tenor untuk produk pinjaman
+              baru.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            class="grid gap-4 sm:grid-cols-2"
+            @submit.prevent="submitCreate"
           >
-            <Sparkles class="size-3.5" aria-hidden="true" />
-            Konfigurasi
-          </span>
-          <h1
-            class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-          >
-            Tipe Pinjaman
-          </h1>
-          <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-            Parameter bunga, biaya, dan tenor untuk setiap produk pinjaman.
-          </p>
-        </div>
-      </section>
-
-      <div class="flex justify-end">
-        <Dialog v-model:open="createDialogOpen">
-          <Button type="button" @click="openCreateDialog">
-            <Plus class="mr-2 size-4" /> Tambah Tipe Pinjaman
-          </Button>
-          <DialogContent
-            v-if="createDialogOpen"
-            class="max-h-[90vh] overflow-y-auto sm:max-w-2xl"
-          >
-            <DialogHeader>
-              <DialogTitle>Tambah Tipe Pinjaman</DialogTitle>
-              <DialogDescription>
-                Tentukan bunga, biaya, plafon, dan tenor untuk produk pinjaman
-                baru.
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              class="grid gap-4 sm:grid-cols-2"
-              @submit.prevent="submitCreate"
-            >
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-code">Kode</Label>
-                <Input
-                  id="create-loan-type-code"
-                  v-model="createForm.code"
-                  required
-                  aria-describedby="create-loan-type-code-error"
-                  :aria-invalid="Boolean(createForm.errors.code)"
-                />
-                <InputError
-                  id="create-loan-type-code-error"
-                  role="alert"
-                  :message="createForm.errors.code"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-name">Nama tipe</Label>
-                <Input
-                  id="create-loan-type-name"
-                  v-model="createForm.name"
-                  required
-                  aria-describedby="create-loan-type-name-error"
-                  :aria-invalid="Boolean(createForm.errors.name)"
-                />
-                <InputError
-                  id="create-loan-type-name-error"
-                  role="alert"
-                  :message="createForm.errors.name"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-interest-rate">Bunga (%)</Label>
-                <Input
-                  id="create-loan-type-interest-rate"
-                  v-model="createForm.interest_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  aria-describedby="create-loan-type-interest-rate-error"
-                  :aria-invalid="Boolean(createForm.errors.interest_rate)"
-                />
-                <InputError
-                  id="create-loan-type-interest-rate-error"
-                  role="alert"
-                  :message="createForm.errors.interest_rate"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-admin-fee">Biaya admin</Label>
-                <Input
-                  id="create-loan-type-admin-fee"
-                  v-model="createForm.admin_fee"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  required
-                  aria-describedby="create-loan-type-admin-fee-error"
-                  :aria-invalid="Boolean(createForm.errors.admin_fee)"
-                />
-                <InputError
-                  id="create-loan-type-admin-fee-error"
-                  role="alert"
-                  :message="createForm.errors.admin_fee"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-late-fee">Denda per hari</Label>
-                <Input
-                  id="create-loan-type-late-fee"
-                  v-model="createForm.late_fee_per_day"
-                  type="number"
-                  min="0"
-                  step="500"
-                  required
-                  aria-describedby="create-loan-type-late-fee-error"
-                  :aria-invalid="Boolean(createForm.errors.late_fee_per_day)"
-                />
-                <InputError
-                  id="create-loan-type-late-fee-error"
-                  role="alert"
-                  :message="createForm.errors.late_fee_per_day"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-min-amount"
-                  >Minimum pinjaman</Label
-                >
-                <Input
-                  id="create-loan-type-min-amount"
-                  v-model="createForm.min_amount"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  required
-                  aria-describedby="create-loan-type-min-amount-error"
-                  :aria-invalid="Boolean(createForm.errors.min_amount)"
-                />
-                <InputError
-                  id="create-loan-type-min-amount-error"
-                  role="alert"
-                  :message="createForm.errors.min_amount"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-max-amount"
-                  >Maksimum pinjaman</Label
-                >
-                <Input
-                  id="create-loan-type-max-amount"
-                  v-model="createForm.max_amount"
-                  type="number"
-                  min="0"
-                  step="1000"
-                  required
-                  aria-describedby="create-loan-type-max-amount-error"
-                  :aria-invalid="Boolean(createForm.errors.max_amount)"
-                />
-                <InputError
-                  id="create-loan-type-max-amount-error"
-                  role="alert"
-                  :message="createForm.errors.max_amount"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-min-term">Tenor minimum</Label>
-                <Input
-                  id="create-loan-type-min-term"
-                  v-model="createForm.min_term_months"
-                  type="number"
-                  min="1"
-                  required
-                  aria-describedby="create-loan-type-min-term-error"
-                  :aria-invalid="Boolean(createForm.errors.min_term_months)"
-                />
-                <InputError
-                  id="create-loan-type-min-term-error"
-                  role="alert"
-                  :message="createForm.errors.min_term_months"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-max-term">Tenor maksimum</Label>
-                <Input
-                  id="create-loan-type-max-term"
-                  v-model="createForm.max_term_months"
-                  type="number"
-                  min="1"
-                  required
-                  aria-describedby="create-loan-type-max-term-error"
-                  :aria-invalid="Boolean(createForm.errors.max_term_months)"
-                />
-                <InputError
-                  id="create-loan-type-max-term-error"
-                  role="alert"
-                  :message="createForm.errors.max_term_months"
-                />
-              </div>
-              <div class="space-y-1.5 sm:col-span-2">
-                <Label for="create-loan-type-description">Deskripsi</Label>
-                <textarea
-                  id="create-loan-type-description"
-                  v-model="createForm.description"
-                  class="min-h-20 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950"
-                  aria-describedby="create-loan-type-description-error"
-                  :aria-invalid="Boolean(createForm.errors.description)"
-                />
-                <InputError
-                  id="create-loan-type-description-error"
-                  role="alert"
-                  :message="createForm.errors.description"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label for="create-loan-type-active">Status aktif</Label>
-                <input
-                  id="create-loan-type-active"
-                  v-model="createForm.is_active"
-                  type="checkbox"
-                  class="rounded border"
-                />
-              </div>
-              <DialogFooter class="sm:col-span-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  @click="createDialogOpen = false"
-                >
-                  Batal
-                </Button>
-                <Button type="submit" :disabled="createForm.processing">
-                  Simpan Tipe
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-code">Kode</Label>
+              <Input
+                id="create-loan-type-code"
+                v-model="createForm.code"
+                required
+                aria-describedby="create-loan-type-code-error"
+                :aria-invalid="Boolean(createForm.errors.code)"
+              />
+              <InputError
+                id="create-loan-type-code-error"
+                role="alert"
+                :message="createForm.errors.code"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-name">Nama tipe</Label>
+              <Input
+                id="create-loan-type-name"
+                v-model="createForm.name"
+                required
+                aria-describedby="create-loan-type-name-error"
+                :aria-invalid="Boolean(createForm.errors.name)"
+              />
+              <InputError
+                id="create-loan-type-name-error"
+                role="alert"
+                :message="createForm.errors.name"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-interest-rate">Bunga (%)</Label>
+              <Input
+                id="create-loan-type-interest-rate"
+                v-model="createForm.interest_rate"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                aria-describedby="create-loan-type-interest-rate-error"
+                :aria-invalid="Boolean(createForm.errors.interest_rate)"
+              />
+              <InputError
+                id="create-loan-type-interest-rate-error"
+                role="alert"
+                :message="createForm.errors.interest_rate"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-admin-fee">Biaya admin</Label>
+              <Input
+                id="create-loan-type-admin-fee"
+                v-model="createForm.admin_fee"
+                type="number"
+                min="0"
+                step="1000"
+                required
+                aria-describedby="create-loan-type-admin-fee-error"
+                :aria-invalid="Boolean(createForm.errors.admin_fee)"
+              />
+              <InputError
+                id="create-loan-type-admin-fee-error"
+                role="alert"
+                :message="createForm.errors.admin_fee"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-late-fee">Denda per hari</Label>
+              <Input
+                id="create-loan-type-late-fee"
+                v-model="createForm.late_fee_per_day"
+                type="number"
+                min="0"
+                step="500"
+                required
+                aria-describedby="create-loan-type-late-fee-error"
+                :aria-invalid="Boolean(createForm.errors.late_fee_per_day)"
+              />
+              <InputError
+                id="create-loan-type-late-fee-error"
+                role="alert"
+                :message="createForm.errors.late_fee_per_day"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-min-amount">Minimum pinjaman</Label>
+              <Input
+                id="create-loan-type-min-amount"
+                v-model="createForm.min_amount"
+                type="number"
+                min="0"
+                step="1000"
+                required
+                aria-describedby="create-loan-type-min-amount-error"
+                :aria-invalid="Boolean(createForm.errors.min_amount)"
+              />
+              <InputError
+                id="create-loan-type-min-amount-error"
+                role="alert"
+                :message="createForm.errors.min_amount"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-max-amount">Maksimum pinjaman</Label>
+              <Input
+                id="create-loan-type-max-amount"
+                v-model="createForm.max_amount"
+                type="number"
+                min="0"
+                step="1000"
+                required
+                aria-describedby="create-loan-type-max-amount-error"
+                :aria-invalid="Boolean(createForm.errors.max_amount)"
+              />
+              <InputError
+                id="create-loan-type-max-amount-error"
+                role="alert"
+                :message="createForm.errors.max_amount"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-min-term">Tenor minimum</Label>
+              <Input
+                id="create-loan-type-min-term"
+                v-model="createForm.min_term_months"
+                type="number"
+                min="1"
+                required
+                aria-describedby="create-loan-type-min-term-error"
+                :aria-invalid="Boolean(createForm.errors.min_term_months)"
+              />
+              <InputError
+                id="create-loan-type-min-term-error"
+                role="alert"
+                :message="createForm.errors.min_term_months"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-max-term">Tenor maksimum</Label>
+              <Input
+                id="create-loan-type-max-term"
+                v-model="createForm.max_term_months"
+                type="number"
+                min="1"
+                required
+                aria-describedby="create-loan-type-max-term-error"
+                :aria-invalid="Boolean(createForm.errors.max_term_months)"
+              />
+              <InputError
+                id="create-loan-type-max-term-error"
+                role="alert"
+                :message="createForm.errors.max_term_months"
+              />
+            </div>
+            <div class="space-y-1.5 sm:col-span-2">
+              <Label for="create-loan-type-description">Deskripsi</Label>
+              <textarea
+                id="create-loan-type-description"
+                v-model="createForm.description"
+                class="min-h-20 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 dark:border-zinc-800 dark:bg-zinc-950"
+                aria-describedby="create-loan-type-description-error"
+                :aria-invalid="Boolean(createForm.errors.description)"
+              />
+              <InputError
+                id="create-loan-type-description-error"
+                role="alert"
+                :message="createForm.errors.description"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="create-loan-type-active">Status aktif</Label>
+              <input
+                id="create-loan-type-active"
+                v-model="createForm.is_active"
+                type="checkbox"
+                class="rounded border"
+              />
+            </div>
+            <DialogFooter class="sm:col-span-2">
+              <Button
+                type="button"
+                variant="outline"
+                @click="createDialogOpen = false"
+              >
+                Batal
+              </Button>
+              <Button type="submit" :disabled="createForm.processing">
+                Simpan Tipe
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Card
         data-testid="loan-types-list-card"
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <SectionHeader
-          title="Daftar Tipe Pinjaman"
-          :description="`${loanTypes.length} tipe pinjaman tersedia`"
-          :icon="Settings"
-          tone="sky"
-        />
+        <div class="flex items-center justify-between border-b px-4 py-3">
+          <h2 class="text-sm font-semibold">Daftar Tipe Pinjaman</h2>
+          <span class="text-xs text-zinc-500"
+            >{{ loanTypes.length }} produk</span
+          >
+        </div>
         <CardContent class="px-0 pb-0">
           <DataTable
             :columns="columns"
             :data="loanTypes"
-            table-class="min-w-[900px]"
+            table-class="min-w-[1000px] table-auto"
             compact
             :searchable="false"
             :empty-icon="Settings"
@@ -435,7 +453,7 @@ const columns = [
               <div class="font-semibold text-zinc-950 dark:text-white">
                 {{ row.name }}
               </div>
-              <div class="mt-1 flex min-w-0 items-center gap-2">
+              <div class="mt-1 flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
                   class="shrink-0 bg-zinc-100 px-1.5 py-0 text-[10px] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
@@ -443,7 +461,7 @@ const columns = [
                   {{ row.code }}
                 </Badge>
                 <span
-                  class="block max-w-[18rem] truncate text-xs text-zinc-500 dark:text-zinc-400"
+                  class="block max-w-[28rem] whitespace-normal break-words text-xs text-zinc-500 dark:text-zinc-400"
                   :title="row.description || ''"
                 >
                   {{ row.description || "Tanpa keterangan" }}

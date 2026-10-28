@@ -1,76 +1,111 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from "@inertiajs/vue3";
-import { ArrowLeft, ClipboardList } from "lucide-vue-next";
+import { Head, Link } from "@inertiajs/vue3";
+import { Plus } from "lucide-vue-next";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
 import PageContainer from "@/components/PageContainer.vue";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import DataTable from "@/components/ui/data-table/DataTable.vue";
+import StatusBadge from "@/components/ui/status-badge/StatusBadge.vue";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatDate } from "@/lib/formatters";
-
-defineProps<{
-    counts: {
-        data: Array<{
-            id: number;
-            count_no: string;
-            counted_at: string;
-            status: string;
-            location?: { name: string } | null;
-            requester?: { name: string } | null;
-        }>;
-    };
+import { index, create, show } from "@/routes/cooperative/pos/inventory/counts";
+import type { PaginationMeta } from "@/types/pagination";
+const props = defineProps<{
+  counts: PaginationMeta & {
+    data: Array<{
+      id: number;
+      count_no: string;
+      counted_at: string;
+      status: string;
+      location?: { name: string } | null;
+      requester?: { name: string } | null;
+    }>;
+  };
 }>();
+const columns = [
+  { header: "No. Opname", key: "count_no", slot: "number" },
+  { header: "Tanggal", key: "counted_at", format: formatDate },
+  { header: "Lokasi", key: "location.name" },
+  { header: "Petugas", key: "requester.name" },
+  { header: "Status", key: "status", slot: "status" },
+].map((column) => ({
+  ...column,
+  headerClass: "max-w-none! whitespace-nowrap",
+  class: "max-w-none! whitespace-nowrap",
+}));
+const statusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  REVIEW: "Dalam Review",
+  APPROVED: "Disetujui",
+  POSTED: "Tercatat",
+  CANCELLED: "Dibatalkan",
+};
 </script>
-
 <template>
-    <Head title="Stock Opname" />
-    <AppLayout
-        :breadcrumbs="[
-            { title: 'Koperasi', href: '/cooperative' },
-            { title: 'POS', href: '/cooperative/pos' },
-            { title: 'Stock Opname', href: '/cooperative/pos/inventory/counts' },
+  <Head title="Stock Opname" />
+  <AppLayout
+    :breadcrumbs="[
+      { title: 'Inventory POS', href: '#' },
+      { title: 'Stock Opname', href: index().url },
+    ]"
+  >
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="Stock Opname"
+        description="Hitung stok fisik dan tinjau selisih sebelum persetujuan."
+        ><Button as-child size="sm"
+          ><Link :href="create().url"
+            ><Plus class="size-4" /> Buat Opname</Link
+          ></Button
+        ></WorkspaceHeader
+      >
+      <WorkspaceSummary
+        :items="[
+          { label: 'Opname di Halaman Ini', value: counts.data.length },
+          {
+            label: 'Draft di Halaman Ini',
+            value: counts.data.filter((row) => row.status === 'DRAFT').length,
+          },
+          {
+            label: 'Disetujui di Halaman Ini',
+            value: counts.data.filter((row) => row.status === 'APPROVED')
+              .length,
+            tone: 'emerald',
+          },
         ]"
-    >
-        <PageContainer>
-            <div class="flex flex-col gap-6">
-                <header class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" class="rounded-full" as-child>
-                            <Link href="/cooperative/pos" aria-label="Kembali ke POS">
-                                <ArrowLeft class="h-5 w-5" aria-hidden="true" />
-                            </Link>
-                        </Button>
-                        <div>
-                            <h1 class="text-2xl font-extrabold text-zinc-900 tracking-tight">Stock Opname</h1>
-                            <p class="text-sm text-zinc-500">Hitung stok fisik dan sesuaikan dengan sistem.</p>
-                        </div>
-                    </div>
-                    <Link href="/cooperative/pos/inventory/counts/create">
-                        <Button class="rounded-xl">Buat Opname</Button>
-                    </Link>
-                </header>
-
-                <div v-if="counts.data.length === 0" class="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center">
-                    <ClipboardList class="mx-auto h-12 w-12 text-zinc-300" />
-                    <p class="mt-4 text-lg font-bold text-zinc-800">Belum ada stock opname</p>
-                </div>
-
-                <div v-else class="space-y-3">
-                    <Link
-                        v-for="c in counts.data"
-                        :key="c.id"
-                        :href="`/cooperative/pos/inventory/counts/${c.id}`"
-                        class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm hover:border-zinc-200"
-                    >
-                        <div>
-                            <div class="font-bold text-zinc-800">{{ c.count_no }}</div>
-                            <div class="text-xs text-zinc-500">
-                                {{ c.location?.name }} · {{ formatDate(c.counted_at) }} · {{ c.requester?.name ?? '-' }}
-                            </div>
-                        </div>
-                        <Badge variant="default" class="text-[9px] font-extrabold uppercase">{{ c.status }}</Badge>
-                    </Link>
-                </div>
-            </div>
-        </PageContainer>
-    </AppLayout>
+        label="Ringkasan halaman ini"
+      />
+      <section class="min-w-0 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-sm font-semibold">Daftar Stock Opname</h2>
+          <span class="text-xs text-zinc-500"
+            >{{ props.counts.data.length }} ditampilkan</span
+          >
+        </div>
+        <DataTable
+          :columns="columns"
+          :data="counts"
+          :searchable="false"
+          compact
+          table-class="min-w-[900px] table-auto"
+          empty-message="Belum ada dokumen stock opname. Gunakan Buat Opname untuk memulai."
+        >
+          <template #number="{ row }"
+            ><Link
+              :href="show(row.id).url"
+              class="font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+              >{{ row.count_no }}</Link
+            ></template
+          >
+          <template #status="{ value }"
+            ><StatusBadge
+              :status="value"
+              :label="statusLabels[value] ?? value"
+              :variant="value === 'POSTED' ? 'success' : undefined"
+          /></template>
+        </DataTable>
+      </section>
+    </PageContainer>
+  </AppLayout>
 </template>

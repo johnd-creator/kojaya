@@ -3,21 +3,21 @@ import { Head, router, useForm } from "@inertiajs/vue3";
 import {
   BadgeDollarSign,
   CalendarCheck,
-  Layers,
   LockKeyhole,
   RefreshCw,
-  Sparkles,
   Star,
   Users,
 } from "lucide-vue-next";
 import { computed, reactive } from "vue";
 import type { Component } from "vue";
-import GradientKpiCard from "@/components/dashboard/GradientKpiCard.vue";
-import SectionHeader from "@/components/dashboard/SectionHeader.vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
+import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { close, index } from "@/routes/cooperative/shu";
@@ -123,123 +123,101 @@ const closePeriod = () => {
       { title: 'SHU Koperasi', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-none">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white via-violet-50/60 to-sky-50/40 p-6 shadow-sm shadow-violet-950/5 sm:p-7 dark:border-violet-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
-      >
-        <div
-          class="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-violet-300/20 blur-3xl dark:bg-violet-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="pointer-events-none absolute -bottom-24 -left-12 size-64 rounded-full bg-sky-300/15 blur-3xl dark:bg-sky-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div class="space-y-3">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800 ring-1 ring-inset ring-violet-200/70 dark:bg-violet-900/40 dark:text-violet-200 dark:ring-violet-800/60"
-            >
-              <Sparkles class="size-3.5" />
-              Alokasi Tahunan
-            </span>
-            <h1
-              class="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl dark:text-white"
-            >
-              SHU Koperasi Tahunan
-            </h1>
-            <p class="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-              Alokasi dari pool SHU koperasi berdasarkan bulan aktif dan
-              kedisiplinan iuran wajib. Preview dulu, lalu finalisasi.
-            </p>
-          </div>
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="SHU Koperasi Tahunan"
+        description="Tinjau alokasi SHU berdasarkan bulan aktif dan iuran wajib sebelum menutup periode."
+      ></WorkspaceHeader>
 
-          <div
-            class="grid min-w-0 grid-cols-2 gap-2 rounded-xl border border-white/70 bg-white/70 p-3 shadow-sm shadow-zinc-950/5 backdrop-blur sm:grid-cols-5 dark:border-zinc-800/80 dark:bg-zinc-950/40"
-          >
-            <Input
-              id="shu_year"
-              v-model.number="filter.year"
-              type="number"
-              min="2020"
-              placeholder="Tahun"
-              aria-label="Tahun SHU"
-            />
-            <Input
-              id="shu_pool"
-              v-model.number="filter.cooperative_pool"
-              type="number"
-              min="0"
-              placeholder="Pool SHU"
-              aria-label="Pool SHU koperasi"
-            />
-            <Input
-              id="shu_pos"
-              v-model="filter.pos_profit_pool"
-              type="number"
-              min="0"
-              placeholder="Pool POS"
-              aria-label="Pool POS opsional"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              @click="refreshPreview"
-            >
-              <RefreshCw class="mr-1.5 h-3.5 w-3.5" />
-              Preview
-            </Button>
-            <Button
-              v-can="'manage_cooperative_shu'"
-              type="button"
-              size="sm"
-              :disabled="isClosed || closeForm.processing"
-              @click="closePeriod"
-            >
-              <LockKeyhole class="mr-1.5 h-3.5 w-3.5" />
-              {{ closeForm.processing ? "Menyimpan…" : "Tutup" }}
-            </Button>
-          </div>
+      <WorkspaceSummary
+        :items="
+          kpiCards.map((card) => ({
+            label: card.label,
+            value: card.value,
+            hint: card.meta,
+            tone: card.tone,
+          }))
+        "
+        label="Ringkasan SHU"
+      />
+      <div
+        class="grid items-end gap-3 rounded-xl border p-3 sm:grid-cols-2 xl:grid-cols-[.7fr_1.2fr_1.2fr_auto_auto]"
+      >
+        <div class="space-y-1">
+          <Label for="shu_year" class="text-xs">Tahun SHU</Label>
+          <Input
+            id="shu_year"
+            v-model.number="filter.year"
+            type="number"
+            min="2020"
+            placeholder="Tahun"
+            aria-label="Tahun SHU"
+          />
         </div>
-      </section>
-
-      <section
-        class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
-        aria-label="Ringkasan SHU"
-      >
-        <GradientKpiCard
-          v-for="card in kpiCards"
-          :key="card.label"
-          :label="card.label"
-          :value="card.value"
-          :meta="card.meta"
-          :icon="card.icon"
-          :tone="card.tone"
-          :href="card.href"
-        />
-      </section>
-
+        <div class="space-y-1">
+          <Label for="shu_pool" class="text-xs">Pool SHU Koperasi</Label>
+          <Input
+            id="shu_pool"
+            v-model.number="filter.cooperative_pool"
+            type="number"
+            min="0"
+            placeholder="Pool SHU"
+            aria-label="Pool SHU koperasi"
+          />
+        </div>
+        <div class="space-y-1">
+          <Label for="shu_pos" class="text-xs">Pool POS (opsional)</Label>
+          <Input
+            id="shu_pos"
+            v-model="filter.pos_profit_pool"
+            type="number"
+            min="0"
+            placeholder="Pool POS"
+            aria-label="Pool POS opsional"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          @click="refreshPreview"
+        >
+          <RefreshCw class="mr-1.5 h-3.5 w-3.5" />
+          Preview
+        </Button>
+        <Button
+          v-can="'manage_cooperative_shu'"
+          type="button"
+          size="sm"
+          :disabled="isClosed || closeForm.processing"
+          @click="closePeriod"
+        >
+          <LockKeyhole class="mr-1.5 h-3.5 w-3.5" />
+          {{ closeForm.processing ? "Menyimpan…" : "Tutup" }}
+        </Button>
+      </div>
+      <InputError
+        v-for="(message, field) in closeForm.errors"
+        :key="field"
+        :message="message"
+        role="alert"
+      />
       <Card
-        class="overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
+        class="gap-0 rounded-xl py-0 overflow-hidden border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900/80"
       >
-        <SectionHeader
-          title="Alokasi per Anggota"
-          :description="
-            allocations.length > 0
-              ? `${allocations.length} anggota dialokasikan`
-              : 'Belum ada anggota aktif untuk periode ini'
-          "
-          :icon="Layers"
-          tone="violet"
-        />
+        <div class="flex items-center justify-between gap-2 border-b px-4 py-3">
+          <h2 class="text-sm font-semibold">Alokasi per Anggota</h2>
+        </div>
         <CardContent class="px-0 pb-0">
-          <div class="overflow-x-auto">
+          <div
+            class="overflow-x-auto"
+            role="region"
+            aria-label="Alokasi SHU, geser untuk melihat kolom lainnya"
+            tabindex="0"
+          >
             <table
               aria-label="Tabel alokasi SHU per anggota"
-              class="w-full text-sm"
+              class="w-full min-w-[760px] text-sm [&_td]:whitespace-nowrap"
               role="table"
             >
               <thead
@@ -285,7 +263,7 @@ const closePeriod = () => {
                   </td>
                 </tr>
                 <tr v-if="allocations.length === 0">
-                  <td colspan="5" class="px-4 py-16 text-center text-zinc-500">
+                  <td colspan="5" class="px-4 py-10 text-center text-zinc-500">
                     <div class="flex flex-col items-center gap-2">
                       <Users class="size-8 text-zinc-300 dark:text-zinc-700" />
                       <p class="text-sm">

@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { Head, useForm } from "@inertiajs/vue3";
-import { ImageOff, Plus, Search, ShoppingCart, Sparkles, Store, Trash2 } from "lucide-vue-next";
+import { Head, Link, useForm } from "@inertiajs/vue3";
+import {
+  ImageOff,
+  Plus,
+  Search,
+  ShoppingCart,
+  Store,
+  Trash2,
+} from "lucide-vue-next";
 import { computed, ref } from "vue";
+import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
+import InfoTooltip from "@/components/InfoTooltip.vue";
+import InputError from "@/components/InputError.vue";
 import PageContainer from "@/components/PageContainer.vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import AppLayout from "@/layouts/AppLayout.vue";
 import { formatCurrency } from "@/lib/formatters";
 import { index } from "@/routes/cooperative/pos";
+import { index as transactionIndex } from "@/routes/cooperative/pos/transactions";
 import { store as storeTransaction } from "@/routes/cooperative/pos/transactions";
 
 type Product = {
@@ -79,7 +90,9 @@ const selectedMember = computed(() =>
   props.members.find((member) => String(member.id) === String(memberId.value)),
 );
 
-const storeAccount = computed(() => selectedMember.value?.store_account ?? null);
+const storeAccount = computed(
+  () => selectedMember.value?.store_account ?? null,
+);
 
 const projectedBalance = computed(() =>
   storeAccount.value ? Number(storeAccount.value.balance) - total.value : 0,
@@ -93,17 +106,26 @@ const canSubmit = computed(() => {
     return false;
   }
   if (paymentMethod.value === "MEMBER_STORE_ACCOUNT") {
-    if (!memberId.value || !storeAccount.value || storeAccount.value.status !== "active") {
+    if (
+      !memberId.value ||
+      !storeAccount.value ||
+      storeAccount.value.status !== "active"
+    ) {
       return false;
     }
     if (!purchaserName.value.trim()) {
       return false;
     }
   }
-  if (paymentMethod.value === "CASH" && Number(cashReceived.value) < total.value) {
+  if (
+    paymentMethod.value === "CASH" &&
+    Number(cashReceived.value) < total.value
+  ) {
     return false;
   }
-  return cart.value.every((item) => item.quantity <= item.stock && item.quantity > 0);
+  return cart.value.every(
+    (item) => item.quantity <= item.stock && item.quantity > 0,
+  );
 });
 
 const cartStockIssues = computed(() =>
@@ -165,7 +187,15 @@ const submit = () => {
     return;
   }
 
-  if (!window.confirm("Konfirmasi pembelian " + formatCurrency(total.value) + " untuk " + (purchaserName.value || selectedMember.value?.name || "anggota") + "?")) {
+  if (
+    !window.confirm(
+      "Konfirmasi pembelian " +
+        formatCurrency(total.value) +
+        " untuk " +
+        (purchaserName.value || selectedMember.value?.name || "anggota") +
+        "?",
+    )
+  ) {
     return;
   }
 
@@ -173,10 +203,20 @@ const submit = () => {
   form.cooperative_member_id = memberId.value || "";
   form.payment_method = paymentMethod.value;
   form.discount_amount = discountSafe.value;
-  form.cash_received = paymentMethod.value === "CASH" ? Number(cashReceived.value) : null;
-  form.store_delegate_code = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? storeDelegateCode.value : "";
-  form.purchaser_name = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? purchaserName.value.trim() : "";
-  form.purchase_note = paymentMethod.value === "MEMBER_STORE_ACCOUNT" ? purchaseNote.value.trim() : "";
+  form.cash_received =
+    paymentMethod.value === "CASH" ? Number(cashReceived.value) : null;
+  form.store_delegate_code =
+    paymentMethod.value === "MEMBER_STORE_ACCOUNT"
+      ? storeDelegateCode.value
+      : "";
+  form.purchaser_name =
+    paymentMethod.value === "MEMBER_STORE_ACCOUNT"
+      ? purchaserName.value.trim()
+      : "";
+  form.purchase_note =
+    paymentMethod.value === "MEMBER_STORE_ACCOUNT"
+      ? purchaseNote.value.trim()
+      : "";
   form.items = cart.value.map((item) => ({
     pos_product_id: item.id,
     quantity: item.quantity,
@@ -205,119 +245,126 @@ const submit = () => {
       { title: 'POS Toko', href: index().url },
     ]"
   >
-    <PageContainer class="max-w-none">
-      <section
-        class="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/60 to-sky-50/40 p-5 shadow-sm shadow-emerald-950/5 sm:p-6 dark:border-emerald-900/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-900"
+    <PageContainer class="max-w-none gap-4">
+      <WorkspaceHeader
+        title="POS Toko Koperasi"
+        description="Pilih produk atau scan barcode, periksa keranjang, lalu selesaikan pembayaran."
       >
-        <div
-          class="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10"
-          aria-hidden="true"
-        />
-        <div
-          class="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+        <Button as-child variant="outline" size="sm"
+          ><Link :href="transactionIndex().url">Riwayat Transaksi</Link></Button
         >
-          <div class="space-y-1.5">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/70 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800/60"
-            >
-              <Sparkles class="size-3" />
-              Kasir
-            </span>
-            <h1
-              class="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl dark:text-white"
-            >
-              POS Toko Koperasi
-            </h1>
-          </div>
-          <div class="flex flex-col gap-2 sm:flex-row">
-            <div class="relative">
-              <Search
-                class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
-              />
-              <Input
-                v-model="search"
-                class="pl-9"
-                placeholder="Scan barcode atau cari produk"
-              />
-            </div>
-            <select
-              aria-label="Kategori produk" v-model="selectedCategory"
-              class="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
-            >
-              <option value="">Semua kategori</option>
-              <option
-                v-for="category in categories"
-                :key="category.id"
-                :value="String(category.id)"
-              >
-                {{ category.name }}
-              </option>
-            </select>
-          </div>
+        <Button as-child variant="outline" size="sm" class="lg:hidden"
+          ><a href="#pos-cart"
+            ><ShoppingCart class="size-4" /> Keranjang ({{ cart.length }})</a
+          ></Button
+        >
+      </WorkspaceHeader>
+      <div class="flex flex-wrap items-center gap-2 rounded-xl border p-3">
+        <div class="relative min-w-0 basis-full sm:basis-auto sm:flex-1">
+          <Search
+            class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+          />
+          <Input
+            v-model="search"
+            class="pl-9"
+            placeholder="Scan barcode atau cari produk"
+            aria-label="Cari produk POS"
+          />
         </div>
-      </section>
+        <select
+          aria-label="Kategori produk"
+          v-model="selectedCategory"
+          class="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <option value="">Semua kategori</option>
+          <option
+            v-for="category in categories"
+            :key="category.id"
+            :value="String(category.id)"
+          >
+            {{ category.name }}
+          </option>
+        </select>
+      </div>
 
-      <div class="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <button
-            v-for="product in products"
-            :key="product.id"
-            type="button"
-            :disabled="product.stock <= 0"
-            class="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 text-left shadow-sm shadow-zinc-950/5 transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300/80 hover:shadow-md hover:shadow-emerald-950/5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:border-zinc-800/80 dark:bg-zinc-900"
-            @click="addProduct(product)"
-          >
-            <div
-              class="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+      <div
+        class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_400px]"
+      >
+        <section class="min-w-0 space-y-3" aria-label="Katalog produk POS">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-sm font-semibold">Katalog Produk</h2>
+            <span class="text-xs text-zinc-500"
+              >{{ products.length }} produk</span
             >
-              <img
-                v-if="product.image_url"
-                :src="product.image_url"
-                :alt="product.name"
-                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-700"
-                aria-hidden="true"
-              >
-                <ImageOff class="size-10" />
-              </div>
-              <span
-                v-if="product.stock <= 0"
-                class="absolute right-2 top-2 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white"
-              >
-                Habis
-              </span>
-            </div>
-            <div class="flex-1 p-3">
-              <div class="line-clamp-2 font-semibold text-zinc-950 dark:text-white">
-                {{ product.name }}
-              </div>
-              <div class="mt-1 text-[11px] text-zinc-500">
-                {{ product.sku }} · Stok {{ product.stock }}
-              </div>
-              <div
-                class="mt-2 text-base font-bold text-emerald-700 dark:text-emerald-300"
-              >
-                {{ formatCurrency(product.sale_price) }}
-              </div>
-            </div>
-          </button>
-          <div
-            v-if="products.length === 0"
-            class="col-span-full rounded-xl border border-dashed border-zinc-200/80 bg-white/60 p-8 text-center text-sm text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/40"
-          >
-            <Store
-              class="mx-auto mb-2 size-8 text-zinc-300 dark:text-zinc-700"
-            />
-            Produk tidak ditemukan.
           </div>
-        </div>
+          <div
+            class="grid grid-cols-2 content-start items-start gap-3 xl:grid-cols-3 2xl:grid-cols-4"
+          >
+            <button
+              v-for="product in products"
+              :key="product.id"
+              type="button"
+              :disabled="product.stock <= 0"
+              class="group flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white/95 text-left shadow-sm shadow-zinc-950/5 transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300/80 hover:shadow-md hover:shadow-emerald-950/5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:border-zinc-800/80 dark:bg-zinc-900"
+              @click="addProduct(product)"
+            >
+              <div
+                class="relative aspect-[2/1] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+              >
+                <img
+                  v-if="product.image_url"
+                  :src="product.image_url"
+                  :alt="product.name"
+                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div
+                  v-else
+                  class="flex h-full w-full items-center justify-center text-zinc-300 dark:text-zinc-700"
+                  aria-hidden="true"
+                >
+                  <ImageOff class="size-10" />
+                </div>
+                <span
+                  v-if="product.stock <= 0"
+                  class="absolute right-2 top-2 rounded-full bg-rose-700 px-2 py-0.5 text-[10px] font-bold uppercase text-white"
+                >
+                  Habis
+                </span>
+              </div>
+              <div class="flex-1 p-3">
+                <div
+                  class="line-clamp-2 font-semibold text-zinc-950 dark:text-white"
+                >
+                  {{ product.name }}
+                </div>
+                <div class="mt-1 text-[11px] text-zinc-500">
+                  {{ product.sku }} · Stok {{ product.stock }}
+                </div>
+                <div
+                  class="mt-2 text-base font-bold text-emerald-700 dark:text-emerald-300"
+                >
+                  {{ formatCurrency(product.sale_price) }}
+                </div>
+              </div>
+            </button>
+            <div
+              v-if="products.length === 0"
+              class="col-span-full rounded-xl border border-dashed border-zinc-200/80 bg-white/60 p-8 text-center text-sm text-zinc-500 dark:border-zinc-800/80 dark:bg-zinc-900/40"
+            >
+              <Store
+                class="mx-auto mb-2 size-8 text-zinc-300 dark:text-zinc-700"
+              />
+              Produk tidak ditemukan.
+            </div>
+          </div>
+        </section>
 
         <aside
-          class="flex flex-col rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900"
+          id="pos-cart"
+          aria-label="Keranjang POS"
+          tabindex="-1"
+          class="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto flex flex-col rounded-xl border border-zinc-200/80 bg-white/95 shadow-sm shadow-zinc-950/5 dark:border-zinc-800/80 dark:bg-zinc-900"
         >
           <div
             class="flex items-center gap-2 border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800/70"
@@ -341,15 +388,15 @@ const submit = () => {
             {{ stockError }}
           </div>
           <div
-            class="flex-1 divide-y divide-zinc-200/70 overflow-auto dark:divide-zinc-800/70"
+            class="max-h-[340px] divide-y divide-zinc-200/70 overflow-auto dark:divide-zinc-800/70"
           >
             <div
               v-for="item in cart"
               :key="item.id"
-              class="flex items-center gap-3 px-4 py-3"
+              class="flex items-center gap-2 px-4 py-3"
             >
               <div
-                class="size-12 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800"
+                class="size-10 shrink-0 overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800"
               >
                 <img
                   v-if="item.image_url"
@@ -367,7 +414,9 @@ const submit = () => {
                 </div>
               </div>
               <div class="min-w-0 flex-1">
-                <div class="truncate font-medium text-zinc-950 dark:text-white">
+                <div
+                  class="whitespace-normal break-words text-sm font-medium text-zinc-950 dark:text-white"
+                >
                   {{ item.name }}
                 </div>
                 <div class="text-xs text-zinc-500">
@@ -376,6 +425,7 @@ const submit = () => {
               </div>
               <Input
                 v-model.number="item.quantity"
+                :aria-label="`Jumlah ${item.name}`"
                 type="number"
                 min="1"
                 :max="item.stock"
@@ -386,7 +436,7 @@ const submit = () => {
                 variant="ghost"
                 size="icon"
                 type="button"
-                class="text-zinc-500 hover:text-rose-600"
+                class="text-zinc-500 hover:text-rose-700"
                 @click="removeItem(item.id)"
               >
                 <Trash2 class="size-4" />
@@ -395,7 +445,7 @@ const submit = () => {
             </div>
             <div
               v-if="cart.length === 0"
-              class="flex flex-col items-center py-12 text-sm text-zinc-500"
+              class="flex flex-col items-center py-8 text-sm text-zinc-500"
             >
               <ShoppingCart
                 class="mb-2 size-8 text-zinc-300 dark:text-zinc-700"
@@ -407,7 +457,8 @@ const submit = () => {
             class="space-y-3 border-t border-zinc-200/70 p-4 dark:border-zinc-800/70"
           >
             <select
-              aria-label="Metode pembayaran" v-model="paymentMethod"
+              aria-label="Metode pembayaran"
+              v-model="paymentMethod"
               class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <option value="CASH">Tunai (CASH)</option>
@@ -417,7 +468,8 @@ const submit = () => {
               <option value="MEMBER_STORE_ACCOUNT">Saldo Toko Anggota</option>
             </select>
             <select
-              aria-label="Anggota pembeli" v-model="memberId"
+              aria-label="Anggota pembeli"
+              v-model="memberId"
               class="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
             >
               <option value="">
@@ -439,18 +491,30 @@ const submit = () => {
               v-if="paymentMethod === 'MEMBER_STORE_ACCOUNT' && memberId"
               class="space-y-1.5"
             >
-              <div class="grid grid-cols-3 gap-2 rounded-lg bg-sky-50 p-3 text-xs dark:bg-sky-950/30">
+              <div
+                class="grid grid-cols-3 gap-2 rounded-lg bg-sky-50 p-3 text-xs dark:bg-sky-950/30"
+              >
                 <div>
                   <span class="block text-zinc-500">Saldo</span>
-                  <strong>{{ storeAccount ? formatCurrency(storeAccount.balance) : "—" }}</strong>
+                  <strong>{{
+                    storeAccount ? formatCurrency(storeAccount.balance) : "—"
+                  }}</strong>
                 </div>
                 <div>
                   <span class="block text-zinc-500">Limit</span>
-                  <strong>{{ storeAccount ? formatCurrency(storeAccount.credit_limit) : "—" }}</strong>
+                  <strong>{{
+                    storeAccount
+                      ? formatCurrency(storeAccount.credit_limit)
+                      : "—"
+                  }}</strong>
                 </div>
                 <div>
                   <span class="block text-zinc-500">Sisa digunakan</span>
-                  <strong>{{ storeAccount ? formatCurrency(storeAccount.available_spending) : "—" }}</strong>
+                  <strong>{{
+                    storeAccount
+                      ? formatCurrency(storeAccount.available_spending)
+                      : "—"
+                  }}</strong>
                 </div>
               </div>
               <div
@@ -459,48 +523,72 @@ const submit = () => {
               >
                 <div class="flex justify-between">
                   <span class="text-zinc-500">Proyeksi saldo</span>
-                  <strong :class="projectedBalance < 0 ? 'text-rose-600' : 'text-emerald-600'">
+                  <strong
+                    :class="
+                      projectedBalance < 0
+                        ? 'text-rose-700'
+                        : 'text-emerald-700'
+                    "
+                  >
                     {{ formatCurrency(projectedBalance) }}
                   </strong>
                 </div>
                 <p class="mt-1 text-zinc-500">
-                  {{ projectedBalance < 0 ? "Pemakaian/utang toko" : "Saldo tersimpan" }}
+                  {{
+                    projectedBalance < 0
+                      ? "Pemakaian/utang toko"
+                      : "Saldo tersimpan"
+                  }}
                 </p>
               </div>
-              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                Yang berbelanja <span class="text-rose-600">*</span>
+              <label
+                class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+              >
+                Yang berbelanja <span class="text-rose-700">*</span>
               </label>
               <Input
+                aria-label="Yang berbelanja"
                 v-model="purchaserName"
                 placeholder="Nama yang mengambil barang"
                 required
               />
-              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                Catatan <span class="font-normal text-zinc-400">(opsional)</span>
+              <label
+                class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+              >
+                Catatan
+                <span class="font-normal text-zinc-400">(opsional)</span>
               </label>
               <textarea
+                aria-label="Catatan belanja"
                 v-model="purchaseNote"
                 maxlength="500"
                 rows="2"
                 class="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-zinc-800 dark:bg-zinc-950"
                 placeholder="Contoh: diambil oleh staff gudang"
               />
-              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              <label
+                class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+              >
                 Delegate / Staff (opsional)
               </label>
               <Input
+                aria-label="Kode delegate"
                 v-model="storeDelegateCode"
                 placeholder="Kode Delegate"
               />
-              <p class="text-[11px] text-zinc-500">
-                Delegate hanya menjadi referensi staff terdaftar; kasir tidak memerlukan PIN atau password.
-              </p>
+              <InfoTooltip label="Keterangan delegate belanja">
+                Delegate hanya menjadi referensi staff terdaftar; kasir tidak
+                memerlukan PIN atau password.
+              </InfoTooltip>
             </div>
             <div class="space-y-1.5">
-              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+              <label
+                class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+              >
                 Diskon (Rp)
               </label>
               <Input
+                aria-label="Diskon (Rp)"
                 v-model.number="discountAmount"
                 type="number"
                 min="0"
@@ -510,19 +598,19 @@ const submit = () => {
               />
               <p
                 v-if="Number(discountAmount) > subtotal && subtotal > 0"
-                class="text-[11px] text-rose-600"
+                class="text-[11px] text-rose-700"
               >
                 Diskon melebihi subtotal, akan dipotong otomatis.
               </p>
             </div>
-            <div
-              v-if="paymentMethod === 'CASH'"
-              class="space-y-1.5"
-            >
-              <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300">
+            <div v-if="paymentMethod === 'CASH'" class="space-y-1.5">
+              <label
+                class="text-xs font-medium text-zinc-600 dark:text-zinc-300"
+              >
                 Tunai diterima (Rp)
               </label>
               <Input
+                aria-label="Tunai diterima (Rp)"
                 v-model.number="cashReceived"
                 type="number"
                 min="0"
@@ -531,7 +619,11 @@ const submit = () => {
               />
               <div class="flex flex-wrap gap-1.5">
                 <Button
-                  v-for="preset in [total, Math.ceil(total / 50000) * 50000, Math.ceil(total / 100000) * 100000].filter((v, i, a) => v > 0 && a.indexOf(v) === i)"
+                  v-for="preset in [
+                    total,
+                    Math.ceil(total / 50000) * 50000,
+                    Math.ceil(total / 100000) * 100000,
+                  ].filter((v, i, a) => v > 0 && a.indexOf(v) === i)"
                   :key="preset"
                   type="button"
                   variant="outline"
@@ -561,7 +653,7 @@ const submit = () => {
               </div>
               <div
                 v-if="discountSafe > 0"
-                class="flex justify-between text-rose-600"
+                class="flex justify-between text-rose-700"
               >
                 <span>Diskon</span>
                 <span>-{{ formatCurrency(discountSafe) }}</span>
@@ -575,11 +667,17 @@ const submit = () => {
             </div>
             <p
               v-if="cartStockIssues.length > 0"
-              class="text-[11px] font-medium text-rose-600"
+              class="text-[11px] font-medium text-rose-700"
               role="alert"
             >
               Periksa kuantitas item bertanda merah sebelum membayar.
             </p>
+            <InputError
+              v-for="(message, field) in form.errors"
+              :key="field"
+              :message="message"
+              role="alert"
+            />
             <Button
               class="w-full shadow-sm"
               :disabled="!canSubmit"

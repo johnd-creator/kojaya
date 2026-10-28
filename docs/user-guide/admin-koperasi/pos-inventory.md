@@ -74,15 +74,23 @@ pesanan khusus, retur, setoran kas, dan opname stok.
 
 ### POS
 
-1. Buka menu **POS**. Sistem menampilkan daftar shift.
+Halaman POS dan inventori memakai header serta filter ringkas. Keterangan
+halaman tersedia pada ikon **i**. Ringkasan yang bertuliskan **di Halaman Ini**
+hanya menghitung baris yang sedang ditampilkan.
+
+1. Buka **Kasir POS** untuk melihat katalog produk dan keranjang.
 2. Tekan **Buka Shift** untuk memulai shift kasir, lalu catat
    saldo awal.
-3. Untuk mencatat penjualan, tekan **Transaksi Baru**, pilih
-   produk, tentukan jumlah, lalu tekan **Simpan**. Pantau
-   daftar transaksi pada menu **Daftar Transaksi**.
+3. Cari produk atau scan barcode, pilih produk, lalu periksa jumlah,
+   metode pembayaran, diskon, dan tunai diterima pada keranjang. Tekan
+   **Bayar** dan periksa konfirmasinya. Di ponsel, tombol **Keranjang**
+   membawa Anda langsung ke bagian pembayaran. Pantau hasilnya melalui
+   **Riwayat Transaksi** dan gunakan filter untuk menelusuri transaksi.
 4. Untuk pesanan khusus (misalnya pesanan kopi), buka **Pesanan
    Kopi** dan ubah status pesanan ketika siap saji, selesai,
-   atau dibatalkan.
+   atau dibatalkan. Antrean tampil sebagai tabel di desktop dan kartu ringkas
+   di ponsel. Pilihan menu dan catatan tetap terlihat; rincian waktu tersedia
+   pada ikon **i**.
 5. Untuk transaksi yang perlu dibatalkan, buka **Permintaan
    Void**, pilih transaksi, dan proses sesuai prosedur
    pembatalan.
@@ -101,13 +109,24 @@ pesanan khusus, retur, setoran kas, dan opname stok.
 
 ### Inventori
 
+Daftar opname, penerimaan, dan transfer tampil sebagai tabel, termasuk ketika
+belum ada dokumen. Pada **Produk POS** dan **Kategori POS**, gunakan tombol
+**Tambah Produk** atau **Tambah Kategori** untuk membuka formulir. Aksi **Edit**
+pada baris membuka dialog berisi data yang dipilih. Stok awal produk yang
+sudah ada tetap tidak dapat diubah melalui formulir edit.
+
 1. Untuk opname stok, buka **Stok Opname**, pilih periode, lalu
    catat hasil perhitungan fisik. Sistem akan menampilkan
    selisih.
-2. Untuk penerimaan barang, buka **Penerimaan Barang**, isi
+2. Untuk penerimaan barang, buka **Penerimaan Stok**, isi
    supplier, produk, dan jumlah, lalu simpan.
-3. Untuk transfer antar gudang, buka **Transfer Gudang**, isi
+3. Untuk transfer antar gudang, buka **Transfer Stok**, isi
    gudang asal, gudang tujuan, produk, dan jumlah, lalu simpan.
+
+Pada **Laporan POS**, pilih periode dan filter, lalu tekan **Terapkan**.
+Ringkasan penjualan berada dalam satu strip; tren, rekonsiliasi, produk,
+anggota, dan kasir tersusun dalam satu area analisis. Ekspor **CSV** dan
+pembuatan **PDF** tetap menggunakan filter yang dipilih.
 
 ## Hasil yang diharapkan
 

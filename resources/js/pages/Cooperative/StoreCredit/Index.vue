@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
-import { Search, Wallet, ArrowRight, Plus } from "lucide-vue-next";
+import { Search, Wallet, ArrowRight, Plus, ChevronDown } from "lucide-vue-next";
 import { ref } from "vue";
 import WorkspaceHeader from "@/components/dashboard/WorkspaceHeader.vue";
 import WorkspaceSummary from "@/components/dashboard/WorkspaceSummary.vue";
@@ -228,18 +228,24 @@ function submitOpenAccount(): void {
                 @keyup.enter="applyFilter"
               />
             </div>
-            <select
-              aria-label="Filter saldo akun"
-              v-model="filters.filter"
-              class="h-9 rounded-md border px-2 text-sm"
-              @change="applyFilter"
-            >
-              <option value="">Semua</option>
-              <option value="positive">Saldo Positif</option>
-              <option value="negative">Saldo Negatif</option>
-              <option value="zero">Saldo Nol</option>
-              <option value="suspended">Ditangguhkan</option>
-            </select>
+            <div class="relative">
+              <select
+                aria-label="Filter saldo akun"
+                v-model="filters.filter"
+                class="h-9 w-40 appearance-none rounded-md border border-zinc-200 bg-white py-1 pl-3 pr-8 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                @change="applyFilter"
+              >
+                <option value="">Semua</option>
+                <option value="positive">Saldo Positif</option>
+                <option value="negative">Saldo Negatif</option>
+                <option value="zero">Saldo Nol</option>
+                <option value="suspended">Ditangguhkan</option>
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                class="pointer-events-none absolute right-2 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400"
+              />
+            </div>
             <Button variant="outline" size="sm" @click="applyFilter"
               >Terapkan</Button
             >

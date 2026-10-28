@@ -176,6 +176,12 @@ jobs:
       - name: Disable Vite development server
         run: rm -f public/hot
 
+      - name: Verify user guide content and screenshot exports
+        if: github.event_name == 'pull_request'
+        run: |
+          npm run docs:validate
+          npm run docs:screenshots:test
+
       - name: Verify compact workspace interactions and responsive layout
         if: github.event_name == 'pull_request'
         run: >-

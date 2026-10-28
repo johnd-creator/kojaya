@@ -9,7 +9,8 @@
 ## 2026-10-28 - Compact workspace PR verification
 
 - Added the finance, operations, and payment browser regressions to the pull-request UI audit. CI uses Playwright's installed Chromium; local Windows runs retain Chrome. The workflow also triggers when these tests change, without weakening visual or accessibility gates.
-- All three browser suites pass again locally (168 responsive page/state scenarios plus the existing payment proof/cancellation/approval-error regression). Scoped ESLint passes. The local PHPUnit launcher cannot resolve its configured vendor/autoload.php bootstrap path; no PHP pass is claimed. Clean Linux CI and reviewed canonical captures remain required before merge.
+- All three browser suites pass again locally (168 responsive page/state scenarios plus the existing payment proof/cancellation/approval-error regression). Scoped ESLint passes. The local PHPUnit bootstrap initially fails inside the sandbox; the same isolated-memory configuration passes outside it (10 framework tests, 51 assertions). Clean Linux CI and reviewed canonical captures remain required before merge.
+- Initial Linux CI passed the three interaction suites and exposed one dark-mode contrast defect in the loan-type count plus stale visual readiness text for the redesigned transfer/empty-account/report screens. Added the missing dark text variant, wrapped account names independently from member numbers, aligned exact readiness/title assertions with the new copy, and added a dark-dialog axe regression. No waiver, threshold, screenshot mask, or route coverage was weakened; the incomplete first captures are not baseline sources.
 
 ## 2026-10-28 - Compact loyalty, POS, and inventory workspaces
 

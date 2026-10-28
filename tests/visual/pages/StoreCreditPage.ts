@@ -27,7 +27,7 @@ export class StoreCreditPage {
 
     public async gotoReport(query = ""): Promise<void> {
         await this.page.goto(`/cooperative/store-credit-report${query}`);
-        await expect(this.page.getByRole("heading", { name: "Laporan Saldo Toko Anggota" })).toBeVisible();
+        await expect(this.page.getByRole("heading", { name: "Laporan Saldo Toko", exact: true })).toBeVisible();
     }
 
     public async gotoTransfers(query = ""): Promise<void> {

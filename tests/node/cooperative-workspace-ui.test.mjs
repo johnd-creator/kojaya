@@ -598,6 +598,12 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
             ).toBeVisible();
           }
           if (fixture.key === "loan-types") {
+            const auditDarkDialog = width === 1440 && !empty;
+            if (auditDarkDialog) {
+              await page.evaluate(() =>
+                document.documentElement.classList.add("dark"),
+              );
+            }
             await page
               .getByRole("button", {
                 name: "Tambah Tipe Pinjaman",
@@ -607,7 +613,27 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
             await expect(
               page.getByRole("dialog").getByLabel("Kode", { exact: true }),
             ).toBeVisible();
+            if (auditDarkDialog) {
+              await page.waitForFunction(() => {
+                const dialog = document.querySelector('[role="dialog"]');
+                return dialog && getComputedStyle(dialog).opacity === "1";
+              });
+              const accessibility = await new AxeBuilder({ page })
+                .include("#main-content")
+                .include('[role="dialog"]')
+                .analyze();
+              accessibilityFailures.push(
+                ...accessibility.violations.filter((violation) =>
+                  ["serious", "critical"].includes(violation.impact ?? ""),
+                ),
+              );
+            }
             await page.keyboard.press("Escape");
+            if (auditDarkDialog) {
+              await page.evaluate(() =>
+                document.documentElement.classList.remove("dark"),
+              );
+            }
             if (!empty) {
               await page
                 .getByRole("button", { name: "Edit", exact: true })
@@ -622,6 +648,14 @@ test("cooperative workspaces retain readable tables, dialogs and filters across 
             }
           }
           if (fixture.key === "store-credit") {
+            await expect(
+              page.getByText(
+                empty
+                  ? "Belum ada akun saldo toko pada filter ini."
+                  : member.name,
+                { exact: true },
+              ),
+            ).toBeVisible();
             await page
               .getByRole("button", { name: "Buka Akun", exact: true })
               .click();

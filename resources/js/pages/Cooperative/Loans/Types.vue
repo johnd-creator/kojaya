@@ -435,7 +435,7 @@ const columns = [
       >
         <div class="flex items-center justify-between border-b px-4 py-3">
           <h2 class="text-sm font-semibold">Daftar Tipe Pinjaman</h2>
-          <span class="text-xs text-zinc-500"
+          <span class="text-xs text-zinc-500 dark:text-zinc-400"
             >{{ loanTypes.length }} produk</span
           >
         </div>

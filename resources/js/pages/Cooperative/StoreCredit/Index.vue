@@ -276,11 +276,11 @@ function submitOpenAccount(): void {
                 class="border-b last:border-0"
               >
                 <td class="p-3 font-medium">
-                  {{
+                  <span>{{
                     account.member?.full_name ??
                     account.member?.name ??
                     "Anggota tidak tersedia"
-                  }}
+                  }}</span>
                   <div class="mt-0.5 text-xs font-normal text-zinc-500">
                     {{ account.member?.member_no ?? "—" }}
                   </div>

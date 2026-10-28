@@ -14,6 +14,8 @@
 
 - PR CI exposed two newly reported high-severity advisories in the existing PhpSpreadsheet 1.30.6 lock. Updated only that package to 1.30.7, retaining root constraints and audit policy. Bounded scanner/ODS metadata regressions reproduce old-version failures without entity parsing or repeated-cell expansion; all seven pass on the patch. All 157 related import/export tests pass (925 assertions) on isolated SQLite memory; the 46 dues regressions pass (342 assertions). Final remote checks remain required.
 
+- Linux capture run 40649299885 completed all 204 cooperative screenshot entries at implementation head fdfa81b6. Reviewed the four dues states across desktop/tablet/mobile and reconciled only their twelve baselines. The initial desktop compare had exactly four expected dues-image failures (173 tests passed); no threshold, inventory, workflow, or unrelated baseline was changed. Final-head compare and CI remain required.
+
 ## 2026-10-23 - PR 116 approved npm security follow-up
 
 - Updated only follow-redirects 1.16.0 to 1.16.1 and Vite 7.3.6 to 7.3.7. Reviewed the complete lock delta: version/tarball/integrity for those two entries only; package.json, root constraints, all transitive package entries and qs 6.15.3 are unchanged. Existing audit severity policies remain enforced.

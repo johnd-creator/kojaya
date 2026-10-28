@@ -49,10 +49,14 @@ kewenangan lebih tinggi.
 
 ## Langkah penggunaan
 
-1. Buka **Iuran dan Tagihan** untuk melihat tagihan berdasarkan periode,
-   status, anggota, kategori, atau jenis iuran.
-2. Gunakan status **Belum lunas**, **Belum bayar**, **Sebagian**, **Lunas**,
-   atau **Void** sesuai kebutuhan pemeriksaan.
+1. Buka **Iuran dan Tagihan**. Ringkasan periode dan total tagihan tampil
+   dalam satu strip. Arahkan kursor, fokuskan dengan keyboard, atau ketuk ikon
+   **i** untuk membaca keterangan, termasuk jendela autodebit di samping judul.
+2. Gunakan pencarian anggota dan periode pada toolbar. Buka **Filter Tagihan**
+   untuk memilih cakupan periode, status, kategori, atau jenis iuran, lalu klik
+   **Terapkan**. Untuk pembayaran sekaligus, pilih tagihan dan buka **Batch
+   Payment** pada toolbar yang sama; tinjau rincian melalui **Proses** sebelum
+   mengonfirmasi pembayaran.
 3. Buka **Ledger Simpanan** untuk melihat mutasi simpanan berdasarkan
    tanggal, scope, jenis simpanan, atau tipe mutasi.
 4. Cocokkan rincian tagihan dengan transaksi ledger dan bukti yang

@@ -4,7 +4,13 @@
 
 **Project Start:** February 26, 2026
 **Current Status:** Internal Alpha / Active Development
-**Last Updated:** October 23, 2026
+**Last Updated:** October 28, 2026
+
+## 2026-10-28 - Compact cooperative dues workspace
+
+- Replaced the large dues hero, separate autodebit notice, and eight individual summary cards with a compact heading and a single summary strip on desktop. Supporting descriptions use info tooltips with hover, keyboard focus, and touch access.
+- Combined search, period, filter, and batch payment controls in one toolbar. Filter and payment details expand on demand and retain entered values when collapsed. Invoice actions and payment confirmation remain in the existing flow.
+- Verified the production bundle with synthetic browser fixtures at 1440, 1280, 768, and 390 px, covering Admin/Pengurus views, tooltips, filter requests, eligible selection, and batch review without a Laravel server or database writes. Build, scoped ESLint/Prettier, and the browser regression pass. Global type checking still reports errors outside the changed Vue files; neither changed Vue file has a diagnostic.
 
 ## 2026-10-23 - PR 116 approved npm security follow-up
 
